@@ -1,0 +1,22 @@
+{
+  "name": "drone-build-lab",
+  "version": "1.0.0",
+  "description": "WebGL digital lab: build, wire, test and fly a 250 mm quadcopter from bare frame parts.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "0.147.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.2",
+    "vite": "^8.3.5"
+  }
+}
