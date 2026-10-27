@@ -59,7 +59,17 @@ export const TEX_MAKE={
   }),
   vtx:()=>smallPcb(CINE?'HD':'VTX','#1b1730'),
   rx:()=>smallPcb('RX','#16262a'),
-  gps:()=>ctex(256,256,(g,w)=>{ g.fillStyle='#d9cfb6'; g.fillRect(0,0,w,w); g.fillStyle='#b9ad92'; g.fillRect(w*.38,w*.38,w*.24,w*.24); g.fillStyle='#3b3a36'; g.beginPath(); g.moveTo(w/2,w*.08); g.lineTo(w*.62,w*.26); g.lineTo(w*.38,w*.26); g.closePath(); g.fill(); g.font='600 26px "IBM Plex Mono", monospace'; g.textAlign='center'; g.fillText('GPS',w/2,w*.86); }),
+  /* ceramic patch antenna seen from above: silver radiating element, feed pin, and the arrow that must point to the front */
+  gps:()=>ctex(256,256,(g,w)=>{ g.fillStyle='#d8cdb0'; g.fillRect(0,0,w,w);
+    const e=g.createLinearGradient(0,w*.2,0,w*.8); e.addColorStop(0,'#e3e6e8'); e.addColorStop(1,'#a9afb4'); g.fillStyle=e; g.fillRect(w*.2,w*.2,w*.6,w*.6);
+    g.fillStyle='#7d838a'; g.beginPath(); g.arc(w*.62,w*.62,w*.05,0,TAU); g.fill();
+    g.fillStyle='#2b2a27'; g.beginPath(); g.moveTo(w/2,w*.03); g.lineTo(w*.6,w*.16); g.lineTo(w*.4,w*.16); g.closePath(); g.fill();
+    g.font='600 22px "IBM Plex Mono", monospace'; g.textAlign='center'; g.fillText('GPS · COMPASS',w/2,w*.93); }),
+  /* model 3: smart flight battery label */
+  exbat:()=>ctex(512,256,(g,w,h)=>{ g.fillStyle='#d9dcdf'; g.fillRect(0,0,w,h);
+    g.fillStyle='#2a2e33'; g.font='700 54px "Barlow Semi Condensed", sans-serif'; g.fillText('SMART BATTERY',28,70);
+    g.font='500 30px "IBM Plex Mono", monospace'; g.fillStyle='#4b535a'; g.fillText('12S · 52.8 V · 5935 mAh',30,118);
+    g.fillStyle='#e0894a'; g.fillRect(0,h*.82,w,h*.06); }),
   bat:()=>ctex(768,288,(g,w,h)=>{
     g.fillStyle='#22262b'; g.fillRect(0,0,w,h);
     g.fillStyle=CINE?'#3d8fb8':'#c4632d'; g.fillRect(0,h*.72,w,h*.08);
@@ -69,5 +79,5 @@ export const TEX_MAKE={
   front:()=>ctex(512,192,(g,w,h)=>{ g.fillStyle='rgba(224,137,74,.85)'; g.beginPath(); g.moveTo(w/2,8); g.lineTo(w/2+46,74); g.lineTo(w/2+16,74); g.lineTo(w/2+16,110); g.lineTo(w/2-16,110); g.lineTo(w/2-16,74); g.lineTo(w/2-46,74); g.closePath(); g.fill(); g.font='700 56px "Barlow Semi Condensed", sans-serif'; g.textAlign='center'; g.fillText('FRONT',w/2,170); }),
 };
 export const smallPcb=(label,col)=>ctex(256,256,(g,w)=>{ g.fillStyle=col; g.fillRect(0,0,w,w); g.strokeStyle='rgba(150,220,190,.1)'; g.lineWidth=3; for(let i=0;i<10;i++){g.beginPath();g.moveTo(Math.random()*w,Math.random()*w);g.lineTo(Math.random()*w,Math.random()*w);g.stroke();} g.fillStyle='rgba(238,242,240,.85)'; g.font='600 30px "IBM Plex Mono", monospace'; g.textAlign='center'; g.fillText(label,w/2,w*.86); });
-export const escTex=TEX_MAKE.esc(), fcTex=TEX_MAKE.fc(), vtxTex=TEX_MAKE.vtx(), rxTex=TEX_MAKE.rx(), gpsTex=TEX_MAKE.gps(), batTex=TEX_MAKE.bat(), frontTex=TEX_MAKE.front();
+export const escTex=TEX_MAKE.esc(), fcTex=TEX_MAKE.fc(), vtxTex=TEX_MAKE.vtx(), rxTex=TEX_MAKE.rx(), gpsTex=TEX_MAKE.gps(), batTex=TEX_MAKE.bat(), frontTex=TEX_MAKE.front(), exBatTex=TEX_MAKE.exbat();
 export const ringTex=ctex(128,128,(g,w)=>{ g.strokeStyle='#fff'; g.lineWidth=9; g.beginPath(); g.arc(w/2,w/2,w*.38,0,TAU); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.arc(w/2,w/2,w*.1,0,TAU); g.fill(); });

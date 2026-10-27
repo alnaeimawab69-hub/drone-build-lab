@@ -1,11 +1,12 @@
 /* Drone Build Lab · Workbench, CAD view, drone root, markers, flight visuals */
 import * as THREE from 'three';
-import { $, MODEL, TAU, V, armPos, clamp } from './01-config.js';
+import { $, EX, MODEL, SCALE, TAU, V, armPos, clamp } from './01-config.js';
 import { scene } from './02-scene.js';
 import { frontTex, matTex, ringTex } from './03-textures.js';
 import { M } from './04-materials.js';
 import { PROXY_MAT } from './05-geometry.js';
-import { HOT } from './07-catalogue.js';
+import { makeRing } from './06-builders.js';
+import { HOT, PROP_Y } from './07-catalogue.js';
 import { S } from './08-state.js';
 import { textSprite } from './12-placement.js';
 import { updateMarkers } from './14-markers-picking.js';
@@ -51,12 +52,16 @@ export function dimension(a,b,off,note){
   const dir=b2.clone().sub(a2).normalize();
   for(const [pt,d] of [[a2,dir.clone().negate()],[b2,dir]]){ const c=new THREE.Mesh(new THREE.ConeGeometry(.12,.45,10),DIM_HEAD); c.position.copy(pt).addScaledVector(d,-.22); c.quaternion.setFromUnitVectors(V(0,1,0),d); c.renderOrder=11; g.add(c); }
   const t=textSprite(mm(a.distanceTo(b))+(note?' · '+note:''),'#14457a','#1d63a8',.42,'rgba(246,248,250,.96)');
-  t.position.copy(a2).lerp(b2,.5).add(off.length()>.05?off.clone().setLength(.5):V(0,.5,0)); g.add(t);
-  g.traverse(o=>o.userData.noStyle=true); return g;
+  t.position.copy(a2).lerp(b2,.5).add(off.length()>.05?off.clone().setLength(.5/SCALE):V(0,.5/SCALE,0)); g.add(t);
+  g.traverse(o=>{ o.userData.noStyle=true; if(SCALE!==1&&(o.isSprite||o.isMesh)) o.scale.multiplyScalar(1/SCALE); }); return g;
 }
 export const DIMS=new THREE.Group(); DIMS.visible=false;
 export function buildDims(){ if(!DIMS.parent) droneRoot.add(DIMS); if(DIMS.children.length) return;
 const hw=MODEL.plate[0]/2, hl=MODEL.plate[1]/2;
+if(EX){ [[armPos(4).setY(PROP_Y+4),armPos(1).setY(PROP_Y+4),V(0,0,0),'wheelbase'],
+  [armPos(2).add(V(-MODEL.propR,PROP_Y+2,0)),armPos(2).add(V(MODEL.propR,PROP_Y+2,0)),V(0,5,0),MODEL.prop+' prop'],
+  [V(-hw,20,-20.5),V(-hw,20,15),V(-14,0,0),'body'],
+  [V(hw+18,0,0),V(hw+18,46.7,0),V(4,0,0),'height']].forEach(d=>DIMS.add(dimension(...d))); return; }
 [[armPos(4).setY(2.4),armPos(1).setY(2.4),V(0,0,0),'wheelbase'],
  [armPos(4).setY(MODEL.armT),armPos(2).setY(MODEL.armT),V(0,0,-4.5),'motor spacing'],
  [armPos(2).add(V(-6.35,2.2,0)),armPos(2).add(V(6.35,2.2,0)),V(0,1.6,0),MODEL.prop+' prop'],
@@ -70,7 +75,7 @@ export function setStyle(cad){
   styleObj(droneRoot); $('#btnCad').setAttribute('aria-pressed',cad); $('#viewport').classList.toggle('cad',cad); updateMarkers();
 }
 
-export const droneRoot=new THREE.Group(); scene.add(droneRoot);
+export const droneRoot=new THREE.Group(); droneRoot.scale.setScalar(SCALE); scene.add(droneRoot);
 
 HOT.forEach(h=>{
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:ringTex,depthTest:false,transparent:true}));
@@ -78,13 +83,26 @@ HOT.forEach(h=>{
   droneRoot.add(s); h.marker=s;
 });
 
-/* flight visuals */
-export const thrustArrows=[1,2,3,4].map(n=>{ const a=new THREE.ArrowHelper(V(0,1,0),armPos(n).setY(2.6),2,0xe0894a,.6,.4); a.visible=false; a.traverse(o=>{if(o.material){o.material.depthTest=false;o.material.transparent=true;}}); a.renderOrder=9; droneRoot.add(a); return a; });
-export const totalArrow=new THREE.ArrowHelper(V(0,1,0),V(),3,0xe0894a,.9,.6);
-export const weightArrow=new THREE.ArrowHelper(V(0,-1,0),V(),3.4,0x7cc0d3,.9,.6);
-[totalArrow,weightArrow].forEach(a=>{a.visible=false; a.traverse(o=>{if(o.material){o.material.depthTest=false;o.material.transparent=true;}}); scene.add(a);});
-export const PN=320, pPos=new Float32Array(PN*3), pData=[];
-for(let i=0;i<PN;i++) pData.push({m:1+(i%4),y:2-Math.random()*8,r:Math.sqrt(Math.random())*5.6,a:Math.random()*TAU});
+/* flight visuals. Every force arrow is drawn to one scale: the weight is FORCE_LEN long, so four motors at hover
+   are a quarter of that each, and the four motor arrows add up to the total thrust arrow.
+   Arrows on droneRoot are scaled by 1/SCALE so they keep their bench size on the smaller-drawn model 3. */
+export const FORCE_LEN=6;
+const overlay=a=>{ a.visible=false; a.traverse(o=>{if(o.material){o.material.depthTest=false;o.material.transparent=true;}}); a.renderOrder=9; return a; };
+/* set an arrow to a length in bench units; the head shrinks with short arrows so they never turn into just a head */
+export function setArrow(a,len){ a.visible=len>.04; if(!a.visible) return; const h=Math.min(.75,len*.4); a.setLength(len,h,h*.7); }
+export const thrustArrows=[1,2,3,4].map(n=>{ const a=overlay(new THREE.ArrowHelper(V(0,1,0),armPos(n).setY(PROP_Y+.15),2,0xe0894a,.6,.4)); a.scale.setScalar(1/SCALE); droneRoot.add(a); return a; });
+export const totalArrow=overlay(new THREE.ArrowHelper(V(0,1,0),V(),3,0xe0894a,.9,.6));
+export const weightArrow=overlay(new THREE.ArrowHelper(V(0,-1,0),V(),3.4,0x7cc0d3,.9,.6));
+export const netArrow=overlay(new THREE.ArrowHelper(V(1,0,0),V(),2,0x5bc489,.9,.6));
+[totalArrow,weightArrow,netArrow].forEach(a=>scene.add(a));
+/* spin arrows: a ring over each prop that turns with it, orange for clockwise and blue for counter-clockwise */
+export const spinRings=[1,2,3,4].map(n=>{ const r=makeRing(MODEL.propR*.6,1.7/SCALE); r.position.copy(armPos(n)).setY(PROP_Y+.9/SCALE); r.traverse(o=>o.userData.noStyle=true); droneRoot.add(r); return r; });
+export function showSpinRings(on){
+  spinRings.forEach((r,i)=>{ const n=i+1, w=S.spin[n], vis=on&&w!==0; r.visible=vis; if(!vis) return;
+    const cw=w<0; r.scale.z=cw?-1:1; r.userData.mat.color.setHex(cw?0xe0894a:0x7cc0d3); });
+}
+export const PN=320, pPos=new Float32Array(PN*3), pData=[], AIR_DROP=9/SCALE;  // airflow falls AIR_DROP below the props
+for(let i=0;i<PN;i++) pData.push({m:1+(i%4),y:PROP_Y-Math.random()*AIR_DROP,r:Math.sqrt(Math.random())*MODEL.propR*.88,a:Math.random()*TAU});
 export const pGeo=new THREE.BufferGeometry(); pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
 export const particles=new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xbfe6f2,size:.11,transparent:true,opacity:.55,depthWrite:false}));
 particles.visible=false; particles.frustumCulled=false; droneRoot.add(particles);

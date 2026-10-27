@@ -65,7 +65,7 @@ export default function Guide() {
           <div className="wrap prose">
             <h2>Suggested session (60–80 minutes)</h2>
             <ol>
-              <li><b>Movements (10 min).</b> Before building, open the Movements activity. Students drive the drone with the two sticks, play each of throttle, yaw, pitch and roll, then take the eight-question stick quiz.</li>
+              <li><b>Movements (10 min).</b> Before building, open the Movements activity. Students fly the drone with the remote (on-screen sticks, the keyboard, or a USB radio or gamepad), play each of throttle, yaw, pitch and roll, then take the eight-question stick quiz.</li>
               <li><b>Explore (10 min).</b> Open the finished drone, use exploded view and the part labels, read three or four info cards.</li>
               <li><b>Practice (30–40 min).</b> Full build with hints. Encourage students to read the explanation on each mistake rather than retrying blindly.</li>
               <li><b>Assessment (20–30 min).</b> Fresh start, no hints, timed. Students copy the result from the report and paste it into their submission.</li>
@@ -136,6 +136,7 @@ export default function Guide() {
                 {MOTORS.map(([m, corner, spin, prop]) => <tr key={m}><td>{m}</td><td>{corner}</td><td>{spin}</td><td>{prop}</td></tr>)}
               </tbody>
             </table></div>
+            <p>This is <b>props in</b>, the default. Students can choose <b>props out</b> on the start screen: every motor is reversed (M1 and M4 counter-clockwise, M2 and M3 clockwise) and the lab’s layouts, motor test, mixer and quiz follow that choice.</p>
           </div>
         </section>
 

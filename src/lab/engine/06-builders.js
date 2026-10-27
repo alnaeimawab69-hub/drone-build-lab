@@ -14,7 +14,14 @@ export function armShape(){
   sh.holes.push(slotHole(4.4,8.0,0,.22));
   return sh;
 }
-export function buildArm(){ const g=new THREE.Group(); g.add(flatExtrude(armShape(),MODEL.armT,M.carbon)); return g; }
+export function buildArm(){
+  const g=new THREE.Group(); g.add(flatExtrude(armShape(),MODEL.armT,M.carbon));
+  /* TPU arm guard: a soft bumper around the arm tip takes the hit in a crash instead of the motor bell */
+  const L=ARM, a0=-1.15, a1=1.15, sh=new THREE.Shape();
+  sh.absarc(L,0,1.82,a0,a1,false); sh.absarc(L,0,1.52,a1,a0,true);
+  const gd=flatExtrude(sh,MODEL.armT+.3,M.tpu); gd.position.y=-.15; g.add(gd);
+  return g;
+}
 export function buildPlateB(){
   const [W,L]=MODEL.plate, A=MODEL.alu;
   const sh=rrShape(W,L,.7), H=(x,z)=>sh.holes.push(circHole(x,.25-z,.15));
@@ -31,35 +38,92 @@ export function buildCamPlate(){
   else g.add(box(.16,2.95,1.5,M.carbon));
   return g;
 }
+/* battery straps: each one passes down through a pair of slots, one slot on each side of the battery */
+export const PLATE_T=CINE?.25:.22;                       // top plate thickness
+export const STRAP_X=MODEL.bat[0]/2+.35;                  // slot distance from the centre line
+export const STRAP_Z=[-1,1].map(s=>MODEL.batZ+s*(CINE?1.6:1.9));
+const strapSlots=(sh,Y)=>{ for(const z of STRAP_Z) for(const x of [-STRAP_X,STRAP_X]){ const p=new THREE.Path(), y=Y(z); p.moveTo(x-.11,y-.36); p.lineTo(x+.11,y-.36); p.lineTo(x+.11,y+.36); p.lineTo(x-.11,y+.36); p.lineTo(x-.11,y-.36); sh.holes.push(p); } };
+/* anti-slip rubber pad under the battery, between the straps */
+function batteryPad(g){ const [W,,L]=MODEL.bat, p=box(W-.2,.06,L-.4,M.batPad,0,PLATE_T+.03,MODEL.batZ); p.castShadow=false; g.add(p); }
 export function buildTopPlate(){
   if(CINE) return buildTopPlateC();
   const g=new THREE.Group(), ts=rrShape(5.2,9.2,.6);
-  for(const x of [-1.85,1.85]){ const p=new THREE.Path(); p.moveTo(x-.11,-.35); p.lineTo(x+.11,-.35); p.lineTo(x+.11,.35); p.lineTo(x-.11,.35); p.lineTo(x-.11,-.35); ts.holes.push(p); }
+  strapSlots(ts,z=>-z);
   for(const x of [-2.35,2.35]) for(const z of [-4,0,4.2]) ts.holes.push(circHole(x,-z,.15));
-  g.add(flatExtrude(ts,.22,M.carbonTop));
-  const mast=cyl(.12,.12,2.35,M.carbonTop,12); mast.position.set(0,1.395,4.1); g.add(mast);
-  const mp=cyl(.9,.9,.1,M.carbonTop,32); mp.position.set(0,2.6,4.1); g.add(mp);
+  g.add(flatExtrude(ts,PLATE_T,M.carbonTop));
+  batteryPad(g);
   return g;
 }
-/* model 2: longer, wider top plate with TPU mounts for the action camera (front) and the GPS (rear) */
+/* model 2: longer, wider top plate with a TPU mount for the action camera at the front */
 function buildTopPlateC(){
   const g=new THREE.Group(), cz=.5, ts=rrShape(6.2,12,.6), A=MODEL.alu, Y=z=>-(z-cz);
-  for(const x of [-2,2]){ const p=new THREE.Path(), y=Y(MODEL.batZ); p.moveTo(x-.11,y-.35); p.lineTo(x+.11,y-.35); p.lineTo(x+.11,y+.35); p.lineTo(x-.11,y+.35); p.lineTo(x-.11,y-.35); ts.holes.push(p); }
+  strapSlots(ts,Y);
   for(const x of [-A,A]) for(const z of [-4,0,4.2]) ts.holes.push(circHole(x,Y(z),.15));
-  for(const [x,z] of [[-1.6,-1.2],[1.6,-1.2],[-1.6,3.4],[1.6,3.4]]) ts.holes.push(circHole(x,Y(z),.45));
-  const pl=flatExtrude(ts,.25,M.carbonTop); pl.position.z=cz; g.add(pl);
+  for(const [x,z] of [[-1.6,-1.2],[1.6,-1.2]]) ts.holes.push(circHole(x,Y(z),.45));
+  const pl=flatExtrude(ts,PLATE_T,M.carbonTop); pl.position.z=cz; g.add(pl);
+  batteryPad(g);
   /* action-camera mount: soft TPU base with three prongs */
   const base=mesh(roundBox(3.4,.3,2.4,.1,4),M.tpu); base.position.set(0,.4,-3.7); g.add(base);
   for(const x of [-.32,0,.32]) g.add(box(.16,.75,.9,M.tpu,x,.9,-3.7));
-  /* GPS mount */
-  const gm=mesh(roundBox(2.4,.5,2.4,.12,4),M.tpu); gm.position.set(0,.5,5.3); g.add(gm);
   return g;
 }
-export function makeRing(){
-  const g=new THREE.Group(); const arc=Math.PI*1.45, R2=1.9;
+/* a flat band that follows a closed loop drawn in the x-y plane: outer face, inner face and two edges.
+   Material 0 is the outside, material 1 the inside. */
+export function bandLoop(pts,width,thick,mats){
+  const curve=new THREE.CatmullRomCurve3(pts.map(([x,y])=>V(x,y,0)),true,'catmullrom',.2), N=160, pos=[], idx=[], groups=[[],[],[]];
+  for(let i=0;i<N;i++){ const t=i/N, p=curve.getPointAt(t), tg=curve.getTangentAt(t), n=V(tg.y,-tg.x,0).normalize();
+    for(const [s,z] of [[1,-1],[1,1],[-1,1],[-1,-1]]) pos.push(p.x+n.x*s*thick/2,p.y+n.y*s*thick/2,z*width/2); }
+  const q=(a,b,c,d,grp)=>groups[grp].push(a,b,c,a,c,d);
+  for(let i=0;i<N;i++){ const a=i*4, b=((i+1)%N)*4;
+    q(a,b,b+1,a+1,0); q(a+3,a+2,b+2,b+3,1); q(a+1,b+1,b+2,a+2,2); q(a,a+3,b+3,b,2); }
+  groups.forEach(l=>idx.push(...l));
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setIndex(idx);
+  geo.addGroup(0,groups[0].length,0); geo.addGroup(groups[0].length,groups[1].length,1); geo.addGroup(groups[0].length+groups[1].length,groups[2].length,0);
+  geo.computeVertexNormals();
+  const m=new THREE.Mesh(geo,mats); m.castShadow=m.receiveShadow=true; return m;
+}
+/* battery strap, origin on the top surface of the top plate: under the plate, up through the slots, over the battery.
+   The inner face is red anti-slip rubber; the buckle and the loose tail sit on top. */
+export function buildStrap(){
+  const g=new THREE.Group(), [W,H]=MODEL.bat, X=STRAP_X, top=H+.06+.05, bot=-PLATE_T-.05, w=W/2+.04;
+  const pts=[[-X,bot],[0,bot-.02],[X,bot],[X,.6],[X-.05,top-.55],[w,top-.08],[w-.35,top],[0,top+.02],[-w+.35,top],[-w,top-.08],[-X+.05,top-.55],[-X,.6]];
+  g.add(bandLoop(pts,.62,.07,[M.strapBand,M.strapGrip]));
+  const bk=box(.95,.16,.74,M.darkMetal,.55,top+.08,0); g.add(bk);
+  g.add(box(.6,.06,.5,M.black,.55,top+.17,0));
+  const tail=box(1.5,.06,.6,M.strapBand,1.45,top+.13,0); tail.rotation.z=-.12; g.add(tail);
+  return g;
+}
+/* TPU GPS mount: a printed tower at the rear that lifts the GPS above the battery, where the sky view is clear.
+   GPS_TOP is where the GPS sits, from the mount's origin. */
+export const GPS_TOP=CINE?V(0,2.15,.6):V(0,2.9,1.0);
+export function buildGpsMount(){
+  const g=new THREE.Group(), T=GPS_TOP;
+  const base=mesh(roundBox(2.2,.3,1.1,.1,4),M.tpu); base.position.y=.15; g.add(base);
+  for(const x of [-.65,.65]) g.add(rod(V(x,.2,0),V(x*.9,T.y-.2,T.z-.15),.2,M.tpu,10));
+  g.add(rod(V(0,.25,.35),V(0,T.y-.25,T.z+.5),.16,M.tpu,10));
+  const pl=mesh(roundBox(2.5,.25,2.5,.1,4),M.tpu); pl.position.set(0,T.y-.13,T.z); g.add(pl);
+  for(const s of [-1,1]) g.add(box(2.5,.25,.12,M.tpu,0,T.y+.05,T.z+s*1.2));
+  for(const x of [-.65,.65]){ const sc=cyl(.17,.17,.08,M.darkMetal,12); sc.position.set(x,.33,0); g.add(sc); }
+  return g;
+}
+/* TPU camera mount: side cheeks outside the camera plates reach past the lens to protect it,
+   a chin bar joins them under the lens, and tick marks show the uptilt angle */
+export function buildCamMount(){
+  const g=new THREE.Group();
+  for(const s of [-1,1]){
+    const ch=mesh(roundBox(.3,2.5,2.8,.12,4),M.tpu); ch.position.set(s*1.38,0,-.55); g.add(ch);
+    for(const a of [0,10,20,30,40]){ const t=box(.04,.05,.42,M.black); const r=a*Math.PI/180; t.position.set(s*1.545,Math.sin(r)*.85,-Math.cos(r)*.85+.1); t.rotation.x=r; g.add(t); }
+  }
+  const chin=mesh(roundBox(3.06,.34,.5,.12,4),M.tpu); chin.position.set(0,-1.08,-1.75); g.add(chin);
+  return g;
+}
+/* a flat arc with an arrow head, lying in the x-z plane. As built it points counter-clockwise seen from above;
+   scale.z = -1 turns it clockwise. The motor test uses the small one, flight and Movements a big one over each prop. */
+export function makeRing(R2=1.9,k=1){
+  const g=new THREE.Group(); const arc=Math.PI*1.45;
   const mat=new THREE.MeshBasicMaterial({color:0xe0894a,side:THREE.DoubleSide,depthTest:false,transparent:true});
-  const t=new THREE.Mesh(new THREE.TorusGeometry(R2,.08,8,48,arc),mat); t.rotation.x=-Math.PI/2; g.add(t);
-  const head=new THREE.Mesh(new THREE.ConeGeometry(.26,.62,16),mat);
+  const t=new THREE.Mesh(new THREE.TorusGeometry(R2,.08*k,8,64,arc),mat); t.rotation.x=-Math.PI/2; g.add(t);
+  const head=new THREE.Mesh(new THREE.ConeGeometry(.26*k,.62*k,16),mat);
   head.position.set(R2*Math.cos(arc),0,-R2*Math.sin(arc));
   head.quaternion.setFromUnitVectors(V(0,1,0),V(-Math.sin(arc),0,-Math.cos(arc)));
   g.add(head); t.renderOrder=head.renderOrder=7; t.userData.noStyle=head.userData.noStyle=true; g.userData.mat=mat; g.visible=false;
@@ -176,10 +240,15 @@ export function buildRX(){
   addPad(g,{key:'rx',label:'RX',need:'T1',pos:V(.45,.14,-.68),out:F});
   return g;
 }
+/* compact GPS: a thin black case with a ceramic patch antenna on top (the arrow points to the front),
+   a built-in compass, a status LED and a 4-wire plug at the front */
 export function buildGPS(){
   const g=new THREE.Group();
-  const gs=mesh(roundBox(2.2,.5,2.2,.2),M.gpsShell); gs.position.y=.25; g.add(gs);
-  const p=new THREE.Mesh(new THREE.BoxGeometry(1.4,.12,1.4),[M.patch,M.patch,M.patch,M.patch,M.patch,M.patch]); p.position.y=.56; p.castShadow=true; g.add(p);
+  const gs=mesh(roundBox(2.1,.36,2.1,.14,4),M.gpsShell); gs.position.y=.18; g.add(gs);
+  const p=new THREE.Mesh(new THREE.BoxGeometry(1.5,.26,1.5),[M.ceramic,M.ceramic,M.patch,M.ceramic,M.ceramic,M.ceramic]); p.position.y=.49; p.castShadow=true; g.add(p);
+  const pin=cyl(.09,.09,.04,M.tin,12); pin.position.set(.18,.64,.18); g.add(pin);
+  const led=box(.12,.06,.12,std({color:0x6fd0ff,emissive:0x2a8fd0}),.82,.38,.82); led.castShadow=false; g.add(led);
+  g.add(box(.8,.24,.3,M.nylon,0,.16,-1.08));
   const F=V(0,0,-1);
   addPad(g,{key:'5v',label:'5V',need:'5V',pos:V(-.45,.12,-1.2),out:F});
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.15,.12,-1.2),out:F});
@@ -211,7 +280,6 @@ export function buildLead(){
 export function buildBattery(){
   const g=new THREE.Group(), [W,H,L]=MODEL.bat;
   const b=new THREE.Mesh(roundBox(W,H,L,.28),[M.batSide,M.batSide,M.batEnd,M.batEnd,M.batEnd,M.batEnd]); b.position.y=H/2; b.castShadow=b.receiveShadow=true; g.add(b);
-  const st=mesh(roundBox(W+.14,H+.14,.55,.3),M.strap); st.position.y=H/2; g.add(st);
   const by=CINE?H*.83:2.15, bz=L/2+.12, cells=CINE?7:5, gap=CINE?.1:.12;
   g.add(box(.7,.3,.22,M.white,-1.0,by,bz));
   for(let i=0;i<cells;i++){ const x=-1.25+i*gap; g.add(tube([V(x,by,bz-.12),V(x,by+.3,bz-.32),V(x,by+.47,bz-.62)],.025,wireMat(i?0xd8453b:0x232528))); }

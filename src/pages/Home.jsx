@@ -5,7 +5,7 @@ import cadView from '../assets/img/cad-view.png';
 
 const STAGES = [
   ['Build the frame', 'Bottom plate, four arms, stack and aluminium standoffs, camera plates, top plate. Arms take M3 × 10, the top plate M3 × 6.'],
-  ['Mount the components', 'Motors, ESC, flight controller (arrow to the front), camera, VTX, receiver, GPS, capacitor and battery lead, each with its own fasteners.'],
+  ['Mount the components', 'Motors, ESC, flight controller (arrow to the front), camera and its TPU mount, VTX, receiver, GPS on its TPU mount, capacitor and battery lead, each with its own fasteners.'],
   ['Wire the electronics', 'A wiring diagram like a real stack chart. Drag each wire end to its pad: TX crosses to RX, polarity matters, 5 V and 9 V are not the same.'],
   ['Power-up and motor test', 'Fit the battery, confirm the props are off, spin each motor and fix the one that turns the wrong way by swapping two wires.'],
   ['Fit the propellers', 'CW props on CW motors, CCW on CCW. A mismatch is caught before take-off.'],
@@ -17,7 +17,7 @@ const MODES = [
   ['learn', 'Guided', 'Practice', 'Green rings and pads show where each part, screw and wire goes. Every mistake comes with an explanation, and “Show me” completes any stage as a demonstration.'],
   ['assess', 'Scored', 'Assessment', 'No hints and a running timer. Wrong parts, screws and wires cost points. The report breaks the score down by stage and lists what to review.'],
   ['explore', 'Free', 'Explore', 'Start with the finished drone. Pull it apart in exploded view, read what each part does and how it connects, then fly it.'],
-  ['moves', '3D animation', 'Movements', 'Learn throttle, yaw, pitch and roll. Two on-screen transmitter sticks fly the drone; rotation axes, thrust arrows and motor bars show what each stick does. Ends with a quick quiz.'],
+  ['moves', '3D animation', 'Movements', 'Learn throttle, yaw, pitch and roll with a remote: on-screen sticks, the keyboard (WASD and arrows) or a USB radio or gamepad. Rotation axes, spin arrows, force arrows and motor bars show what each stick does. Ends with a quick quiz.'],
 ];
 
 function Feature({ eyebrow, title, img, alt, flip, children }) {
@@ -45,7 +45,7 @@ export default function Home() {
               <h1>From bare carbon to first flight.</h1>
               <p className="lede">Students build a quadcopter in the browser, choosing a 250 mm trainer quad or a 5-inch cinematic FPV drone: bolt the frame together, mount and fasten every component with the right screw, solder 23 wires, test motor direction, fit the propellers and fly it to see how thrust creates each movement.</p>
               <div className="ctas"><a className="btn primary" href="lab.html">Open the lab →</a><a className="btn" href="guide.html">Teacher guide</a></div>
-              <div className="facts"><span><b>7</b> stages</span><span><b>36</b> fasteners</span><span><b>23–24</b> wires</span><span><b>2</b> drone models</span><span><b>4</b> activities</span><span>runs in any modern browser</span></div>
+              <div className="facts"><span><b>7</b> stages</span><span><b>36</b> fasteners</span><span><b>23–24</b> wires</span><span><b>3</b> drone models</span><span><b>4</b> activities</span><span>runs in any modern browser</span></div>
             </div>
             <div className="shot"><img src={lab3d} alt="The finished quadcopter on the workbench in the 3D lab" width="1400" height="900" /></div>
           </div>

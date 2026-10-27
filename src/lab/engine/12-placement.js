@@ -1,6 +1,6 @@
 /* Drone Build Lab · Placing parts, pads and 3D wires */
 import * as THREE from 'three';
-import { TAU, V, ZERO, armPos, ease, easeOut } from './01-config.js';
+import { SCALE, TAU, V, ZERO, armPos, ease, easeOut } from './01-config.js';
 import { M, hex, wireColor, wireMat } from './04-materials.js';
 import { HARNESS_COLS, PHASE_COLS, mesh, rod, strands } from './05-geometry.js';
 import { HOT, HOTMAP, TYPES } from './07-catalogue.js';
@@ -16,8 +16,9 @@ import { removeLabel } from './22-info-labels.js';
 export function createPart(t){ const g=TYPES[t].build(); g.userData.typeKey=t; return g; }
 export function exVec(p){
   const t=p.hot.type;
-  if(t==='motor'||t==='prop'){ const d=armPos(p.hot.motor).normalize().multiplyScalar(2.2); d.y=t==='motor'?1:3.2; return d; }
+  if(t==='motor'||t==='prop'){ const d=armPos(p.hot.motor).normalize().multiplyScalar(2.2/SCALE); d.y=(t==='motor'?1:3.2)/SCALE; return d; }
   if(t==='panel') return V(Math.sign(p.hot.pos.x)*2.6,0,0);
+  if(t==='gear') return V(Math.sign(p.hot.pos.x)*10,0,0);
   return TYPES[p.type].ex||ZERO;
 }
 export function layout(p){ p.group.position.copy(p.hot.pos).add(p.lift).addScaledVector(exVec(p),S.explode); p.group.position.y+=p.drop||0; }

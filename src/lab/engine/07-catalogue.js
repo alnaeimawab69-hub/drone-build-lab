@@ -1,6 +1,7 @@
 /* Drone Build Lab · Part catalogue, mounting points (hotspots), stages and scoring */
-import { ARM_ANG, CINE, DEG, MODEL, V, armPos } from './01-config.js';
-import { buildActionCam, buildAluSt, buildArm, buildBattery, buildCamPlate, buildCamera, buildCap, buildESC, buildFC, buildGPS, buildLED, buildLead, buildMotor, buildNylSt, buildPanel, buildPlateB, buildProp, buildRX, buildTopPlate, buildVTX } from './06-builders.js';
+import { ARM_ANG, CINE, DEG, EX, MODEL, V, armPos } from './01-config.js';
+import { GPS_TOP, PLATE_T, STRAP_Z, buildActionCam, buildAluSt, buildArm, buildBattery, buildCamMount, buildCamPlate, buildCamera, buildCap, buildESC, buildFC, buildGPS, buildGpsMount, buildLED, buildLead, buildMotor, buildNylSt, buildPanel, buildPlateB, buildProp, buildRX, buildStrap, buildTopPlate, buildVTX } from './06-builders.js';
+import { EX_PROP_Y, EX_TYPES, exHot } from './29-enterprise.js';
 
 /* ================= Part catalogue ================= */
 export const TYPES={
@@ -15,7 +16,7 @@ export const TYPES={
   camPlate:{name:'Camera side plate',count:2,build:buildCamPlate,where:'at the front edge of the bottom plate, one on each side',
     role:'Forms the camera cage and protects the lens in a crash.',links:'The camera mounts between them with two M2 × 5 screws.',spec:'1.5 mm carbon'},
   tplate:{name:'Top plate',count:1,build:buildTopPlate,where:'on top of the six aluminium standoffs',ex:V(0,4,0),lab:V(0,.5,-4.7),
-    role:'Closes the frame, carries the battery and holds the GPS mast.',links:'Six M3 × 6 screws into the standoffs. The battery strap passes through its slots.',spec:'2 mm carbon · GPS mast at the rear'},
+    role:'Closes the frame and carries the battery on a rubber anti-slip pad. Two battery straps pass through its slots.',links:'Six M3 × 6 screws into the standoffs. Two pairs of slots take the battery straps; the GPS mount sits at the rear.',spec:'2 mm carbon · battery pad · four strap slots'},
   motor:{name:'Brushless motor',count:4,build:buildMotor,where:'on the motor mounts at the four arm tips',
     role:'Spins the propeller. The outer bell carries magnets and turns around fixed copper windings.',links:'Three phase wires to one ESC output (M1 to M4).',spec:'2205 size (22 mm stator, 5 mm tall) · 2300 KV, about 2300 rpm per volt with no load'},
   esc:{name:'4-in-1 ESC',count:1,build:buildESC,where:'on the stack standoffs, bottom level, because it carries the high current',ex:V(0,1.2,0),lab:V(2.8,.2,0),
@@ -28,14 +29,20 @@ export const TYPES={
     role:'Broadcasts the camera image to the pilot’s goggles or screen.',links:'9 V, G and video from the VTX pad of the flight controller. Never power it without its antenna.',spec:'5.8 GHz band · 25 to 400 mW'},
   rx:{name:'Radio receiver',count:1,build:buildRX,where:'in the rear bay on the left, antennas out the back',ex:V(-1.6,.3,2),lab:V(-.6,.9,0),
     role:'Receives stick commands from the pilot’s handheld radio.',links:'5V, G, TX and RX to UART 1 on the flight controller.',spec:'2.4 GHz · two antennas at 90° for better reception'},
-  gps:{name:'GPS module',count:1,build:buildGPS,where:'on top of the mast, high above the power wiring',ex:V(0,5.5,0),lab:V(0,1.2,0),
-    role:'Reports position and speed from satellites. Enables position hold and return-to-home.',links:'5V, G, TX and RX to UART 3 on the flight controller.',spec:'Mounted high on a mast, away from noisy power wires'},
+  gpsMount:{name:'GPS mount',count:1,build:buildGpsMount,where:'at the rear of the top plate, behind the battery',ex:V(0,2.5,1.5),lab:V(1.9,1.6,.4),
+    role:'A printed TPU tower that lifts the GPS above the battery and away from the power wires. Carbon fibre and the battery block satellite signals, and the current in the power wires disturbs the compass.',links:'Stands on the top plate between the rear standoffs. The GPS sticks to its platform with double-sided foam tape.',spec:'TPU (soft printed plastic): it bends in a crash instead of snapping'},
+  gps:{name:'GPS module',count:1,build:buildGPS,where:'on the platform of the GPS mount, arrow to the front',ex:V(0,6,2.5),lab:V(0,1.2,0),
+    role:'Reports position and speed from satellites; its built-in compass gives the heading. Enables position hold and return-to-home.',links:'5V, G, TX and RX to UART 3 on the flight controller.',spec:'Ceramic patch antenna facing the sky · the arrow on top points to the front'},
+  camMount:{name:'Camera mount',count:1,build:buildCamMount,where:'over the camera cage, its cheeks outside the side plates',ex:V(0,.2,-4.6),lab:V(0,-1.5,-1.8),
+    role:'TPU cheeks reach past the lens, so in a crash the soft mount hits the ground first, not the camera. The tick marks on its side show the camera uptilt in 10° steps.',links:'Slides over the camera side plates; the camera screws pass through it. A chin bar under the lens joins the two sides.',spec:'TPU · angle marks from 0° to 40°'},
   cap:{name:'Capacitor',count:1,build:buildCap,where:'in the rear bay on the right, next to the ESC battery pads',ex:V(1.5,.3,1.4),lab:V(.6,.8,0),
     role:'Absorbs voltage spikes created when the ESC switches the motors. Protects the electronics and cleans up the video.',links:'Across the ESC battery pads: + to +, striped leg (−) to −.',spec:'Low-ESR electrolytic · 35 V · 1000 µF'},
   lead:{name:'Battery lead',count:1,build:buildLead,where:'at the rear exit so the connector hangs out the back',ex:V(.8,.2,2.6),lab:V(.5,.9,1),
     role:'Thick power cable from the battery connector to the ESC.',links:'Red to ESC +, black to ESC −.',spec:'12 AWG silicone wire'},
-  battery:{name:'LiPo battery',count:1,build:buildBattery,where:'on the top plate under the strap',ex:V(0,7,0),lab:V(0,3.2,0),
-    role:'Stores the energy. Four lithium-polymer cells in series.',links:'Plugs into the battery lead connector at the rear.',spec:'4S · 14.8 V nominal, 16.8 V full · 1300 mAh'},
+  battery:{name:'LiPo battery',count:1,build:buildBattery,where:'on the rubber pad on the top plate, between the strap slots',ex:V(0,7,0),lab:V(0,3.2,0),
+    role:'Stores the energy. Four lithium-polymer cells in series.',links:'Plugs into the battery lead connector at the rear. Two straps hold it down.',spec:'4S · 14.8 V nominal, 16.8 V full · 1300 mAh'},
+  strap:{name:'Battery strap',count:2,build:buildStrap,where:'over the battery, through a pair of slots in the top plate',ex:V(0,8.6,0),lab:V(-2.4,2.2,0),
+    role:'Holds the battery down. It is the heaviest part, so in a hard turn or a crash an unstrapped battery flies off and rips out the power cable.',links:'Threads down through two slots in the top plate, under the plate, up over the battery, and closes with a buckle. The red rubber side faces the battery so it cannot slide.',spec:'Velcro with an anti-slip rubber face · 20 × 250 mm · two per battery'},
   propCW:{name:'Propeller, CW',count:2,build:()=>buildProp('CW'),where:'on a motor that spins clockwise',lab:V(0,.9,0),
     role:'Shaped to push air down while turning clockwise, seen from above.',links:'Fits motors that spin clockwise.',spec:'5 inch (127 mm) · three blades'},
   propCCW:{name:'Propeller, CCW',count:2,build:()=>buildProp('CCW'),where:'on a motor that spins counter-clockwise',lab:V(0,.9,0),
@@ -53,7 +60,7 @@ if(CINE){
     spec:'6 mm carbon · thicker arms take crash loads from a heavier drone'});
   T('aluSt',{role:'Spacer posts that hold the top plate 30 mm above the bottom plate. The side panels clip to them.'});
   T('camPlate',{name:'Camera cage plate',role:'Aluminium side plates that form the camera cage. Aluminium survives crashes better than thin carbon and pulls heat away from the camera.',links:'The HD camera mounts between them with two M2 × 5 screws.',spec:'CNC aluminium · fits a 19 mm camera'});
-  T('tplate',{lab:V(0,.5,-5),role:'Closes the frame. Carries the battery in the middle, a TPU mount for the action camera at the front and a TPU mount for the GPS at the rear.',links:'Six M3 × 6 screws into the standoffs. The battery strap passes through its slots.',spec:'2.5 mm carbon · TPU mounts (soft plastic) soak up vibration'});
+  T('tplate',{lab:V(0,.5,-5),role:'Closes the frame. Carries the battery on a rubber pad in the middle and a TPU mount for the action camera at the front.',links:'Six M3 × 6 screws into the standoffs. Two pairs of slots take the battery straps; the GPS mount sits at the rear.',spec:'2.5 mm carbon · TPU mounts (soft plastic) soak up vibration'});
   T('motor',{spec:'2306 size (23 mm stator, 6 mm tall) · 1880 KV, made for 6S batteries'});
   T('esc',{spec:'30.5 × 30.5 mm mounting · about 55 A per motor · 3–6S'});
   T('fc',{links:'ESC harness, receiver (UART 1), digital video unit (UART 2), GPS (UART 3), LED strip (LED pad).'});
@@ -64,7 +71,7 @@ if(CINE){
     role:'Turns the HD camera picture into a digital radio signal for the pilot’s goggles, with very little delay. It also records the flight in HD.',
     links:'9 V and G for power, and TX/RX to UART 2 on the flight controller so the flight data shows in the goggles. Never power it without its antennas.',
     spec:'5.8 GHz digital · two antennas · aluminium heatsink'});
-  T('gps',{where:'on the TPU mount at the rear of the top plate',ex:V(0,4,1.5),spec:'Mounted on top, clear of the carbon plate, which blocks satellite signals'});
+  T('gps',{ex:V(0,5,2.5),spec:'Mounted on top, clear of the carbon plate, which blocks satellite signals'});
   T('cap',{role:'Absorbs voltage spikes created when the ESC switches the motors. On 6S the spikes are bigger, so it matters even more.',spec:'Low-ESR electrolytic · 50 V · 1000 µF'});
   T('battery',{ex:V(0,6,0),role:'Stores the energy. Six lithium-polymer cells in series: higher voltage gives the heavier cinematic drone more power for the same current.',spec:'6S · 22.2 V nominal, 25.2 V full · 1100 mAh'});
   T('propCW',{spec:'5.1 inch (130 mm) · three blades'}); T('propCCW',{spec:'5.1 inch (130 mm) · three blades'});
@@ -78,13 +85,16 @@ if(CINE){
     role:'Records the smooth, high-quality cinematic footage. The HD camera is for the pilot; this camera is for the film.',
     links:'Clamps into the TPU prongs on the top plate. It has its own battery, so it has no wires to the drone.',spec:'Tilted up about 15° · the soft TPU mount stops vibration reaching the picture'};
 }
-export const PROP_Y=MODEL.armT+1.45*(CINE?1.1:1);          // top of the motor shaft, where the prop sits
+/* model 3 (enterprise) has its own catalogue of sealed modules */
+if(EX){ for(const k in TYPES) delete TYPES[k]; Object.assign(TYPES,EX_TYPES); }
+export const PROP_Y=EX?EX_PROP_Y:MODEL.armT+1.45*(CINE?1.1:1);  // top of the motor shaft, where the prop sits
 
 /* hotspots: where parts go (positions in drone coordinates) */
 const AX=MODEL.alu;
 export const ALU_POS=[[-AX,-4],[AX,-4],[-AX,0],[AX,0],[-AX,4.2],[AX,4.2]];
 export const NYL_POS=[[-1.525,-1.525],[1.525,-1.525],[-1.525,1.525],[1.525,1.525]];
-export const HOT=[
+const PLATE_TOP=3.4+PLATE_T, GPS_MOUNT=CINE?V(0,PLATE_TOP,5):V(0,PLATE_TOP,4.05);
+export const HOT=EX?exHot():[
   {id:'bplate',type:'plateB',stage:'frame',pos:V(0,.05,.25),label:'Centre of the mat',mk:V(0,.3,0)},
   ...[1,2,3,4].map(n=>({id:'arm'+n,type:'arm',stage:'frame',pos:V(0,0,0),rotY:ARM_ANG[n]*DEG,motor:n,requires:'bplate',label:'Corner '+n,mk:armPos(n,7).setY(.6)})),
   ...NYL_POS.map(([x,z],i)=>({id:'nyl'+(i+1),type:'nylSt',stage:'frame',pos:V(x,1.375,z),requires:'bplate',label:'Centre hole',mk:V(0,-.8,0)})),
@@ -98,12 +108,15 @@ export const HOT=[
   {id:'cam',type:'camera',stage:'mount',pos:V(0,1.95,-4.3),rotX:.35,requires:['cpl1','cpl2'],label:'Front cage',mk:V(0,0,0)},
   {id:'vtx',type:'vtx',stage:'mount',pos:V(0,.5,CINE?3.5:3.4),label:'Rear bay, centre',mk:V(0,.35,0)},
   {id:'rx',type:'rx',stage:'mount',pos:V(-1.9,.45,4.4),label:'Rear bay, left',mk:V(0,.25,0)},
-  {id:'gps',type:'gps',stage:'mount',pos:CINE?V(0,4.15,5.3):V(0,6.05,4.1),requires:'tplate',label:'Mast top',mk:V(0,.35,0)},
+  {id:'camMount',type:'camMount',stage:'mount',pos:V(0,1.925,-4.3),requires:'cam',label:'Over the camera',mk:V(0,-1.1,-1.8)},
+  {id:'gpsMount',type:'gpsMount',stage:'mount',pos:GPS_MOUNT,requires:'tplate',label:'Top plate, rear',mk:V(0,.4,0)},
+  {id:'gps',type:'gps',stage:'mount',pos:GPS_MOUNT.clone().add(GPS_TOP),requires:'gpsMount',label:'GPS mount platform',mk:V(0,.35,0)},
   {id:'cap',type:'cap',stage:'mount',pos:V(1.95,.75,3.1),label:'Rear bay, right',mk:V(0,0,0)},
   {id:'lead',type:'lead',stage:'mount',pos:V(1.1,.7,5.0),label:'Rear exit',mk:V(0,0,.5)},
   ...(CINE?[{id:'led',type:'led',stage:'mount',pos:V(3.12,1.98,.3),requires:'pnl2',label:'Inside the right panel',mk:V(-.4,.4,-2)},
     {id:'acam',type:'actionCam',stage:'mount',pos:V(0,4.6,-3.7),rotX:.26,requires:'tplate',label:'Top plate, front mount',mk:V(0,2,0)}]:[]),
-  {id:'bat',type:'battery',stage:'power',pos:V(0,CINE?3.65:3.62,MODEL.batZ),label:'Top plate',mk:V(0,1.3,0)},
+  {id:'bat',type:'battery',stage:'power',pos:V(0,PLATE_TOP+.06,MODEL.batZ),label:'Top plate',mk:V(0,1.3,0)},
+  ...STRAP_Z.map((z,i)=>({id:'strap'+(i+1),type:'strap',stage:'power',pos:V(0,PLATE_TOP,z),requires:'bat',label:(i?'Rear':'Front')+' strap slots',mk:V(0,MODEL.bat[1]+.5,0)})),
   ...[1,2,3,4].map(n=>({id:'prop'+n,type:'prop',stage:'props',pos:armPos(n).setY(PROP_Y),motor:n,label:'Motor '+n+' shaft',mk:V(0,.35,0)})),
 ];
 export const HOTMAP=Object.fromEntries(HOT.map(h=>[h.id,h]));
@@ -114,7 +127,7 @@ export const STAGES=[
   {key:'frame',title:'Build the frame',short:'Frame',goal:'Assemble the frame from bare carbon parts and screw it together.'},
   {key:'mount',title:'Mount the components',short:'Mount',goal:'Drag each part onto the frame, then fasten it with the right screws.'},
   {key:'wire',title:'Wire the electronics',short:'Wire',goal:'Solder every wire end to the correct pad. Drag from a wire end to a pad.'},
-  {key:'power',title:'Power-up and motor test',short:'Test',goal:'Fit the battery, then check each motor spins the right way.'},
+  {key:'power',title:'Power-up and motor test',short:'Test',goal:'Fit and strap down the battery, then check each motor spins the right way.'},
   {key:'props',title:'Fit the propellers',short:'Props',goal:'Fit a CW or CCW propeller to each motor to match its spin.'},
   {key:'fly',title:'Flight physics',short:'Fly',goal:'Fly the finished drone and watch how motor speeds create every movement.'},
   {key:'quiz',title:'Knowledge check',short:'Check',goal:CINE?'Eleven questions on what you just built.':'Eight questions on what you just built.'},

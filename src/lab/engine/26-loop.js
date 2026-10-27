@@ -3,7 +3,7 @@ import { $ } from './01-config.js';
 import { camera, controls, renderer, scene } from './02-scene.js';
 import { HOT } from './07-catalogue.js';
 import { PADS, S, parts } from './08-state.js';
-import { droneRoot, styleObj } from './09-scene-content.js';
+import { droneRoot, spinRings, styleObj } from './09-scene-content.js';
 import { stepTweens } from './11-tweens-camera.js';
 import { SCR } from './13-screws.js';
 import { stepFlight } from './19-flight.js';
@@ -22,7 +22,9 @@ export function loop(now){
   const k=stageKey();
   if(k==='fly') stepFlight(dt);
   if(k==='moves') stepMoves(dt);
-  for(let n=1;n<=4;n++){ const w=S.spin[n]; const m=parts['mot'+n]; if(m&&w) m.group.userData.rot.rotation.y+=w*dt; const p=parts['prop'+n]; if(p){ if(w) p.group.userData.spinner.rotation.y+=w*dt; p.group.userData.disc.material.opacity=Math.min(.2,Math.abs(w)/42*.2); } }
+  for(let n=1;n<=4;n++){ const w=S.spin[n]; const m=parts['mot'+n]; if(m&&w) m.group.userData.rot.rotation.y+=w*dt; const p=parts['prop'+n]; if(p){ if(w) p.group.userData.spinner.rotation.y+=w*dt; p.group.userData.disc.material.opacity=Math.min(.2,Math.abs(w)/42*.2); }
+    /* the spin arrow turns the same way as its prop, slowly enough to follow by eye */
+    const r=spinRings[n-1]; if(r.visible) r.rotation.y+=Math.sign(w)*(1.2+Math.abs(w)*.04)*dt; }
   const pulse=1.3+.14*Math.sin(clockT*4);
   HOT.forEach(h=>{ if(h.marker.visible) h.marker.scale.setScalar(S.drag&&S.drag.snap===h?1.8:pulse); });
   for(const s of Object.values(SCR)) if(s.marker.visible) s.marker.scale.setScalar(S.drag&&S.drag.hole===s.id?.95:.55+.08*Math.sin(clockT*4));

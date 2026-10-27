@@ -1,8 +1,9 @@
 /* Drone Build Lab · Flight physics model */
-import { DEG, EXP, TAU, V, armPos, clamp } from './01-config.js';
+import { DEG, EXP, MODEL, SCALE, TAU, V, YAW_MIX, armPos, clamp, motorsTurning } from './01-config.js';
 import { camera, controls } from './02-scene.js';
+import { PROP_Y } from './07-catalogue.js';
 import { S } from './08-state.js';
-import { PN, droneRoot, pData, pGeo, pPos, particles, thrustArrows, totalArrow, weightArrow } from './09-scene-content.js';
+import { AIR_DROP, FORCE_LEN, PN, droneRoot, netArrow, pData, pGeo, pPos, particles, setArrow, showSpinRings, thrustArrows, totalArrow, weightArrow } from './09-scene-content.js';
 import { renderPanel } from './21-panel.js';
 import { toast } from './23-toast.js';
 
@@ -17,8 +18,8 @@ export const MANS={
   pitchB:{t:'Pitch back',d:'Front motors (M2, M4) speed up and rear motors (M1, M3) slow down. The nose lifts and the tilted thrust pushes the drone backward.',dof:'pitch'},
   rollR:{t:'Roll right',d:'Left motors (M3, M4) speed up and right motors (M1, M2) slow down. The drone banks right and the tilted thrust slides it sideways.',dof:'roll'},
   rollL:{t:'Roll left',d:'Right motors (M1, M2) speed up and left motors (M3, M4) slow down. The drone banks left and slides left.',dof:'roll'},
-  yawR:{t:'Yaw right',d:'Each spinning prop twists the frame the opposite way. Speeding up the counter-clockwise props (M2, M3) and slowing the clockwise ones (M1, M4) leaves a net twist that turns the nose right. Total lift stays the same.',dof:'yaw'},
-  yawL:{t:'Yaw left',d:'Speeding up the clockwise props (M1, M4) and slowing the counter-clockwise ones (M2, M3) twists the frame to the left.',dof:'yaw'},
+  yawR:{t:'Yaw right',d:`Each spinning prop twists the frame the opposite way (watch the spin arrows). Speeding up the counter-clockwise props (${motorsTurning('CCW')}) and slowing the clockwise ones (${motorsTurning('CW')}) leaves a net twist that turns the nose right. Total lift stays the same.`,dof:'yaw'},
+  yawL:{t:'Yaw left',d:`Speeding up the clockwise props (${motorsTurning('CW')}) and slowing the counter-clockwise ones (${motorsTurning('CCW')}) twists the frame to the left.`,dof:'yaw'},
   land:{t:'Land',d:'Thrust is reduced slowly below the weight until the drone touches down, then the motors are disarmed.',dof:'heave'},
   arm:{t:'Armed',d:'Motors idle at low speed. Thrust is far below the weight, so the drone stays on the mat.',dof:null},
 };
@@ -64,28 +65,52 @@ export function stepFlight(dt){
   const eY=dY*.5+(dY-f.yawRate);
   let T=0;
   if(f.armed){ if(air){ const aZ=(f.altT-f.pos.y)*2.0-f.vel.y*2.6; T=(G+clamp(aZ,-6,8))/(Math.cos(f.roll)*Math.cos(f.pitch)); T=clamp(T,0,2.2*G); } else T=G*.12; }
-  const base=T/4, r=eR*G*.9, p=eP*G*.9, y=eY*G*.12;
+  /* motor mixer: the roll, pitch and yaw terms cancel in the sum, so the four thrusts always add up to T */
+  const base=T/4, r=eR*G*.9, p=eP*G*.9, y=eY*G*.12*YAW_MIX;
   f.thr=[base+r-p+y, base+r+p-y, base-r-p-y, base-r+p+y].map(v=>f.armed?Math.max(f.armed?G*.02:0,v):0);
   f.T=T;
   droneRoot.rotation.set(f.pitch,f.yaw,f.roll,'YXZ');
   const up=V(0,1,0).applyQuaternion(droneRoot.quaternion);
-  const acc=up.multiplyScalar(T).add(V(0,-G,0)).addScaledVector(f.vel,-.45);
+  const acc=up.clone().multiplyScalar(T).add(V(0,-G,0)).addScaledVector(f.vel,-.45);
   f.vel.addScaledVector(acc,dt); f.pos.addScaledVector(f.vel,dt);
+  const ground=f.pos.y<=0;
   if(f.pos.y<0){ f.pos.y=0; if(f.vel.y<0) f.vel.y=0; f.vel.x*=.85; f.vel.z*=.85; }
   if(f.landing&&f.pos.y<.01&&f.altT===0){ f.armed=false; f.landing=false; f.cur=null; renderPanel(); }
   droneRoot.position.copy(f.pos);
   const d=f.pos.clone().sub(f.last); camera.position.add(d); controls.target.add(d); f.last.copy(f.pos);
   for(let n=1;n<=4;n++){ const fr=f.thr[n-1]/(G/4); S.spin[n]=f.armed?(EXP[n]==='CW'?-1:1)*(10+32*Math.sqrt(Math.max(0,fr))):0; }
-  // forces
-  const show=S.forces&&f.armed;
-  thrustArrows.forEach((a,i)=>{ a.visible=show; if(show) a.setLength(.5+f.thr[i]/(G/4)*2.2,.6,.4); });
-  const c=droneRoot.localToWorld(V(0,2.2,0));
-  totalArrow.visible=weightArrow.visible=show;
-  if(show){ const u=V(0,1,0).applyQuaternion(droneRoot.quaternion); totalArrow.position.copy(c); totalArrow.setDirection(u); totalArrow.setLength(Math.max(.4,T/G*4),.9,.6); weightArrow.position.copy(c); weightArrow.setLength(4,.9,.6); }
+  showSpinRings(S.spinArrows&&f.armed);
+  /* on the mat the ground pushes back, so the net force is zero there */
+  drawForces(f.armed?f.thr:null,T,up,ground?V():acc);
   // airflow
   particles.visible=S.air&&f.armed;
-  if(particles.visible){ for(let i=0;i<PN;i++){ const q=pData[i]; const fr=f.thr[q.m-1]/(G/4); q.y-=(3+26*fr)*dt; if(q.y<-7){ q.y=2.0+Math.random()*.2; q.r=Math.sqrt(Math.random())*5.6; q.a=Math.random()*TAU; } const mp=armPos(q.m); const spread=1+(2-q.y)*.03; pPos[i*3]=mp.x+Math.cos(q.a)*q.r*spread; pPos[i*3+1]=q.y; pPos[i*3+2]=mp.z+Math.sin(q.a)*q.r*spread; } pGeo.attributes.position.needsUpdate=true; }
+  if(particles.visible) stepAir(f.thr,dt);
   f.hudT+=dt; if(f.hudT>.1){ f.hudT=0; updateHud(); }
+}
+/* free-body diagram, all to one scale (FORCE_LEN per weight): each motor's thrust at its prop, and at the centre of gravity
+   the total thrust (along the drone's up axis), the weight (always straight down) and the net force that accelerates the drone.
+   thr null hides everything. Also used by the Movements activity. */
+export const FORCE={c:V(),up:V(0,1,0),T:0,net:V()};
+export function drawForces(thr,T,up,net){
+  const show=S.forces&&!!thr, K=FORCE_LEN/G;
+  thrustArrows.forEach((a,i)=>{ if(show) setArrow(a,thr[i]*K); else a.visible=false; });
+  totalArrow.visible=weightArrow.visible=netArrow.visible=false;
+  if(!show) return;
+  const c=droneRoot.localToWorld(V(0,MODEL.cg,0));
+  Object.assign(FORCE,{T}); FORCE.c.copy(c); FORCE.up.copy(up); FORCE.net.copy(net);
+  totalArrow.position.copy(c); totalArrow.setDirection(up); setArrow(totalArrow,T*K);
+  weightArrow.position.copy(c); setArrow(weightArrow,G*K);
+  const nl=net.length()*K; netArrow.position.copy(c);
+  if(nl>.3){ netArrow.setDirection(net.clone().normalize()); setArrow(netArrow,nl); }
+}
+/* airflow: particles fall from each prop disc, faster when that motor pushes harder */
+export function stepAir(thr,dt){
+  const top=PROP_Y-.2/SCALE, R=MODEL.propR*.88;
+  for(let i=0;i<PN;i++){ const q=pData[i]; const fr=thr[q.m-1]/(G/4); q.y-=(3+26*fr)/SCALE*dt;
+    if(q.y<top-AIR_DROP){ q.y=top+Math.random()*.2/SCALE; q.r=Math.sqrt(Math.random())*R; q.a=Math.random()*TAU; }
+    const mp=armPos(q.m), spread=1+(top-q.y)*SCALE*.03;
+    pPos[i*3]=mp.x+Math.cos(q.a)*q.r*spread; pPos[i*3+1]=q.y; pPos[i*3+2]=mp.z+Math.sin(q.a)*q.r*spread; }
+  pGeo.attributes.position.needsUpdate=true;
 }
 export function updateHud(){
   const f=FL, el=id=>document.getElementById(id); if(!el('hudTW')) return;

@@ -2,12 +2,17 @@
 
 A WebGL digital lab where students build a quadcopter from bare carbon parts: frame, screws, components, wiring, motor test, propellers and flight physics.
 
-Two drone models, chosen on the start screen:
+Three drone models, chosen on the start screen:
 
 - **Model 1 · LX-250 quadcopter** (default): 250 mm X frame, analog camera and VTX, 4S battery.
 - **Model 2 · CX-5 cinematic FPV**: 5-inch deadcat frame (front arms swept out of the camera view), aluminium camera cage, clear side panels with an LED strip, HD camera and digital video unit, action camera on a TPU mount, 2306 motors, 6S battery.
+- **Model 3 · EX-9 enterprise drone**: large industrial quad (895 mm wheelbase) with folding arms, dual hot-swap smart batteries, RTK module with two GNSS antennas, gimbal camera (zoom, wide, thermal, laser rangefinder), six-direction obstacle sensors, beacons and landing gear. It is built from sealed modules, so it is offered in Explore and Movements only. It is drawn at 30 % of real size.
 
-Four activities: Practice, Assessment, Explore, and **Movements**, a 3D animation where two on-screen transmitter sticks (Mode 2) fly the drone so students learn throttle, yaw, pitch and roll, with a stick quiz at the end. Every part is modelled in code. There are no imported 3D models and no brand names.
+Models 1 and 2 are built FPV style: yellow TPU arm guards, a TPU camera mount, a TPU GPS mount with a ceramic-patch GPS, and two battery straps on a rubber pad.
+
+The start screen also sets the **motor direction**: props in (default) or props out (every motor reversed).
+
+Four activities: Practice, Assessment, Explore, and **Movements**, a flight trainer where a drawn radio transmitter (Mode 2) flies the drone so students learn throttle, yaw, pitch and roll, with a stick quiz at the end. The sticks can be dragged, driven with the keyboard (W A S D and the arrow keys), or driven by a USB radio transmitter or gamepad (Gamepad API, with axis mapping under "Controller setup"). Every part is modelled in code. There are no imported 3D models and no brand names.
 
 Built with React 19, Vite and Three.js 0.147.
 
@@ -80,7 +85,8 @@ DroneBuildLab/
         ├── 25-viewbar.js           view buttons
         ├── 26-loop.js              render loop
         ├── 27-boot.js              start-up
-        └── 28-movements.js         Movements activity: sticks, axis rings, stick quiz
+        ├── 28-movements.js         Movements activity: remote, USB controller, axis rings, stick quiz
+        └── 29-enterprise.js        model 3: sealed-module parts, catalogue and mounting points
 ```
 
 ## How the lab page works
@@ -100,7 +106,9 @@ Each engine module imports what it uses from the others and exports its top-leve
 ## Conventions
 
 - 1 scene unit = 1 cm. Front of the drone is −Z, right is +X, up is +Y.
-- Motors: M1 rear right (CW), M2 front right (CCW), M3 rear left (CCW), M4 front left (CW).
+- Motors: M1 rear right (CW), M2 front right (CCW), M3 rear left (CCW), M4 front left (CW). That is props in; props out reverses all four. The start screen reloads with `?props=in|out`, and `EXP` and `YAW_MIX` in `01-config.js` follow it.
+- Force arrows share one scale (`FORCE_LEN` in `09-scene-content.js` per weight), so the four motor arrows add up to the total thrust. `drawForces` in `19-flight.js` draws them for both flight and Movements.
+- Model 3 is built at real size and drawn smaller with `droneRoot.scale` (`MODEL.scale`). Arrows and helpers that must keep their bench size are scaled by `1/SCALE`.
 - Wiring is checked by net: a wire end has a `need` (for example `R1`), a pad has a `net`. They must match.
 
 ## Common changes

@@ -1,11 +1,11 @@
 /* Drone Build Lab · Start screen and assessment report */
-import { $, MODEL, MODELS, esc } from './01-config.js';
-import { HOTMAP, SEC, SECNAME } from './07-catalogue.js';
+import { $, MODEL, MODELS, PROPS, esc } from './01-config.js';
+import { SEC, SECNAME } from './07-catalogue.js';
 import { S } from './08-state.js';
 import { droneRoot } from './09-scene-content.js';
-import { createPart, place, setFCRot } from './12-placement.js';
+import { setFCRot } from './12-placement.js';
 import { scores } from './17-scoring.js';
-import { autoFrame, autoMount, autoProps, autoWire, enterStage, exitStage, stageKey } from './20-stages.js';
+import { autoFrame, autoMount, autoProps, autoWire, enterStage, exitStage, placePower, stageKey } from './20-stages.js';
 import { fmtTime, renderMeta } from './21-panel.js';
 import { toast } from './23-toast.js';
 
@@ -20,6 +20,9 @@ function modelIcon(m){
 export function showStart(){
   let name=''; try{ name=localStorage.getItem('dbl-name')||''; }catch(e){}
   const models=Object.values(MODELS).map(m=>`<button class="model ${m.key===MODEL.key?'on':''}" data-model="${m.key}" aria-pressed="${m.key===MODEL.key}">${modelIcon(m)}<span><em>Model ${m.no}${m.key===MODEL.key?' · selected':''}</em><b>${esc(m.title)}</b><small>${esc(m.blurb)}</small></span></button>`).join('');
+  const sealed=!!MODEL.sealed, lock=sealed?'disabled title="This model is built from sealed modules. Try it in Explore or Movements."':'';
+  const props=[['in','Props in','Front props sweep in toward the camera. The usual default.'],['out','Props out','Every motor reversed: front props sweep out, away from the camera.']]
+    .map(([k,b,s])=>`<button class="pdir ${PROPS===k?'on':''}" data-props="${k}" aria-pressed="${PROPS===k}"><b>${b}</b><small>${s}</small></button>`).join('');
   $('#overlay').hidden=false;
   $('#overlay').innerHTML=`<div class="ov" role="dialog" aria-labelledby="ovT">
     <div class="eyebrow">Digital lab · Drone fundamentals</div>
@@ -28,24 +31,28 @@ export function showStart(){
     <div class="field"><label for="studentName">Your name</label><input id="studentName" autocomplete="name" value="${esc(name)}" placeholder="Shown on your report"></div>
     <h3 class="sec">1 · Choose a drone</h3>
     <div class="models">${models}</div>
-    <h3 class="sec">2 · Choose an activity</h3>
+    <h3 class="sec">2 · Motor direction</h3>
+    <div class="pdirs">${props}</div>
+    <h3 class="sec">3 · Choose an activity</h3>
     <div class="modes">
-      <button class="mode learn" data-mode="learn"><em>Guided</em><b>Practice</b><span>Hints show where parts and wires go. “Show me” completes any stage for you.</span></button>
-      <button class="mode assess" data-mode="assess"><em>Scored</em><b>Assessment</b><span>No hints, timed. Mistakes cost points. Ends with a report you can copy.</span></button>
+      <button class="mode learn" data-mode="learn" ${lock}><em>Guided</em><b>Practice</b><span>Hints show where parts and wires go. “Show me” completes any stage for you.</span></button>
+      <button class="mode assess" data-mode="assess" ${lock}><em>Scored</em><b>Assessment</b><span>No hints, timed. Mistakes cost points. Ends with a report you can copy.</span></button>
       <button class="mode explore" data-mode="explore"><em>Free</em><b>Explore</b><span>Start with the finished drone. Pull it apart, read about each part, fly it.</span></button>
-      <button class="mode moves" data-mode="moves"><em>3D animation</em><b>Movements</b><span>Learn throttle, yaw, pitch and roll with two transmitter sticks.</span></button>
+      <button class="mode moves" data-mode="moves"><em>Flight trainer</em><b>Movements</b><span>Fly with a remote: on-screen sticks, the keyboard, or a USB radio or gamepad.</span></button>
     </div>
+    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so it has no build stages. Explore it part by part, or fly it in Movements.</p>`:''}
     <p class="small">Drag parts with a mouse or finger. Drag empty space to orbit, scroll or pinch to zoom.</p></div>`;
   $('#overlay').querySelectorAll('.mode').forEach(b=>b.onclick=()=>start(b.dataset.mode));
-  /* every module reads the model while it loads, so switching model reloads the page */
-  $('#overlay').querySelectorAll('.model').forEach(b=>b.onclick=()=>{
-    if(b.dataset.model===MODEL.key) return;
-    try{ localStorage.setItem('dbl-name',($('#studentName').value||'').trim()); localStorage.setItem('dbl-model',b.dataset.model); }catch(e){}
-    location.href=location.pathname+'?model='+b.dataset.model;
-  });
+  /* every module reads the model and the motor direction while it loads, so changing either reloads the page */
+  const reload=(model,props)=>{
+    try{ localStorage.setItem('dbl-name',($('#studentName').value||'').trim()); localStorage.setItem('dbl-model',model); localStorage.setItem('dbl-props',props); }catch(e){}
+    location.href=`${location.pathname}?model=${model}&props=${props}`;
+  };
+  $('#overlay').querySelectorAll('.model').forEach(b=>b.onclick=()=>{ if(b.dataset.model!==MODEL.key) reload(b.dataset.model,PROPS); });
+  $('#overlay').querySelectorAll('.pdir').forEach(b=>b.onclick=()=>{ if(b.dataset.props!==PROPS) reload(MODEL.key,b.dataset.props); });
 }
 /* the finished drone, for Explore and Movements */
-function buildFinished(){ autoFrame(false); autoMount(false); setFCRot(0,.01); droneRoot.updateMatrixWorld(true); autoWire(false); place(HOTMAP.bat,createPart('battery')); S.test.confirmed=true; autoProps(false); }
+function buildFinished(){ autoFrame(false); autoMount(false); setFCRot(0,.01); droneRoot.updateMatrixWorld(true); autoWire(false); placePower(false); S.test.confirmed=true; autoProps(false); }
 export function start(mode){
   S.name=($('#studentName').value||'').trim(); try{ localStorage.setItem('dbl-name',S.name); }catch(e){}
   $('#overlay').hidden=true; $('#overlay').innerHTML='';
@@ -58,7 +65,7 @@ export function start(mode){
 export function grade(t){ return t>=85?'Distinction':t>=70?'Merit':t>=50?'Pass':'Needs more practice'; }
 export function resultText(sc){
   const d=new Date();
-  return [`Drone Build Lab · ${MODEL.title} · ${S.mode==='assess'?'Assessment':'Practice'} result`,
+  return [`Drone Build Lab · ${MODEL.title} · props ${PROPS} · ${S.mode==='assess'?'Assessment':'Practice'} result`,
     `Student: ${S.name||'(no name)'}`,`Date: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`,`Time taken: ${fmtTime(S.endT-S.startT)}`,
     `Total: ${sc.total}/100 (${grade(sc.total)})`,
     ...Object.keys(SEC).map(k=>`  ${SECNAME[k]}: ${sc[k]}/${SEC[k]}`),

@@ -31,7 +31,8 @@ export function buildScrew(k){
   return g;
 }
 Object.keys(SCREWT).forEach(k=>SCREWT[k].build=()=>buildScrew(k));
-export const SCREW_SPEC={
+/* model 3 is built from sealed modules with quick-release connectors, so it has no screws to drive */
+export const SCREW_SPEC=MODEL.sealed?{}:{
   arm:[[1.2,MODEL.armT,0],[3.2,MODEL.armT,0]].map(p=>({p,out:[0,1,0],kind:'M3x10'})),
   tplate:[-4,0,4.2].flatMap(z=>[-MODEL.alu,MODEL.alu].map(x=>({p:[x,CINE?.25:.22,z],out:[0,1,0],kind:'M3x6'}))),
   motor:[[.57,.57],[.57,-.57],[-.57,.57],[-.57,-.57]].map(([x,z])=>({p:[x,-MODEL.armT,z],out:[0,-1,0],kind:'M3x6'})),

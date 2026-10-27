@@ -1,11 +1,11 @@
 /* Drone Build Lab · Info card and floating part labels */
-import { $, V, armPos, esc } from './01-config.js';
+import { $, ARM, MODEL, V, armPos, esc } from './01-config.js';
 import { canvas } from './02-scene.js';
 import { TYPES } from './07-catalogue.js';
 import { S, parts } from './08-state.js';
-import { droneRoot, totalArrow, weightArrow } from './09-scene-content.js';
+import { FORCE_LEN, droneRoot, netArrow, totalArrow } from './09-scene-content.js';
 import { screenOf } from './14-markers-picking.js';
-import { FL, G } from './19-flight.js';
+import { FORCE, G } from './19-flight.js';
 import { stageKey } from './20-stages.js';
 
 /* ================= Info card & labels ================= */
@@ -24,16 +24,18 @@ export function updateLabels(){
   for(const id in LBL) if(!on||!parts[id]) removeLabel(id);
   if(on){
     for(const id in parts){ const p=parts[id];
-      if(p.type==='aluSt'||p.type==='nylSt'||p.type==='camPlate'||p.type==='panel'||(p.type==='arm'&&p.hot.motor!==2)) continue;
+      /* one label per kind of part where the copies sit side by side (second strap, second battery) */
+      if(p.type==='aluSt'||p.type==='nylSt'||p.type==='camPlate'||p.type==='panel'||(p.type==='arm'&&p.hot.motor!==2)||id==='strap2'||id==='bat2') continue;
       if(!LBL[id]){ const d=document.createElement('div'); d.className='plabel'; d.textContent=partLabel(p); d.onclick=()=>showInfo(p.type); box.appendChild(d); LBL[id]=d; }
-      const w=p.type==='arm'?droneRoot.localToWorld(armPos(2,7).setY(.8)):p.group.getWorldPosition(V()).add(TYPES[p.type].lab||V(0,1,0)); const s=screenOf(w); const r=canvas.getBoundingClientRect();
+      const w=p.type==='arm'?droneRoot.localToWorld(armPos(2,ARM*.56).setY(MODEL.armLblY||.8)):p.group.getWorldPosition(V()).add(TYPES[p.type].lab||V(0,1,0)); const s=screenOf(w); const r=canvas.getBoundingClientRect();
       LBL[id].style.display=s.z>1?'none':''; LBL[id].style.transform=`translate(${s.x-r.left}px,${s.y-r.top}px) translate(-50%,-100%)`;
     }
   }
-  const showF=stageKey()==='fly'&&totalArrow.visible;
-  if(showF&&!forceLbl){ forceLbl=[['Total thrust',''],['Weight','w']].map(([t,c])=>{ const d=document.createElement('div'); d.className='plabel force '+c; d.textContent=t; box.appendChild(d); return d; }); }
+  /* force names at the arrow tips, in flight and in Movements */
+  const showF=(stageKey()==='fly'||stageKey()==='moves')&&totalArrow.visible;
+  if(showF&&!forceLbl){ forceLbl=[['Total thrust',''],['Weight','w'],['Net force','n']].map(([t,c])=>{ const d=document.createElement('div'); d.className='plabel force '+c; d.textContent=t; box.appendChild(d); return d; }); }
   if(!showF&&forceLbl){ forceLbl.forEach(d=>d.remove()); forceLbl=null; }
-  if(forceLbl){ const r=canvas.getBoundingClientRect(); const u=V(0,1,0).applyQuaternion(droneRoot.quaternion);
-    const a=totalArrow.position.clone().addScaledVector(u,Math.max(.4,FL.T/G*4)+.6), b=weightArrow.position.clone().add(V(0,-4.8,0));
-    [a,b].forEach((w,i)=>{ const s=screenOf(w); forceLbl[i].style.transform=`translate(${s.x-r.left}px,${s.y-r.top}px) translate(-50%,-50%)`; }); }
+  if(forceLbl){ const r=canvas.getBoundingClientRect(), K=FORCE_LEN/G, c=FORCE.c;
+    const tips=[c.clone().addScaledVector(FORCE.up,FORCE.T*K+.7),c.clone().add(V(0,-FORCE_LEN-.7,0)),netArrow.visible?c.clone().addScaledVector(FORCE.net.clone().normalize(),FORCE.net.length()*K+1):null];
+    tips.forEach((w,i)=>{ const el=forceLbl[i]; el.style.display=w?'':'none'; if(!w) return; const s=screenOf(w); el.style.transform=`translate(${s.x-r.left}px,${s.y-r.top}px) translate(-50%,-50%)`; }); }
 }

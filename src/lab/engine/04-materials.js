@@ -44,9 +44,23 @@ export const M={
   panel:new THREE.MeshPhysicalMaterial({color:0xcfe3ea,roughness:.08,metalness:0,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide,clearcoat:1,clearcoatRoughness:.05}),
   ledStrip:std({color:0xe9ecee,roughness:.5}),
   led:std({color:0x9fe6ff,emissive:0x3bb8ff,emissiveIntensity:1.6,roughness:.3}),
-  tpu:std({color:0xc4501a,roughness:.85}),
+  tpu:std({color:0xf0b81c,roughness:.82}),            // printed TPU mounts, yellow like most modern FPV builds
   heatsink:std({color:0x8f979e,roughness:.35,metalness:.85}),
   camShell:std({color:0x0c0d0f,roughness:.75}),
+  /* battery straps and pad */
+  strapBand:std({color:0x17191c,roughness:.92}),
+  strapGrip:std({color:0xc8402f,roughness:.95}),
+  batPad:std({color:0x24272b,roughness:.98}),
+  ceramic:std({color:0xd8cdb0,roughness:.55}),
+  /* model 3 (enterprise) parts */
+  shell:new THREE.MeshPhysicalMaterial({color:0x3a3f45,roughness:.5,metalness:.1,clearcoat:.4,clearcoatRoughness:.35}),
+  shellLight:new THREE.MeshPhysicalMaterial({color:0xb9bec3,roughness:.45,metalness:.1,clearcoat:.4,clearcoatRoughness:.3}),
+  shellDark:std({color:0x1c1f23,roughness:.6}),
+  lensBlack:new THREE.MeshPhysicalMaterial({color:0x05070a,roughness:.05,metalness:.2,clearcoat:1,clearcoatRoughness:.03}),
+  beaconRed:std({color:0xff4a3d,emissive:0xd8231a,emissiveIntensity:1.3,roughness:.3}),
+  ledGreen:std({color:0x7cffa0,emissive:0x21c45a,emissiveIntensity:1.3,roughness:.3}),
+  lampWhite:std({color:0xf7f5ea,emissive:0xbab49a,emissiveIntensity:.9,roughness:.3}),
+  orange:std({color:0xe0894a,roughness:.5}),
 };
 M.carbonTop=M.carbon.clone();
 export const WIRE_MATS={};

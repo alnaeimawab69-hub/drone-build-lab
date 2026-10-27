@@ -1,7 +1,7 @@
 /* Drone Build Lab · Renderer, camera, orbit controls, environment lighting */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { $, V } from './01-config.js';
+import { $, MODEL, V } from './01-config.js';
 
 /* ================= Renderer & scene ================= */
 export const canvas=$('#c');
@@ -27,7 +27,7 @@ canvas.addEventListener('pointerdown',e=>canvasHooks.down&&canvasHooks.down(e));
 export const controls=new OrbitControls(camera,canvas);
 controls.target.set(0,1.8,.5);
 controls.enableDamping=true; controls.dampingFactor=.08;
-controls.maxPolarAngle=Math.PI*.49; controls.minDistance=5; controls.maxDistance=75;
+controls.maxPolarAngle=Math.PI*.49; controls.minDistance=5; controls.maxDistance=75*(MODEL.view||1);
 
 /* environment for metal reflections, built from simple light panels */
 export let envTex=null;
@@ -47,7 +47,8 @@ scene.add(new THREE.HemisphereLight(0xcfe3ff,0x2a221a,.55));
 export const key=new THREE.DirectionalLight(0xfff1e0,1.5);
 key.position.set(14,28,12); key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);
-Object.assign(key.shadow.camera,{left:-18,right:18,top:18,bottom:-18,near:1,far:80});
+const SH=18*(MODEL.view||1);
+Object.assign(key.shadow.camera,{left:-SH,right:SH,top:SH,bottom:-SH,near:1,far:80});
 key.shadow.bias=-.0004;
 scene.add(key);
 export const fill=new THREE.DirectionalLight(0x9fc4ff,.45); fill.position.set(-16,10,-12); scene.add(fill);

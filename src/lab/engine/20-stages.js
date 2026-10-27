@@ -4,7 +4,7 @@ import { camera, controls } from './02-scene.js';
 import { M } from './04-materials.js';
 import { HOT, HOTMAP, SEC, STAGES } from './07-catalogue.js';
 import { PADS, S, parts } from './08-state.js';
-import { CAD_MATS, droneRoot, particles, thrustArrows, totalArrow, weightArrow } from './09-scene-content.js';
+import { CAD_MATS, droneRoot, netArrow, particles, showSpinRings, thrustArrows, totalArrow, weightArrow } from './09-scene-content.js';
 import { CAM, camTo, tween } from './11-tweens-camera.js';
 import { addWire, createPart, layout, place, rebuildWires, setFCRot, srcPads, updatePadSprites } from './12-placement.js';
 import { autoScrews, stageScrews, updateScrewMarkers } from './13-screws.js';
@@ -49,7 +49,7 @@ export function enterStage(k){
 export function exitStage(k){
   if(k==='wire'){ setFCLift(0); setTopFade(false); }
   if(k==='power') stopAllSpin();
-  if(k==='fly'){ resetFlight(); thrustArrows.forEach(a=>a.visible=false); totalArrow.visible=weightArrow.visible=false; particles.visible=false; }
+  if(k==='fly'){ resetFlight(); thrustArrows.forEach(a=>a.visible=false); totalArrow.visible=weightArrow.visible=netArrow.visible=false; particles.visible=false; showSpinRings(false); }
   if(k==='quiz') controls.autoRotate=false;
   if(k==='explore') setExplode(0);
   if(k==='moves') exitMoves();
@@ -72,7 +72,10 @@ export function autoFrame(anim){
 }
 export function bestTarget(src){ const a=dgXY(src); let best=null,bd=1e9; for(const p of Object.values(PADS)) if(!p.need&&p.net===src.need){ const b=dgXY(p), d=Math.hypot(b[0]-a[0],b[1]-a[1]); if(d<bd){bd=d;best=p;} } return best; }
 export function autoWire(anim){ droneRoot.updateMatrixWorld(true); srcPads().filter(p=>!p.wired).forEach((p,i)=>{ const go=()=>{ if(p.wired||!PADS[p.id]) return; const t=bestTarget(p); if(t) addWire(p.id,t.id); if(anim) renderPanel(); }; anim?tween(.01,null,go,i*.07):go(); }); }
-export function autoPower(){ if(!parts.bat) place(HOTMAP.bat,createPart('battery'),{animate:true}); S.test.safety=true; [1,2,3,4].forEach(n=>{ if(dirActual(n)!==EXP[n]) S.test.swapped[n]=!S.test.swapped[n]; }); stopAllSpin(); S.test.confirmed=true; renderPanel(); }
+/* every part of the power stage: the battery, then what needs it (the straps) */
+export function placePower(anim){ HOT.filter(h=>h.stage==='power').forEach(h=>{ if(!parts[h.id]) place(h,createPart(h.type),{animate:anim}); }); }
+export const strapped=()=>HOT.filter(h=>h.stage==='power').every(h=>parts[h.id]);
+export function autoPower(){ placePower(true); S.test.safety=true; [1,2,3,4].forEach(n=>{ if(dirActual(n)!==EXP[n]) S.test.swapped[n]=!S.test.swapped[n]; }); stopAllSpin(); S.test.confirmed=true; renderPanel(); }
 export function autoProps(anim){ [1,2,3,4].forEach((n,i)=>{ const h=HOTMAP['prop'+n]; if(parts[h.id]) return; const go=()=>{ if(!parts[h.id]) place(h,createPart(EXP[n]==='CW'?'propCW':'propCCW'),{animate:anim}); if(anim) renderPanel(); }; anim?tween(.01,null,go,i*.15):go(); }); }
 
 export const ACT={
@@ -111,6 +114,7 @@ $('#panel').addEventListener('change',e=>{
   if(t.id==='safeChk'){ S.test.safety=t.checked; renderPanel(); }
   if(t.id==='chkForces'){ S.forces=t.checked; }
   if(t.id==='chkAir'){ S.air=t.checked; }
+  if(t.id==='chkSpin'){ S.spinArrows=t.checked; }
   if(t.name&&t.name.startsWith('q')){ S.quizAns[+t.name.slice(1)]=+t.value; }
 });
 $('#panel').addEventListener('pointerdown',e=>{
