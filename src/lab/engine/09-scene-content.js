@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { $, EX, MODEL, SCALE, TAU, V, armPos, clamp } from './01-config.js';
 import { scene } from './02-scene.js';
-import { frontTex, matTex, ringTex } from './03-textures.js';
+import { frontTex, ringTex } from './03-textures.js';
 import { M } from './04-materials.js';
 import { PROXY_MAT } from './05-geometry.js';
 import { makeRing } from './06-builders.js';
@@ -10,10 +10,11 @@ import { HOT, PROP_Y } from './07-catalogue.js';
 import { S } from './08-state.js';
 import { textSprite } from './12-placement.js';
 import { updateMarkers } from './14-markers-picking.js';
+import { buildLabRoom } from './30-lab-room.js';
 
 /* ================= Scene content ================= */
-export const ground=new THREE.Mesh(new THREE.CircleGeometry(60,64),new THREE.MeshStandardMaterial({map:matTex,roughness:.92}));
-ground.rotation.x=-Math.PI/2; ground.position.y=-.02; ground.receiveShadow=true; scene.add(ground);
+/* the studio around the drone (ESD mat on a dark backdrop); hidden in the CAD view */
+export const ground=buildLabRoom(); scene.add(ground);
 export const frontDecal=new THREE.Mesh(new THREE.PlaneGeometry(6,2.25),new THREE.MeshBasicMaterial({map:frontTex,transparent:true,depthWrite:false}));
 frontDecal.rotation.x=-Math.PI/2; frontDecal.position.set(0,0,-19); scene.add(frontDecal);
 
@@ -69,7 +70,7 @@ if(EX){ [[armPos(4).setY(PROP_Y+4),armPos(1).setY(PROP_Y+4),V(0,0,0),'wheelbase'
  [V(hw-.1,0,-4.6),V(hw-.1,3.62,-4.6),V(1.8,0,0),'frame height'],
  [V(-hw,.35,.25-hl),V(-hw,.35,.25+hl),V(-2.4,0,0),'bottom plate']].forEach(d=>DIMS.add(dimension(...d))); }
 export function setStyle(cad){
-  S.cad=cad; const bg=cad?0xe6eaed:0x0f171a;
+  S.cad=cad; const bg=cad?0xe6eaed:0x141c20;
   scene.background.setHex(bg); scene.fog.color.setHex(bg); ground.visible=!cad; grid.visible=cad;
   buildDims(); DIMS.visible=cad; $('#tblock').hidden=!cad; $('#tbName').textContent=S.name||'Student';
   styleObj(droneRoot); $('#btnCad').setAttribute('aria-pressed',cad); $('#viewport').classList.toggle('cad',cad); updateMarkers();

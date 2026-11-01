@@ -46,6 +46,7 @@ export function showStart(){
   /* every module reads the model and the motor direction while it loads, so changing either reloads the page */
   const reload=(model,props)=>{
     try{ localStorage.setItem('dbl-name',($('#studentName').value||'').trim()); localStorage.setItem('dbl-model',model); localStorage.setItem('dbl-props',props); }catch(e){}
+    $('#overlay').innerHTML=`<div class="loading" role="status">Loading ${esc(MODELS[model].title)} · props ${props}…</div>`;
     location.href=`${location.pathname}?model=${model}&props=${props}`;
   };
   $('#overlay').querySelectorAll('.model').forEach(b=>b.onclick=()=>{ if(b.dataset.model!==MODEL.key) reload(b.dataset.model,PROPS); });

@@ -116,11 +116,11 @@ export default function Guide() {
               </tbody>
             </table></div>
             <h3 style={{ marginTop: 28 }}>Model 2: CX-5 cinematic FPV (24 wires)</h3>
-            <p>Battery lead, capacitor, motors, ESC harness, receiver and GPS are wired as above. The analog camera and VTX are replaced by an HD digital system, and an LED strip is added. The HD camera has no wires to the flight controller: its coax cable goes straight to the digital video unit.</p>
+            <p>Battery lead, capacitor, motors, ESC harness, receiver and GPS are wired as above. The analog camera and analog VTX are replaced by an HD camera and a digital VTX, and an LED strip is added. The HD camera has no wires to the flight controller: its coax cable goes straight to the digital VTX.</p>
             <div className="table-wrap"><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
-                <tr><td>Digital video unit</td><td>VIN · G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td><b>9V</b> · G · <b>R2</b> · <b>T2</b></td><td>On-screen data over UART 2</td></tr>
+                <tr><td>Digital VTX</td><td>VIN · G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td><b>9V</b> · G · <b>R2</b> · <b>T2</b></td><td>On-screen data over UART 2</td></tr>
                 <tr><td>LED strip</td><td>5V · G · <Dot c="#4fb06d" />DIN</td><td>5V · G · <b>LED</b></td><td>Data wire goes to the LED pad</td></tr>
               </tbody>
             </table></div>

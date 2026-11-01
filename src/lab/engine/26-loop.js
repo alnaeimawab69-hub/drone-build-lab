@@ -22,7 +22,7 @@ export function loop(now){
   const k=stageKey();
   if(k==='fly') stepFlight(dt);
   if(k==='moves') stepMoves(dt);
-  for(let n=1;n<=4;n++){ const w=S.spin[n]; const m=parts['mot'+n]; if(m&&w) m.group.userData.rot.rotation.y+=w*dt; const p=parts['prop'+n]; if(p){ if(w) p.group.userData.spinner.rotation.y+=w*dt; p.group.userData.disc.material.opacity=Math.min(.2,Math.abs(w)/42*.2); }
+  for(let n=1;n<=4;n++){ const w=S.spin[n]; const m=parts['mot'+n]; if(m&&w) m.group.userData.rot.rotation.y+=w*dt; const p=parts['prop'+n]; if(p){ if(w) p.group.userData.spinner.rotation.y+=w*dt; p.group.userData.disc.material.opacity=w?Math.min(.95,.45+Math.abs(w)/40*.5):0; }
     /* the spin arrow turns the same way as its prop, slowly enough to follow by eye */
     const r=spinRings[n-1]; if(r.visible) r.rotation.y+=Math.sign(w)*(1.2+Math.abs(w)*.04)*dt; }
   const pulse=1.3+.14*Math.sin(clockT*4);

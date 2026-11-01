@@ -112,7 +112,7 @@ export function renderMount(learn){
     ${checks}
     <p class="note">Motor screws go in from <b>under the arm</b>: orbit below the frame to watch them. ${learn?'While you hold a part, <b>green rings</b> show where it can go. ':'Assessment: no hints. Each wrong placement or screw costs points. '}Drag a fitted part to take it off again. <b>Click the flight controller</b> to rotate it 90°. The ESC must be in place before the flight controller.</p>`;
 }
-export const WGROUPS=CINE?[['lead','Battery lead'],['cap','Capacitor'],['motors','Motors'],['esc','ESC harness'],['rx','Radio receiver'],['gps','GPS module'],['vtx','Digital video unit'],['led','LED strip']]
+export const WGROUPS=CINE?[['lead','Battery lead'],['cap','Capacitor'],['motors','Motors'],['esc','ESC harness'],['rx','Radio receiver'],['gps','GPS module'],['vtx','Digital VTX'],['led','LED strip']]
   :[['lead','Battery lead'],['cap','Capacitor'],['motors','Motors'],['esc','ESC harness'],['rx','Radio receiver'],['gps','GPS module'],['cam','FPV camera'],['vtx','Video transmitter']];
 export function renderWire(learn){
   const all=srcPads(); const done=all.filter(p=>p.wired).length;
@@ -187,7 +187,7 @@ export const QUIZ=[
 /* model 2 adds questions on what makes it a cinematic drone */
 if(CINE) QUIZ.push(
   {q:'Why are the front arms of this frame swept out to the sides (a “deadcat” layout)?',o:['To make the drone faster','So the front propellers stay out of the camera picture','To fit a bigger battery','So the drone can only fly forward'],a:1,why:'With the front motors moved out to the sides, the spinning propellers no longer appear at the top corners of the camera view, so the footage is clean.'},
-  {q:'Where does the HD camera’s video signal go?',o:['To the CAM pad on the flight controller','Through the coax cable to the digital video unit','To the ESC','Straight to the action camera'],a:1,why:'A digital system sends the camera picture over a thin coax cable straight to the video unit. The flight controller only talks to the video unit over UART 2 for the on-screen data.'},
+  {q:'Where does the HD camera’s video signal go?',o:['To the CAM pad on the flight controller','Through the coax cable to the digital VTX','To the ESC','Straight to the action camera'],a:1,why:'A digital system sends the camera picture over a thin coax cable straight to the VTX. The flight controller only talks to the VTX over UART 2 for the on-screen data.'},
   {q:'The action camera sits in a soft TPU mount because…',o:['TPU is lighter than carbon','It soaks up motor vibration so the footage is smooth','It charges the camera','It keeps the camera cool'],a:1,why:'Vibration from the motors and props makes wobbly “jello” in the footage. A soft TPU mount damps it before it reaches the camera.'},
 );
 export function renderQuiz(){

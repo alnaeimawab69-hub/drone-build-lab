@@ -1,6 +1,7 @@
 /* Drone Build Lab · Builders for every part, made from code (no imported models) */
 import * as THREE from 'three';
 import { ARM, CINE, MODEL, TAU, V, armPos } from './01-config.js';
+import { propBlurTex } from './03-textures.js';
 import { M, std, wireMat } from './04-materials.js';
 import { PHASE_COLS, addPad, boardMesh, box, circHole, cyl, flatExtrude, mesh, rod, roundBox, rrShape, slotHole, smd, strands, tube } from './05-geometry.js';
 
@@ -95,7 +96,7 @@ export function buildStrap(){
 }
 /* TPU GPS mount: a printed tower at the rear that lifts the GPS above the battery, where the sky view is clear.
    GPS_TOP is where the GPS sits, from the mount's origin. */
-export const GPS_TOP=CINE?V(0,2.15,.6):V(0,2.9,1.0);
+export const GPS_TOP=CINE?V(0,3.3,.8):V(0,2.9,1.0);       // on both models the GPS sits above the top of the battery
 export function buildGpsMount(){
   const g=new THREE.Group(), T=GPS_TOP;
   const base=mesh(roundBox(2.2,.3,1.1,.1,4),M.tpu); base.position.y=.15; g.add(base);
@@ -155,14 +156,19 @@ export function bladeShape(s){
   sh.quadraticCurveTo(...P(6.48,.12),...P(6.05,.3)); sh.bezierCurveTo(...P(4.2,.56),...P(1.8,.56),...P(.3,.3)); sh.lineTo(...P(.3,-.32));
   return sh;
 }
+/* the blur a spinning prop leaves: a see-through disc, darker towards the tips, with a bright line where the tips pass.
+   The render loop fades it in with the motor speed */
+export function propDisc(R){
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(R,72),new THREE.MeshBasicMaterial({map:propBlurTex,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+  disc.rotation.x=-Math.PI/2; disc.renderOrder=2; disc.userData.noStyle=true; return disc;
+}
 export function buildProp(dir){
   const s=dir==='CW'?1:-1, g=new THREE.Group(), sp=new THREE.Group(); g.add(sp); g.userData.spinner=sp; g.userData.dir=dir;
   const hub=cyl(.42,.46,.38,M.propHub,24); hub.position.y=.19; sp.add(hub);
   const nut=cyl(.3,.3,.3,M.steel,6); nut.position.y=.53; sp.add(nut);
   const geo=new THREE.ExtrudeGeometry(bladeShape(s),{depth:.07,bevelEnabled:false,curveSegments:10}); geo.rotateX(-Math.PI/2); geo.translate(0,-.035,0);
   for(let k=0;k<3;k++){ const pv=new THREE.Group(); pv.rotation.y=k*TAU/3; const bl=mesh(geo,M.prop); bl.rotation.x=-.28*s; bl.position.y=.2; pv.add(bl); sp.add(pv); }
-  const disc=new THREE.Mesh(new THREE.CircleGeometry(6.35,64),new THREE.MeshBasicMaterial({color:0xcfe6ee,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
-  disc.rotation.x=-Math.PI/2; disc.position.y=.22; disc.userData.noStyle=true; g.add(disc); g.userData.disc=disc;
+  const disc=propDisc(MODEL.propR); disc.position.y=.22; g.add(disc); g.userData.disc=disc;
   return g;
 }
 export function buildESC(){
@@ -187,7 +193,7 @@ export function buildFC(){
   g.add(box(.12,.06,.12,std({color:0x4fd18b,emissive:0x2a8a55}),1.1,.19,.6));
   const P=(k,l,net,x,z,o)=>addPad(g,{key:k,label:l,net,pos:V(x,.17,z),out:o});
   const F=V(0,0,-1),B=V(0,0,1),Rt=V(1,0,0),Lf=V(-1,0,0);
-  if(CINE){ /* model 2: LED strip on the front pads, digital video unit on UART 2 */
+  if(CINE){ /* model 2: LED strip on the front pads, digital VTX on UART 2 */
     P('c5','5V','5V',0,-1.6,F); P('cg','G','GND',.55,-1.6,F); P('led','LED','LED',1.1,-1.6,F);
     P('v9','9V','9V',1.6,-.9,Rt); P('vg','G','GND',1.6,-.45,Rt); P('t2','T2','T2',1.6,0,Rt); P('r2','R2','R2',1.6,.45,Rt);
   } else {
@@ -258,12 +264,13 @@ export function buildGPS(){
 }
 export function buildCap(){
   const g=new THREE.Group();
-  const b=cyl(.38,.38,1.6,M.capBody,28); b.rotation.x=Math.PI/2; g.add(b);
-  const st=mesh(new THREE.CylinderGeometry(.386,.386,1.5,24,1,true,Math.PI*1.5-.35,.7),M.capStripe); st.rotation.x=Math.PI/2; g.add(st);
-  const top=cyl(.36,.36,.04,M.tin,24); top.rotation.x=Math.PI/2; top.position.z=.81; g.add(top);
-  for(const x of [-.15,.15]) g.add(rod(V(x,0,-.8),V(x,0,-1.25),.03,M.tin));
-  addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.15,0,-1.3),out:V(0,1,0)});
-  addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.15,0,-1.3),out:V(0,1,0)});
+  /* 10 mm across and 20 mm long, the usual size of a 1000 µF low-ESR capacitor */
+  const b=cyl(.5,.5,2,M.capBody,32); b.rotation.x=Math.PI/2; g.add(b);
+  const st=mesh(new THREE.CylinderGeometry(.507,.507,1.9,24,1,true,Math.PI*1.5-.4,.8),M.capStripe); st.rotation.x=Math.PI/2; g.add(st);
+  const top=cyl(.47,.47,.04,M.tin,24); top.rotation.x=Math.PI/2; top.position.z=1.01; g.add(top);
+  for(const x of [-.2,.2]) g.add(rod(V(x,0,-1),V(x,0,-1.5),.035,M.tin));
+  addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.2,0,-1.55),out:V(0,1,0)});
+  addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.2,0,-1.55),out:V(0,1,0)});
   return g;
 }
 export function buildLead(){
@@ -288,7 +295,7 @@ export function buildBattery(){
 }
 
 /* ================= Model 2 (cinematic) parts ================= */
-/* HD camera: digital sensor and a bigger lens. Its picture runs over the coax cable that comes with the video unit, so it has no wires of its own */
+/* HD camera: digital sensor and a bigger lens. Its picture runs over the coax cable that comes with the VTX, so it has no wires of its own */
 function buildHDCamera(){
   const g=new THREE.Group();
   const cb=mesh(roundBox(1.9,1.9,1.5,.14),M.camShell); cb.position.z=.05; g.add(cb);
@@ -299,7 +306,7 @@ function buildHDCamera(){
   g.add(box(.5,.3,.2,M.gold,0,-.4,.86));
   return g;
 }
-/* digital video unit: heatsink body, two antennas, and the coax cable forward to the HD camera */
+/* digital VTX: heatsink body, two antennas, and the coax cable forward to the HD camera */
 function buildHDVTX(){
   const g=new THREE.Group();
   g.add(boardMesh(2.8,.14,2.8,M.pcbG,M.vtxTop));

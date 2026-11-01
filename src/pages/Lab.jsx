@@ -50,7 +50,7 @@ export default function Lab() {
         </main>
       </div>
       <div id="tip"></div>
-      <div id="overlay"></div>
+      <div id="overlay"><div className="loading" role="status">Loading the lab…</div></div>
     </>
   );
 }

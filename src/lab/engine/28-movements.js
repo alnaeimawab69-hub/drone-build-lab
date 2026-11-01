@@ -36,7 +36,7 @@ export const MOVES={
     neg:{t:'Roll left',d:'The right motors (M1, M2) speed up and the left motors (M3, M4) slow down until the drone has banked left. It then slides to the left.'}},
 };
 const STICK_OF={thr:['L','y'],yaw:['L','x'],pitch:['R','y'],roll:['R','x']};
-const HOVER=6, MAX_TILT=28*DEG, MAX_YAW=110*DEG;
+const HOVER=6, MAX_TILT=16*DEG, MAX_YAW=60*DEG;
 const PLAY_SEQ=[[1,1.7],[0,.9],[-1,1.7],[0,1]];
 
 export const MV={in:{thr:0,yaw:0,pitch:0,roll:0},drag:null,dragV:{L:{x:0,y:0},R:{x:0,y:0}},keys:{},anim:null,queue:[],quiz:null,

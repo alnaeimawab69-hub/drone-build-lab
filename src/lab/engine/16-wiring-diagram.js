@@ -21,11 +21,11 @@ export const DG_SRC={
   mot4:{circ:[300,545,44],tips:[[410,563]]}, mot2:{circ:[900,545,44],tips:[[790,563]]},
   mot3:{circ:[300,770,44],tips:[[410,657]]}, mot1:{circ:[900,770,44],tips:[[790,657]]},
 };
-/* model 2: no analog camera or VTX. The LED strip uses the front pads and the digital video unit uses UART 2 */
+/* model 2: no analog camera or VTX. The LED strip uses the front pads and the digital VTX uses UART 2 */
 if(CINE){
   delete DG_SRC.cam;
   DG_SRC.led={box:[565,24,130,60,'LED STRIP','5V · G · DATA'],tips:[[600,112],[637,112],[673,112]]};
-  DG_SRC.vtx={box:[870,175,150,130,'DIGITAL VIDEO','HD unit · 9 V in'],tips:[[805,200],[805,230],[805,260],[805,290]]};
+  DG_SRC.vtx={box:[870,175,150,130,'DIGITAL VTX','HD video · 9 V in'],tips:[[805,200],[805,230],[805,260],[805,290]]};
 }
 S.diagram=true;
 export const srcOf=h=>Object.values(PADS).filter(q=>q.hotId===h&&q.need);
@@ -85,7 +85,7 @@ export function renderDiagram(){
     <g transform="translate(870,40)"><text class="t-h">Wire colours</text>
       ${[['#d8453b','Power (+, 5V, 9V)'],['#3a3f46','Ground (G, −)'],CINE?['#4fb06d','LED data']:['#e8c33c','Video'],['#3d9be0','TX (transmit)'],['#eeeeee','RX (receive)'],['#8a939c','Motor phases']].map(([c,l],i)=>`<rect x="0" y="${12+i*18}" width="22" height="7" rx="2" fill="${c}" stroke="#0d0f11"/><text class="t-s" x="30" y="${19+i*18}">${l}</text>`).join('')}</g>
     <g transform="translate(40,700)"><text class="t-h" style="fill:#b2382b">Default ports</text>
-      ${(CINE?[['UART 1','Receiver'],['UART 2','Digital video unit'],['UART 3','GPS'],['LED','LED strip data']]:[['UART 1','Receiver'],['UART 3','GPS'],['CAM','Camera video in'],['VTX','Video out to VTX']]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
+      ${(CINE?[['UART 1','Receiver'],['UART 2','Digital VTX'],['UART 3','GPS'],['LED','LED strip data']]:[['UART 1','Receiver'],['UART 3','GPS'],['CAM','Camera video in'],['VTX','Video out to VTX']]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
     <g transform="translate(40,800)"><text style="font:700 12px var(--f-mono);fill:#b2382b">⚠ Capacitor required</text><text class="t-s" y="16">absorbs voltage spikes</text></g>
     <rect x="480" y="140" width="240" height="240" rx="18" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
     ${[[495,155],[705,155],[495,365],[705,365]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="#d4a93c" stroke-width="3"/>`).join('')}

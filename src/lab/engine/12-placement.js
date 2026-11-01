@@ -31,12 +31,13 @@ export function place(h,g,opts={}){
   g.rotation.set(h.rotX||0,h.rotY||0,0);
   if(h.type==='fc'){ S.fcRot=opts.fcRot!=null?opts.fcRot:1+Math.floor(Math.random()*3); g.rotation.y=S.fcRot*Math.PI/2; }
   registerPads(h.id,g); registerScrews(h.id,g);
-  if(opts.animate){ p.drop=1.4; tween(.35,k=>{ p.drop=1.4*(1-easeOut(k)); layout(p); }); } else layout(p);
-  if(h.type==='battery') updateBatCable();
+  const cable=h.type==='battery'||h.type==='lead';
+  if(opts.animate){ p.drop=1.4; tween(.35,k=>{ p.drop=1.4*(1-easeOut(k)); layout(p); if(cable) updateBatCable(); }); } else layout(p);
+  if(cable) updateBatCable();
   updateMarkers();
   return p;
 }
-export function unplace(id){ const p=parts[id]; unregisterPads(id); unregisterScrews(id); delete parts[id]; if(p.hot.type==='battery') updateBatCable(); updateMarkers(); removeLabel(id); return p.group; }
+export function unplace(id){ const p=parts[id]; unregisterPads(id); unregisterScrews(id); delete parts[id]; if(p.hot.type==='battery'||p.hot.type==='lead') updateBatCable(); updateMarkers(); removeLabel(id); return p.group; }
 export function removeGroup(g){ if(g.parent) g.parent.remove(g); }
 export function setFCRot(r,dur=.35){ const p=parts.fc; if(!p) return; const from=p.group.rotation.y; let to=r*Math.PI/2; while(to<from-1e-6) to+=TAU; S.fcRot=r; tween(dur,k=>{ p.group.rotation.y=from+(to-from)*ease(k); }); }
 
@@ -103,7 +104,10 @@ export function updateBatCable(){
   droneRoot.updateMatrixWorld(true);
   const a=droneRoot.worldToLocal(parts.bat.group.userData.plug.getWorldPosition(V()));
   const b=droneRoot.worldToLocal(parts.lead.group.userData.socket.getWorldPosition(V()));
-  const c=new THREE.CatmullRomCurve3([a.clone(),a.clone().add(V(0,.2,.9)),V((a.x+b.x)/2,(a.y+b.y)/2,Math.max(a.z,b.z)+1.0),b.clone().add(V(0,0,.7)),b.clone()]);
-  batCable=strands(c,2,.085,.09,2.5,[0xd8453b,0x2b2f35]); batCable.forEach(m=>droneRoot.add(m));
+  /* the battery's own plug mates with the connector on the battery lead, so the cable ends in a second connector body */
+  const c=new THREE.CatmullRomCurve3([a.clone(),a.clone().add(V(0,.2,.9)),V((a.x+b.x)/2,(a.y+b.y)/2,Math.max(a.z,b.z)+1.6),b.clone().add(V(0,0,1.5)),b.clone().add(V(0,0,.8))]);
+  batCable=strands(c,2,.1,.11,2.5,[0xd8453b,0x2b2f35]);
+  const plug=mesh(new THREE.BoxGeometry(.86,.52,.8),M.connector); plug.position.copy(b).add(V(0,0,.4)); batCable.push(plug);
+  batCable.forEach(m=>droneRoot.add(m));
 }
 export function rebuildWires(){ droneRoot.updateMatrixWorld(true); WIRES.forEach(buildWireMesh); updateBatCable(); }

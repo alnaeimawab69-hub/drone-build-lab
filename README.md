@@ -5,7 +5,7 @@ A WebGL digital lab where students build a quadcopter from bare carbon parts: fr
 Three drone models, chosen on the start screen:
 
 - **Model 1 · LX-250 quadcopter** (default): 250 mm X frame, analog camera and VTX, 4S battery.
-- **Model 2 · CX-5 cinematic FPV**: 5-inch deadcat frame (front arms swept out of the camera view), aluminium camera cage, clear side panels with an LED strip, HD camera and digital video unit, action camera on a TPU mount, 2306 motors, 6S battery.
+- **Model 2 · CX-5 cinematic FPV**: 5-inch deadcat frame (front arms swept out of the camera view), aluminium camera cage, clear side panels with an LED strip, HD camera and digital VTX, action camera on a TPU mount, 2306 motors, 6S battery.
 - **Model 3 · EX-9 enterprise drone**: large industrial quad (895 mm wheelbase) with folding arms, dual hot-swap smart batteries, RTK module with two GNSS antennas, gimbal camera (zoom, wide, thermal, laser rangefinder), six-direction obstacle sensors, beacons and landing gear. It is built from sealed modules, so it is offered in Explore and Movements only. It is drawn at 30 % of real size.
 
 Models 1 and 2 are built FPV style: yellow TPU arm guards, a TPU camera mount, a TPU GPS mount with a ceramic-patch GPS, and two battery straps on a rubber pad.
@@ -66,7 +66,7 @@ DroneBuildLab/
         ├── 06-builders.js          every part, built from code
         ├── 07-catalogue.js         part catalogue, hotspots, stages, scoring weights
         ├── 08-state.js             lab state
-        ├── 09-scene-content.js     workbench, CAD view, markers, flight visuals
+        ├── 09-scene-content.js     CAD view, markers, flight visuals
         ├── 10-thumbnails.js        tray thumbnails
         ├── 11-tweens-camera.js     animation and camera moves
         ├── 12-placement.js         placing parts, pads, 3D wires
@@ -86,7 +86,8 @@ DroneBuildLab/
         ├── 26-loop.js              render loop
         ├── 27-boot.js              start-up
         ├── 28-movements.js         Movements activity: remote, USB controller, axis rings, stick quiz
-        └── 29-enterprise.js        model 3: sealed-module parts, catalogue and mounting points
+        ├── 29-enterprise.js        model 3: sealed-module parts, catalogue and mounting points
+        └── 30-lab-room.js          the studio around the drone: ESD mat on a seamless dark backdrop
 ```
 
 ## How the lab page works

@@ -63,15 +63,15 @@ if(CINE){
   T('tplate',{lab:V(0,.5,-5),role:'Closes the frame. Carries the battery on a rubber pad in the middle and a TPU mount for the action camera at the front.',links:'Six M3 × 6 screws into the standoffs. Two pairs of slots take the battery straps; the GPS mount sits at the rear.',spec:'2.5 mm carbon · TPU mounts (soft plastic) soak up vibration'});
   T('motor',{spec:'2306 size (23 mm stator, 6 mm tall) · 1880 KV, made for 6S batteries'});
   T('esc',{spec:'30.5 × 30.5 mm mounting · about 55 A per motor · 3–6S'});
-  T('fc',{links:'ESC harness, receiver (UART 1), digital video unit (UART 2), GPS (UART 3), LED strip (LED pad).'});
+  T('fc',{links:'ESC harness, receiver (UART 1), digital VTX (UART 2), GPS (UART 3), LED strip (LED pad).'});
   T('camera',{name:'HD camera',ex:V(0,.4,-2.6),
-    role:'A digital camera that gives the pilot a sharp, high-definition picture. Its video goes through a thin coaxial cable straight to the digital video unit, not through the flight controller.',
-    links:'Coax cable to the digital video unit (it comes fitted to the video unit). Two M2 × 5 screws into the cage.',spec:'19 mm body · digital HD sensor · 20° uptilt'});
-  T('vtx',{name:'Digital video unit',where:'in the centre of the rear bay, antennas out the back',ex:V(0,.3,2.8),lab:V(0,1.4,0),
+    role:'A digital camera that gives the pilot a sharp, high-definition picture. Its video goes through a thin coaxial cable straight to the digital VTX, not through the flight controller.',
+    links:'Coax cable to the digital VTX (it comes fitted to the VTX). Two M2 × 5 screws into the cage.',spec:'19 mm body · digital HD sensor · 20° uptilt'});
+  T('vtx',{name:'Digital VTX',where:'in the centre of the rear bay, antennas out the back',ex:V(0,.3,2.8),lab:V(0,1.4,0),
     role:'Turns the HD camera picture into a digital radio signal for the pilot’s goggles, with very little delay. It also records the flight in HD.',
     links:'9 V and G for power, and TX/RX to UART 2 on the flight controller so the flight data shows in the goggles. Never power it without its antennas.',
     spec:'5.8 GHz digital · two antennas · aluminium heatsink'});
-  T('gps',{ex:V(0,5,2.5),spec:'Mounted on top, clear of the carbon plate, which blocks satellite signals'});
+  T('gps',{ex:V(0,4,2.5),spec:'Mounted on top, clear of the carbon plate, which blocks satellite signals'});
   T('cap',{role:'Absorbs voltage spikes created when the ESC switches the motors. On 6S the spikes are bigger, so it matters even more.',spec:'Low-ESR electrolytic · 50 V · 1000 µF'});
   T('battery',{ex:V(0,6,0),role:'Stores the energy. Six lithium-polymer cells in series: higher voltage gives the heavier cinematic drone more power for the same current.',spec:'6S · 22.2 V nominal, 25.2 V full · 1100 mAh'});
   T('propCW',{spec:'5.1 inch (130 mm) · three blades'}); T('propCCW',{spec:'5.1 inch (130 mm) · three blades'});
@@ -111,7 +111,7 @@ export const HOT=EX?exHot():[
   {id:'camMount',type:'camMount',stage:'mount',pos:V(0,1.925,-4.3),requires:'cam',label:'Over the camera',mk:V(0,-1.1,-1.8)},
   {id:'gpsMount',type:'gpsMount',stage:'mount',pos:GPS_MOUNT,requires:'tplate',label:'Top plate, rear',mk:V(0,.4,0)},
   {id:'gps',type:'gps',stage:'mount',pos:GPS_MOUNT.clone().add(GPS_TOP),requires:'gpsMount',label:'GPS mount platform',mk:V(0,.35,0)},
-  {id:'cap',type:'cap',stage:'mount',pos:V(1.95,.75,3.1),label:'Rear bay, right',mk:V(0,0,0)},
+  {id:'cap',type:'cap',stage:'mount',pos:V(1.9,.95,3.05),label:'Rear bay, right',mk:V(0,0,0)},
   {id:'lead',type:'lead',stage:'mount',pos:V(1.1,.7,5.0),label:'Rear exit',mk:V(0,0,.5)},
   ...(CINE?[{id:'led',type:'led',stage:'mount',pos:V(3.12,1.98,.3),requires:'pnl2',label:'Inside the right panel',mk:V(-.4,.4,-2)},
     {id:'acam',type:'actionCam',stage:'mount',pos:V(0,4.6,-3.7),rotX:.26,requires:'tplate',label:'Top plate, front mount',mk:V(0,2,0)}]:[]),

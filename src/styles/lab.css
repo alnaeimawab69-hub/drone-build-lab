@@ -164,7 +164,7 @@ h3.sec{font-family:var(--f-display);font-size:15px;font-weight:600;letter-spacin
 .why{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
 
 /* viewport */
-#viewport{position:relative;min-width:0;min-height:0;background:#0f171a;overflow:hidden}
+#viewport{position:relative;min-width:0;min-height:0;background:#141c20;overflow:hidden}
 #viewport.cad{background:#e6eaed}
 .diagram{position:absolute;inset:0;background:#f3f4f1;overflow:hidden}
 .diagram svg{width:100%;height:calc(100% - 60px);display:block;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -228,6 +228,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .info .x:hover{background:var(--panel-3);color:var(--fg)}
 
 /* overlay */
+#overlay .loading{font:600 15px/1.4 'IBM Plex Sans',sans-serif;color:#cfdade;padding:14px 20px;border-radius:10px;background:rgba(20,28,32,.9);border:1px solid rgba(255,255,255,.08)}
 #overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding-block:24px;padding-inline:16px;background:rgba(8,12,14,.72);backdrop-filter:blur(6px);overflow:auto}
 .ov{width:min(760px,100%);background:var(--panel);border:1px solid var(--line-2);border-radius:16px;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
 .ov h1{font-family:var(--f-display);font-size:42px;line-height:1;font-weight:700;margin:6px 0 10px;letter-spacing:-.005em}

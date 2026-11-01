@@ -9,6 +9,9 @@ export let renderer;
 try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true}); }
 catch(e){ $('#viewport').innerHTML='<p style="padding:24px;color:#94a5ac">This lab needs WebGL. Try a recent version of Chrome, Edge, Firefox or Safari.</p>'; throw e; }
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+/* if the browser drops the WebGL context the canvas turns black: say so, and reload once the context comes back */
+canvas.addEventListener('webglcontextlost',e=>{ e.preventDefault(); const t=$('#toast'); if(t){ t.textContent='The graphics card reset. Reloading the 3D view…'; t.className='toast show'; } });
+canvas.addEventListener('webglcontextrestored',()=>location.reload());
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.05;
@@ -16,9 +19,9 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
 export const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x0f171a);
-scene.fog=new THREE.Fog(0x0f171a,70,160);
-export const camera=new THREE.PerspectiveCamera(38,1,.1,400);
+scene.background=new THREE.Color(0x141c20);
+scene.fog=new THREE.Fog(0x141c20,320,1100);                // the studio backdrop (30-lab-room.js) is outside the fog
+export const camera=new THREE.PerspectiveCamera(38,1,.1,1400);
 camera.position.set(17,15,21);
 
 /* our pointerdown must run before OrbitControls' own handler, so register it first (15-input.js sets the handler) */
