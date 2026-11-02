@@ -27,7 +27,7 @@ export const MODELS={
     blurb:'Deadcat frame for clean footage, HD digital video, action camera, 6S power.',
     arm:11.5,ang:{1:-45,2:30,3:-135,4:150},armT:.6,plate:[6.6,11],alu:2.9,bat:[3.4,3,6],batZ:1.1,prop:'5.1 in',cg:2.8,propR:6.5},
   ex9:{key:'ex9',no:3,name:'EX-9',title:'EX-9 enterprise drone',tag:'enterprise inspection drone',
-    blurb:'Large industrial quad: folding arms, dual hot-swap batteries, RTK, gimbal camera, obstacle sensors. Explore and Movements.',
+    blurb:'Large industrial quad: folding arms, two hot-swap batteries, RTK positioning, gimbal camera, obstacle sensors. Explore, Movements and Fault finding.',
     arm:44.75,ang:{1:-51,2:51,3:-129,4:129},armT:3,plate:[20,30],alu:0,bat:[8,5.5,15],batZ:8.2,prop:'21 in',cg:27,propR:26.7,armLblY:29.5,scale:.3,view:1.9,sealed:true},
 };
 function pickModel(){

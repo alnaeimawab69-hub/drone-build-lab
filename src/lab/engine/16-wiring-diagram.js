@@ -53,7 +53,8 @@ export function dgStroke(d,src){
   const c=wireColor(need,src.label); return strand(c===0x2b2f35?'#3a3f46':hex(c),0,need.startsWith('VBAT')?6:4);
 }
 export function renderDiagram(){
-  const el=$('#diagram'), on=stageKey()==='wire'&&S.diagram; el.hidden=!on; $('#viewport').classList.toggle('dg',on); updateViewbar(); if(!on) return;
+  /* also shown in fault finding (models 1 and 2), where students check the finished wiring */
+  const k=stageKey(), el=$('#diagram'), on=(k==='wire'||(k==='fault'&&!MODEL.sealed))&&S.diagram; el.hidden=!on; $('#viewport').classList.toggle('dg',on); updateViewbar(); if(!on) return;
   const learn=S.mode==='learn', pads=Object.values(PADS);
   const tgtSvg=pads.filter(p=>!p.need).map(p=>{
     const [x,y]=dgXY(p), o=p.def.out||V(0,1,0), lx=x-o.x*24, ly=y-o.z*24+4;

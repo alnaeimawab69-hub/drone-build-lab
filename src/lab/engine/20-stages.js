@@ -19,9 +19,10 @@ import { showInfo } from './22-info-labels.js';
 import { toast } from './23-toast.js';
 import { endQuiz, enterMoves, exitMoves, playAll, playMove, recentre, startQuiz, stopMoves } from './28-movements.js';
 import { showReport } from './24-start-report.js';
+import { FT_ACT, enterFault, exitFault } from './31-fault-finding.js';
 
 /* ================= Stage flow ================= */
-export function stageKey(){ if(S.explore) return S.view==='fly'?'fly':S.view==='moves'?'moves':'explore'; return STAGES[S.stage].key; }
+export function stageKey(){ if(S.explore) return S.view==='fly'?'fly':S.view==='moves'?'moves':S.view==='fault'?'fault':'explore'; return STAGES[S.stage].key; }
 export function ready(k){
   switch(k){
     case 'frame': return HOT.filter(h=>h.stage==='frame').every(h=>parts[h.id])&&stageScrews('frame').every(s=>s.driven);
@@ -38,10 +39,11 @@ export function setFCLift(y,dur=.7){ const p=parts.fc; if(!p) return; const y0=p
 export function setTopFade(on){ [M.carbonTop,CAD_MATS.get(M.carbonTop)].filter(Boolean).forEach(m=>{ m.transparent=on; m.opacity=on?.2:1; m.depthWrite=!on; m.needsUpdate=true; }); }
 export function enterStage(k){
   const c=CAM[k]; if(c) camTo(c[0],c[1]);
-  controls.maxPolarAngle=(k==='frame'||k==='mount')?Math.PI*.92:Math.PI*.49;
+  controls.maxPolarAngle=(k==='frame'||k==='mount'||k==='fault')?Math.PI*.92:Math.PI*.49;   // fault finding: look under the arms
   if(k==='wire'){ setFCLift(.95); setTopFade(true); }
   if(k==='fly'){ resetFlight(); }
   if(k==='moves') enterMoves();
+  if(k==='fault') enterFault();
   if(k==='quiz'){ controls.autoRotate=true; controls.autoRotateSpeed=.6; }
   $('#info').hidden=true;
   updatePadSprites(); updateMarkers(); renderAll();
@@ -53,6 +55,7 @@ export function exitStage(k){
   if(k==='quiz') controls.autoRotate=false;
   if(k==='explore') setExplode(0);
   if(k==='moves') exitMoves();
+  if(k==='fault') exitFault();
 }
 export function gotoStage(i){ const prev=stageKey(); exitStage(prev); S.stage=i; enterStage(stageKey()); }
 export function setView(v){ const prev=stageKey(); exitStage(prev); S.view=v; enterStage(stageKey()); }
@@ -104,11 +107,12 @@ export const ACT={
   exploreMoves(){ setView('moves'); },
   mvPlay(b){ playMove(b.dataset.a); }, mvAll(){ playAll(); }, mvStop(){ stopMoves(); },
   mvQuiz(){ startQuiz(); }, mvQuizEnd(){ endQuiz(); }, mvCentre(){ recentre(); },
-  exploreBack(){ setView('parts'); },
+  exploreBack(){ const v=S.backView||'parts'; S.backView=null; setView(v); },
   focus(b){ const id=b.dataset.h; const p=parts[id]; if(!p) return showInfo('frame'); showInfo(p.type); const w=p.group.getWorldPosition(V()); const off=camera.position.clone().sub(controls.target).setLength(11); camTo(w.clone().add(off),w,.8); },
   report(){ showReport(); },
 };
-$('#panel').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(!b||b.disabled) return; ACT[b.dataset.act]&&ACT[b.dataset.act](b); });
+/* the fault finding activity keeps its own actions (FT_ACT in 31-fault-finding.js) */
+$('#panel').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(!b||b.disabled) return; const f=ACT[b.dataset.act]||FT_ACT[b.dataset.act]; f&&f(b); });
 $('#panel').addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='safeChk'){ S.test.safety=t.checked; renderPanel(); }

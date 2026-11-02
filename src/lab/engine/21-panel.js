@@ -11,6 +11,7 @@ import { dirActual } from './18-motor-test.js';
 import { FL, MANS, airborne, updateHud } from './19-flight.js';
 import { ready, stageKey, strapped } from './20-stages.js';
 import { renderMoves } from './28-movements.js';
+import { renderFaults } from './31-fault-finding.js';
 
 /* ================= Panel rendering ================= */
 export function left(t){ return TYPES[t].count-Object.values(parts).filter(p=>p.type===t).length; }
@@ -39,12 +40,12 @@ export function renderSteps(){
 export function fmtTime(ms){ const s=Math.floor(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 export function renderMeta(){
   const m=S.mode, n=S.mistakes.filter(x=>x.sec!=='quiz').length;
-  const chip=S.explore?`<span class="chip explore">${S.view==='moves'?'Movements':'Explore'}</span>`:m==='assess'?'<span class="chip assess">Assessment</span>':'<span class="chip learn">Practice</span>';
+  const chip=S.explore&&S.view==='fault'?'<span class="chip fault">Fault finding</span>':S.explore?`<span class="chip explore">${S.view==='moves'?'Movements':'Explore'}</span>`:m==='assess'?'<span class="chip assess">Assessment</span>':'<span class="chip learn">Practice</span>';
   const t=m==='assess'&&!S.explore?`<span id="timer">${fmtTime((S.endT||performance.now())-S.startT)}</span>`:'';
   const mm=S.explore?'':`<span class="hide-sm ${n?'bad':''}">${n} mistake${n===1?'':'s'}</span>`;
   $('#meta').innerHTML=chip+t+mm;
 }
-export function updateViewbar(){ const k=stageKey(); $('#btnDiag').hidden=k!=='wire'; $('#btnDiag').textContent=S.diagram?'3D view':'Wiring diagram'; $('#btnCad').hidden=k==='wire'&&S.diagram; $('#explodeWrap').hidden=!(k==='explore'||k==='quiz'); $('#btnLabels').setAttribute('aria-pressed',S.labels); }
+export function updateViewbar(){ const k=stageKey(), dg=k==='wire'||(k==='fault'&&!MODEL.sealed); $('#btnDiag').hidden=!dg; $('#btnDiag').textContent=S.diagram?'3D view':'Wiring diagram'; if(k==='fault') $('#btnDiag').setAttribute('aria-pressed',!!S.diagram); $('#btnCad').hidden=dg&&S.diagram; $('#explodeWrap').hidden=!(k==='explore'||k==='quiz'||k==='fault'); $('#btnLabels').setAttribute('aria-pressed',S.labels); }
 
 export function renderPanel(){
   if(S.drag){ S.dirty=true; return; }
@@ -73,8 +74,9 @@ export function renderPanel(){
     const labels={frame:'Next: components',mount:'Next: wiring',wire:'Next: power-up',power:'Next: propellers',props:'Next: flight',fly:'Next: knowledge check',quiz:'See my report'};
     foot=`${learn&&k!=='quiz'?`<button class="btn ghost" data-act="show">${k==='fly'?'Play demo':'Show me'}</button>`:''}<button class="btn primary" data-act="next" ${ready(k)?'':'disabled'}>${labels[k]} →</button>`;
   }
-  if(S.explore&&k==='fly'){ head=`<div class="eyebrow">Explore</div><h2>Flight physics</h2><p>Fly the finished drone. Watch how the four motor speeds create every movement.</p>`; body=renderFly(true); foot=`<button class="btn ghost" data-act="exploreBack">← Back to parts</button><button class="btn primary" data-act="tour">Play demo</button>`; }
+  if(S.explore&&k==='fly'){ head=`<div class="eyebrow">Explore</div><h2>Flight physics</h2><p>Fly the finished drone. Watch how the four motor speeds create every movement.</p>`; body=renderFly(true); foot=`<button class="btn ghost" data-act="exploreBack">← Back to ${S.backView==='fault'?'fault finding':'parts'}</button><button class="btn primary" data-act="tour">Play demo</button>`; }
   if(S.explore&&k==='moves') ({head,body,foot}=renderMoves());
+  if(S.explore&&k==='fault') ({head,body,foot}=renderFaults());
   panel.innerHTML=`<div class="p-head">${head}</div><div class="p-body">${body}</div><div class="p-foot">${foot}</div>`;
   panel.querySelector('.p-body').scrollTop=keepScroll;
   if(k==='fly') updateHud();

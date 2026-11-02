@@ -34,6 +34,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .chip.assess{border-color:var(--color-accent-line);color:var(--color-accent);background:var(--color-accent-soft)}
 .chip.learn{border-color:var(--color-success-line);color:var(--color-success);background:var(--color-success-soft)}
 .chip.explore{border-color:rgba(124,192,211,.5);color:var(--color-info);background:rgba(124,192,211,.12)}
+.chip.fault{border-color:var(--color-danger-line);color:var(--color-danger);background:var(--color-danger-soft)}
 .meta .bad{color:var(--color-danger)}
 
 /* ---------- main layout and side panel ---------- */
@@ -270,13 +271,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .mode:hover:not(:disabled),.model:hover:not(.on),.pdir:hover:not(.on){border-color:var(--color-accent-line);background:var(--color-surface-3)}
 .model.on,.pdir.on{border-color:var(--color-accent);background:var(--color-accent-soft);cursor:default;box-shadow:inset 0 0 0 1px var(--color-accent)}
 
-.modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .mode{display:flex;flex-direction:column;gap:6px;padding:var(--space-4);border-top:3px solid var(--tone,var(--color-border-strong))}
 .mode:hover:not(:disabled){transform:translateY(-2px);box-shadow:var(--shadow-md)}
 .mode b{font-family:var(--font-display);font-size:var(--text-xl);font-weight:var(--weight-bold);line-height:var(--leading-tight)}
 .mode span{font-size:var(--text-sm);color:var(--color-text-muted);line-height:var(--leading-snug)}
 .mode em{font-style:normal;font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--tone)}
-.mode.learn{--tone:var(--color-success)} .mode.assess{--tone:var(--color-accent)} .mode.explore{--tone:var(--color-info)} .mode.moves{--tone:var(--color-warning)}
+.mode.learn{--tone:var(--color-success)} .mode.assess{--tone:var(--color-accent)} .mode.explore{--tone:var(--color-info)} .mode.moves{--tone:var(--color-warning)} .mode.fault{--tone:var(--color-danger)}
 .mode:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
 .models{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:var(--space-6)}
@@ -309,6 +310,24 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .mlist{margin:0 0 var(--space-6);padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto}
 .mlist li{font-size:var(--text-sm);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);background:var(--color-surface-2);border-left:3px solid var(--color-danger)}
 .mlist li small{display:block;color:var(--color-text-muted);font-size:var(--text-2xs);letter-spacing:.05em;text-transform:uppercase}
+
+/* fault finding */
+.ftlist{display:flex;flex-direction:column;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-2);overflow:hidden}
+.ftrow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;padding:var(--space-2) var(--space-3);font-size:var(--text-sm);border-top:1px solid var(--color-border)}
+.ftrow:first-child{border-top:0}
+.ftrow.on{background:var(--color-accent-soft)}
+.ftm{display:flex;gap:var(--space-1);margin-left:auto}
+.ftm .btn{min-width:38px;font-family:var(--font-mono)}
+.ftset{font-size:var(--text-sm);color:var(--color-text-muted)}
+.ftset summary{cursor:pointer;color:var(--color-text)}
+.ftset>*+*{margin-top:var(--space-2)}
+.ftcode{font-family:var(--font-mono);letter-spacing:.06em}
+.ftin{width:130px;padding:5px 9px;border-radius:var(--radius-sm);border:1px solid var(--color-control-border);background:var(--color-surface-2);font-family:var(--font-mono);text-transform:uppercase}
+.mlist.ftres{max-height:none;margin:0}
+.mlist.ftres li.ok{border-left-color:var(--color-success)}
+.mlist.ftres li.warn{border-left-color:var(--color-warning)}
+.mlist.ftres li small{margin-bottom:2px}
+.mlist.ftres li i{color:var(--color-text-muted)}
 
 /* ---------- movements activity: the sticks sit on a drawn radio transmitter ---------- */
 .remote{position:relative;margin-top:22px;padding:var(--space-3) 10px 10px;border-radius:26px 26px 34px 34px;background:linear-gradient(180deg,#2a343b,#1b2227 70%);border:1px solid var(--color-border-strong);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),var(--shadow-md)}

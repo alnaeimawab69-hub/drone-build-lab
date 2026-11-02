@@ -39,8 +39,9 @@ export function showStart(){
       <button class="mode assess" data-mode="assess" ${lock}><em>Scored</em><b>Assessment</b><span>No hints, and a timer. Mistakes cost points. You get a report to copy at the end.</span></button>
       <button class="mode explore" data-mode="explore"><em>Free</em><b>Explore</b><span>Start with the finished drone. Take it apart, read about each part and fly it.</span></button>
       <button class="mode moves" data-mode="moves"><em>Flight trainer</em><b>Movements</b><span>Learn the remote: on-screen sticks, the keyboard, or a USB radio or gamepad.</span></button>
+      <button class="mode fault" data-mode="fault"><em>Diagnose</em><b>Fault finding</b><span>A finished drone has hidden faults. Inspect it and test the motors. Then report what is wrong.</span></button>
     </div>
-    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so it has no build stages. Explore it part by part, or fly it in Movements.</p>`:''}
+    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so it has no build stages. Explore it part by part, fly it in Movements, or find its faults in Fault finding.</p>`:''}
     <p class="small">Drag parts with a mouse or finger. Drag empty space to orbit. Scroll or pinch to zoom.</p></div>`;
   $('#overlay').querySelectorAll('.mode').forEach(b=>b.onclick=()=>start(b.dataset.mode));
   /* every module reads the model and the motor direction while it loads, so changing either reloads the page */
@@ -57,9 +58,10 @@ function buildFinished(){ autoFrame(false); autoMount(false); setFCRot(0,.01); d
 export function start(mode){
   S.name=($('#studentName').value||'').trim(); try{ localStorage.setItem('dbl-name',S.name); }catch(e){}
   $('#overlay').hidden=true; $('#overlay').innerHTML='';
-  S.mode=mode==='assess'?'assess':'learn'; S.explore=mode==='explore'||mode==='moves'; S.startT=performance.now();
+  S.mode=mode==='assess'?'assess':'learn'; S.explore=mode==='explore'||mode==='moves'||mode==='fault'; S.startT=performance.now();
   if(mode==='explore'){ buildFinished(); S.labels=true; S.view='parts'; enterStage('explore'); }
   else if(mode==='moves'){ buildFinished(); S.labels=false; S.view='moves'; enterStage('moves'); }
+  else if(mode==='fault'){ buildFinished(); S.mode='fault'; S.labels=false; S.view='fault'; enterStage('fault'); }   // see 31-fault-finding.js
   else { S.stage=0; enterStage('frame'); }
   if(S.mode==='assess') setInterval(()=>{ const t=$('#timer'); if(t) t.textContent=fmtTime((S.endT||performance.now())-S.startT); },1000);
 }
