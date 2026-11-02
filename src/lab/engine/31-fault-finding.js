@@ -52,53 +52,53 @@ const motorScrews=n=>Object.values(SCR).filter(s=>s.hotId==='mot'+n);
 
 export const KINDS=[
   {k:'motorDir',per:true,label:'Motor spins the wrong way',
-    find:'Take the props off and bench-test each motor. Compare the way it turns with the motor layout.',
-    why:n=>`Motor ${n} (${CORNER[n]}) must spin ${EXP[n]} but spins ${opp(EXP[n])}. Its propeller then pushes air up instead of down, so that corner has no lift and the drone flips on take-off. Fix: swap any two of its three phase wires (or reverse it in the ESC settings), then test it again.`,
+    find:'Take the propellers off. Then bench-test each motor and compare the way it turns with the motor layout.',
+    why:n=>`Motor ${n} (${CORNER[n]}) must spin ${EXP[n]} but spins ${opp(EXP[n])}. Its propeller pushes air up instead of down. That corner has no lift, so the drone flips at take-off. Fix: swap any two of its three phase wires (or reverse it in the ESC settings). Then test it again.`,
     inject:n=>{ S.test.swapped[n]=true; }, fix:n=>{ S.test.swapped[n]=false; }},
   {k:'wrongProp',per:true,label:'Wrong propeller (CW / CCW) on a motor',
-    find:'Compare each propeller with the motor layout. The blade shape (and the Labels button) tells you if it is a CW or CCW prop.',
-    why:n=>`Motor ${n} (${CORNER[n]}) spins ${EXP[n]} but carries a ${opp(EXP[n])} propeller. A mirror-image prop turning the wrong way for its shape pushes air up, so that corner drops and the drone flips on take-off. Fix: fit a ${EXP[n]} propeller.`,
+    find:'Compare each propeller with the motor layout. The blade shape tells you if it is a CW or CCW propeller. The Labels button shows it too.',
+    why:n=>`Motor ${n} (${CORNER[n]}) spins ${EXP[n]} but carries a ${opp(EXP[n])} propeller. The blades are shaped for the other direction, so they push air up. That corner drops and the drone flips at take-off. Fix: fit a ${EXP[n]} propeller.`,
     inject:n=>swapProp(n,opp(EXP[n]),false), fix:(n,anim)=>swapProp(n,EXP[n],anim)},
   {k:'propLoose',per:true,label:'Propeller not tightened down',
     find:'Look at each propeller from the side, at motor height. It should sit flat and square on top of its motor.',
-    why:n=>`The propeller on motor ${n} (${CORNER[n]}) is not clamped down: it sits above the motor and is tilted. At full throttle it wobbles, shakes the whole drone and can fly off. Fix: ${EX?'push it fully onto the motor and twist until the quick-release clamp locks':'seat it on the motor shaft and tighten the prop nut'}.`,
+    why:n=>`The propeller on motor ${n} (${CORNER[n]}) is not clamped down. It sits above the motor and is tilted. At full throttle it wobbles and shakes the whole drone, and it can fly off and hurt someone. Fix: ${EX?'push it fully onto the motor and twist until the quick-release clamp locks':'seat it on the motor shaft and tighten the prop nut'}.`,
     inject:n=>unseat('prop'+n,PROP_LIFT,0,.09), fix:(n,anim)=>reseat('prop'+n,anim)},
   {k:'motorScrews',per:true,only:FPV,label:'Motor screws missing',
-    find:'Orbit under the frame and count the screws under each motor: every motor needs four.',
-    why:n=>`Two of the four M3 × 6 screws under motor ${n} (${CORNER[n]}) are missing. Vibration loosens the motor, so it twists on the arm or comes off in flight. Fix: fit all four screws, M3 × 6 (a longer screw would reach the windings).`,
+    find:'Orbit under the frame. Count the screws under each motor: every motor needs four.',
+    why:n=>`Two of the four M3 × 6 screws under motor ${n} (${CORNER[n]}) are missing. Vibration loosens the motor, so it twists on the arm or comes off in flight. Fix: fit all four M3 × 6 screws. Do not use longer screws: they reach the windings and short the motor.`,
     inject:n=>motorScrews(n).filter((s,i)=>i===0||i===3).forEach(s=>{ if(s.mesh&&s.mesh.parent) s.mesh.parent.remove(s.mesh); s.mesh=null; s.driven=false; s.marker.visible=false; }),
     fix:(n,anim)=>motorScrews(n).filter(s=>!s.driven).forEach(s=>{ drive(s.id,anim); s.marker.visible=false; })},
   {k:'fcRot',label:'Flight controller arrow not pointing to the front',
-    find:EX?'Use Exploded view to lift the top shell off, then look at the arrow on the flight controller.':'Use Exploded view and Top view to see the arrow printed on the flight controller.',
-    why:()=>`The flight controller is turned ${FC_WAY[S.fcRot||1]}. Its sensors now read every tilt in the wrong direction, so it “corrects” the wrong way and the drone flips on take-off. Fix: turn it until the arrow points to the front.`,
+    find:EX?'Use Exploded view to lift the top shell off. Then look at the arrow on the flight controller.':'Use Exploded view and Top view. Then look at the arrow printed on the flight controller.',
+    why:()=>`The flight controller (FC) is turned ${FC_WAY[S.fcRot||1]}. Its sensors now read every tilt in the wrong direction. It “corrects” the wrong way, so the drone flips at take-off. Fix: turn it until the arrow points to the front.`,
     inject:(n,rng)=>fcRotate(1+Math.floor(rng()*3),0), fix:(n,anim)=>fcRotate(0,anim?.6:0)},
   {k:'strap',only:FPV,label:'Battery strap missing',
-    find:'Count the straps over the battery. There must be one through each pair of slots.',
-    why:()=>'Only one strap holds the battery. It is the heaviest part, so in a hard turn or a crash it swings loose and can rip out the power cable. Fix: fit the second strap through its pair of slots.',
+    find:'Count the battery straps. There must be one through each pair of slots.',
+    why:()=>'Only one strap holds the battery. The battery is the heaviest part. In a hard turn or a crash it swings loose and can rip out the power cable. Fix: fit the second strap through its pair of slots.',
     inject:()=>{ if(parts.strap2) removeGroup(unplace('strap2')); }, fix:(n,anim)=>{ if(!parts.strap2) place(HOTMAP.strap2,createPart('strap'),{animate:anim}); }},
   {k:'capRev',only:FPV,label:'Capacitor wired backwards',
-    find:'Open the wiring diagram and follow the two capacitor legs: + to the ESC + pad, the striped − leg to the − pad.',
-    why:()=>'The capacitor’s + leg is soldered to the ESC − pad and its − leg to +. An electrolytic capacitor fitted backwards heats up and can burst as soon as the battery is plugged in. Fix: + to +, − to −.',
+    find:'Open the wiring diagram. Follow the two capacitor legs: the + leg goes to the ESC + pad, the striped − leg to the − pad.',
+    why:()=>'The capacitor’s + leg is soldered to the ESC − pad, and its − leg to +. A capacitor of this type (electrolytic) fitted backwards heats up. It can burst as soon as the battery is plugged in. Fix: + leg to +, − leg to −.',
     inject:()=>swapPair('capRev','cap','VBAT+','VBAT-'), fix:()=>restoreWires('capRev')},
   {k:'gpsX',only:FPV,label:'GPS TX and RX not crossed over',
-    find:'Open the wiring diagram and follow the GPS wires. A TX (transmit) wire must land on an R (receive) pad.',
-    why:()=>'The GPS TX wire goes to T3 and its RX wire to R3, so two transmit pins talk to each other and nothing listens. The flight controller gets no position: no position hold and no return-to-home. Fix: TX to R3, RX to T3.',
+    find:'Open the wiring diagram. Follow the GPS wires: a TX (transmit) wire must go to an R (receive) pad.',
+    why:()=>'The GPS TX wire goes to T3 and its RX wire to R3. Two transmit pins now talk to each other and nothing listens. The flight controller gets no position, so position hold and return-to-home do not work. Fix: TX to R3, RX to T3.',
     inject:()=>swapPair('gpsX','gps','R3','T3'), fix:()=>restoreWires('gpsX')},
-  {k:'rxX',only:FPV,label:'Receiver TX and RX not crossed over',
-    find:'Open the wiring diagram and follow the receiver wires. A TX (transmit) wire must land on an R (receive) pad.',
-    why:()=>'The receiver TX wire goes to T1 and its RX wire to R1, so the flight controller never hears the sticks: the drone will not arm or respond to the pilot. Fix: TX to R1, RX to T1.',
+  {k:'rxX',only:FPV,label:'Radio receiver TX and RX not crossed over',
+    find:'Open the wiring diagram. Follow the radio receiver wires: a TX (transmit) wire must go to an R (receive) pad.',
+    why:()=>'The radio receiver TX wire goes to T1 and its RX wire to R1. The flight controller never hears the sticks, so the drone will not arm or respond to the pilot. Fix: TX to R1, RX to T1.',
     inject:()=>swapPair('rxX','rx','R1','T1'), fix:()=>restoreWires('rxX')},
   {k:'volt',only:FPV,label:'A 5 V part wired to the 9 V pad',
-    find:'Open the wiring diagram and check every red power wire: 5 V parts belong on a 5V pad.',
+    find:'Open the wiring diagram. Check every red power wire: a 5 V part belongs on a 5V pad.',
     why:()=>`The ${CINE?'LED strip':'FPV camera'} 5V wire is soldered to the 9V pad. A 5 V part fed 9 V overheats and can burn out${CINE?'':', and the pilot loses the picture'}. Fix: move the wire to the 5V pad.`,
     inject:()=>retarget('volt',CINE?'led':'cam','5V','9V'), fix:()=>restoreWires('volt')},
   {k:'batLatch',only:EX,label:'Smart battery not locked into its bay',
-    find:'Look at the two batteries from the side and from behind. Both should sit flat and level in the bay.',
-    why:()=>'The right battery is not pushed home, so its connector is only half mated. The drone would take off on one battery with no backup, and vibration can unplug it. Fix: push it down until it clicks and locks.',
+    find:'Look at the two smart batteries from the side and from behind. Both should sit flat and level in the bay.',
+    why:()=>'The right battery is not pushed fully in, so its connector is only half connected. The drone would take off on one battery with no backup. Vibration can also unplug it. Fix: push it down until it clicks and locks.',
     inject:()=>unseat('bat2',3.2,-.12,0), fix:(n,anim)=>reseat('bat2',anim)},
   {k:'gimbal',only:EX,label:'Gimbal camera not locked on its mount',
     find:'Look under the nose. The gimbal camera should sit square and tight against its quick-release mount.',
-    why:()=>'The gimbal camera hangs off its quick-release mount. In flight it can drop off, and the loose connector cuts its power and video. Fix: push it up and turn it until the orange button clicks.',
+    why:()=>'The gimbal camera hangs off its quick-release mount. In flight it can drop off and hit someone. The loose connector also cuts its power and video. Fix: push it up and turn it until the orange button clicks.',
     inject:()=>unseat('gimbal',-1.8,0,.16), fix:(n,anim)=>reseat('gimbal',anim)},
 ].filter(f=>f.only!==false);
 const KIND=Object.fromEntries(KINDS.map(f=>[f.k,f]));
@@ -149,7 +149,7 @@ export function score(r){
 }
 function submit(){
   const r=FT.round; if(!r||r.submitted) return;
-  if(!r.picks.size){ toast('Mark at least one fault in the list first. If you found nothing, keep looking: there are '+r.count+'.'); return; }
+  if(!r.picks.size){ toast('Mark at least one fault in the list first. If you found nothing, keep looking: there '+(r.count===1?'is 1':'are '+r.count)+'.'); return; }
   r.submitted=true; r.t1=now(); r.result=score(r);
   FT.rounds.push({code:r.code,count:r.count,...r.result,hints:r.hints.length,time:r.t1-r.t0,
     faults:r.faults.map(f=>({name:nameOf(f),found:r.picks.has(keyOf(f.k,f.n))})),
@@ -189,7 +189,7 @@ export function exitFault(){ stopAllSpin(); setProps(true); setExplode(0); S.dia
 /* ================= Panel actions (looked up by 20-stages.js) ================= */
 export const FT_ACT={
   ftPick(b){ const r=FT.round; if(!r||r.submitted) return; const k=b.dataset.k; r.picks.has(k)?r.picks.delete(k):r.picks.add(k); renderPanel(); },
-  ftProps(){ setProps(FT.propsOff); toast(FT.propsOff?'Props off. Safe to bench-test the motors.':'Props refitted.','ok'); renderPanel(); },
+  ftProps(){ setProps(FT.propsOff); toast(FT.propsOff?'Propellers off. It is now safe to bench-test the motors.':'Propellers refitted.','ok'); renderPanel(); },
   ftSpin(b){ if(!FT.propsOff) return; const n=+b.dataset.m; setTestSpin(n,S.spin[n]===0); renderPanel(); },
   ftSpinAll(){ if(!FT.propsOff) return; const any=[1,2,3,4].some(n=>S.spin[n]!==0); [1,2,3,4].forEach(n=>setTestSpin(n,!any)); renderPanel(); },
   ftHint(){ hint(); },
@@ -198,7 +198,7 @@ export const FT_ACT={
   ftNext(){ newRound(FT.count); toast(`New drone: ${FT.round.count} hidden fault${FT.round.count===1?'':'s'}.`,'info'); },
   ftCount(b){ FT.count=+b.dataset.n; renderPanel(); },
   ftCode(){ const el=document.getElementById('ftCode'), c=parseCode(el&&el.value);
-    if(!c){ toast('A drone code looks like 3-K7QX: the number of faults, a dash, then up to four letters or digits.','bad'); return; }
+    if(!c){ toast('A drone code looks like 3-K7QX: the number of faults, a dash, then up to four letters or numbers.','bad'); return; }
     FT.count=c.count; newRound(c.count,c.seed); toast(`Drone ${FT.round.code} loaded.`,'ok'); },
   ftCopy(){ copyResult(); },
   ftFly(){ S.backView='fault'; setView('fly'); },
@@ -208,22 +208,22 @@ export const FT_ACT={
 export function renderFaults(){
   const r=FT.round; if(!r) return {head:'<div class="eyebrow">Fault finding</div><h2>Preparing the drone…</h2>',body:'',foot:''};
   const head=`<div class="eyebrow">Fault finding · ${esc(MODEL.name)} · props ${PROPS}</div><h2>Find the faults</h2>
-    <p>This ${esc(MODEL.title)} failed its pre-flight check. <b>${r.count} fault${r.count===1?' is':'s are'}</b> hidden in it. Inspect it like a technician, bench-test the motors, then report every fault you find.</p>`;
+    <p>This ${esc(MODEL.title)} failed its pre-flight check. <b>${r.count} fault${r.count===1?' is':'s are'}</b> hidden in it. Inspect it like a technician and bench-test the motors. Then report every fault you find, before anyone flies it.</p>`;
   const settings=`<details class="ftset"><summary>Drone code and difficulty</summary>
-      <p class="note">This drone: <b class="ftcode">${r.code}</b>. The same code on the same model always gives the same faults, so a class can share one drone.</p>
+      <p class="note">This drone: <b class="ftcode">${r.code}</b>. The same code on the same model always gives the same faults. A class can share one drone this way.</p>
       <div class="row"><span class="note">Faults on the next drone</span>${[1,2,3,4].map(n=>`<button class="btn sm" data-act="ftCount" data-n="${n}" aria-pressed="${FT.count===n}">${n}</button>`).join('')}</div>
       <div class="row"><input id="ftCode" class="ftin" placeholder="e.g. 3-K7QX" aria-label="Drone code" autocomplete="off" spellcheck="false"><button class="btn sm" data-act="ftCode">Load drone</button></div>
     </details>`;
   if(r.submitted) return renderResult(r,head,settings);
   const off=FT.propsOff;
   const rows=[1,2,3,4].map(n=>{ const sp=S.spin[n]!==0;
-    return `<div class="mrow"><span class="mid">M${n}</span><span class="mc">${CORNER[n]}<small>${sp?`turning ${dirActual(n)}`:off?'stopped':'props on: test locked'}</small></span><button class="btn sm" data-act="ftSpin" data-m="${n}" ${off?'':'disabled'}>${sp?'Stop':'Spin'}</button></div>`; }).join('');
+    return `<div class="mrow"><span class="mid">M${n}</span><span class="mc">${CORNER[n]}<small>${sp?`turning ${dirActual(n)}`:off?'stopped':'propellers on: test locked'}</small></span><button class="btn sm" data-act="ftSpin" data-m="${n}" ${off?'':'disabled'}>${sp?'Stop':'Spin'}</button></div>`; }).join('');
   const steps=[
-    `<li><b>Look it over.</b> Orbit all the way round${FPV?' and underneath':''}. Use <b>Labels</b>, <b>Exploded view</b> and <b>Top view</b> under the 3D view, and click any part to read what it does.</li>`,
+    `<li><b>Look it over.</b> Orbit all the way round${FPV?' and underneath':''}. Use <b>Labels</b>, <b>Exploded view</b> and <b>Top view</b> under the 3D view. Click any part to read what it does.</li>`,
     `<li><b>Check the propellers.</b> Each one must match its motor’s spin and sit flat on the motor.<div class="layout" style="margin-top:10px">${layoutSVG(true)}<p>Required layout, seen from above. ${propsNote()}</p></div></li>`,
-    FPV?`<li><b>Check the wiring.</b> Press <b>Wiring diagram</b> under the 3D view and follow every wire to its pad: power, ground, TX to RX.</li>`:'',
-    `<li><b>Bench-test the motors.</b> Take the props off first, then spin each motor and watch the arrow over it.
-      <div class="row" style="margin-top:10px"><button class="btn sm ${off?'':'primary'}" data-act="ftProps">${off?'Refit the props':'Take the props off'}</button><button class="btn sm" data-act="ftSpinAll" ${off?'':'disabled'}>${[1,2,3,4].some(n=>S.spin[n]!==0)?'Stop all':'Spin all'}</button></div>
+    FPV?`<li><b>Check the wiring.</b> Press <b>Wiring diagram</b> under the 3D view. Follow every wire to its pad: power, ground, and TX to RX.</li>`:'',
+    `<li><b>Bench-test the motors.</b> Take the propellers off first: a spinning blade can cut you. Then spin each motor and watch the arrow over it.
+      <div class="row" style="margin-top:10px"><button class="btn sm ${off?'':'primary'}" data-act="ftProps">${off?'Refit the propellers':'Take the propellers off'}</button><button class="btn sm" data-act="ftSpinAll" ${off?'':'disabled'}>${[1,2,3,4].some(n=>S.spin[n]!==0)?'Stop all':'Spin all'}</button></div>
       <div class="mtable">${rows}</div></li>`,
   ].join('');
   const list=KINDS.map(f=>{
@@ -234,7 +234,7 @@ export function renderFaults(){
   return {head,
     body:`<ol class="tasks">${steps}</ol>
       <div><h3 class="sec">Your findings <span style="float:right;font-family:var(--f-mono);font-weight:400;letter-spacing:0">${r.picks.size} marked</span></h3>
-        <p class="note" style="margin-bottom:8px">Mark every fault you find; for a motor fault, press the motor it is on. Each false alarm costs 15 points and each hint 10, so only mark what you have seen.</p>
+        <p class="note" style="margin-bottom:8px">Mark every fault you find. For a motor fault, press the motor it is on. Each false alarm costs 15 points and each hint costs 10, so only mark what you have seen.</p>
         <div class="ftlist">${list}</div></div>
       ${hints}${settings}`,
     foot:`<button class="btn ghost" data-act="ftHint" ${r.hints.length>=r.faults.length?'disabled':''}>Hint (−10)</button><button class="btn primary" data-act="ftSubmit" ${r.picks.size?'':'disabled'}>Submit findings →</button>`};
@@ -243,13 +243,13 @@ function renderResult(r,head,settings){
   const s=r.result, clean=s.found===r.faults.length&&!s.wrong.length;
   const items=r.faults.map(f=>{ const ok=r.picks.has(keyOf(f.k,f.n));
     return `<li class="${ok?'ok':''}"><small>${ok?'✓ Found':'✕ Missed'}</small><b>${esc(nameOf(f))}</b><br>${esc(f.why)}${ok?'':`<br><i>How to spot it: ${esc(KIND[f.k].find)}</i>`}</li>`; }).join('');
-  const wrong=s.wrong.map(k=>{ const [kk,n]=k.split(':'); return `<li class="warn"><small>False alarm</small>${esc(nameOf({label:KIND[kk].label,n:+n||0}))}: this was fine on this drone.</li>`; }).join('');
+  const wrong=s.wrong.map(k=>{ const [kk,n]=k.split(':'); return `<li class="warn"><small>False alarm</small>${esc(nameOf({label:KIND[kk].label,n:+n||0}))}: this part was fine on this drone.</li>`; }).join('');
   const hist=FT.rounds.length>1?`<div><h3 class="sec">This session</h3><ul class="checks">${FT.rounds.map((x,i)=>`<li class="${x.score>=70?'ok':''}">Drone ${i+1} · ${x.code}<span class="r">${x.score}/100</span></li>`).join('')}</ul></div>`:'';
   return {head,
     body:`<div class="rep-top" style="margin:0"><div class="total">${s.score}<small> / 100</small></div><div><div class="grade">${clean?'Every fault found':s.found?`${s.found} of ${r.faults.length} found`:'No faults found'}</div>
         <div class="rep-meta">${s.wrong.length} false alarm${s.wrong.length===1?'':'s'} · ${r.hints.length} hint${r.hints.length===1?'':'s'} · ${fmtTime(r.t1-r.t0)}</div></div></div>
       <div><h3 class="sec">The faults on drone ${r.code}</h3><ul class="mlist ftres">${items}${wrong}</ul></div>
-      ${r.repaired?'<p class="note">Every fault is repaired. Fly the drone to check it, or take the next one.</p>':'<p class="note">Press <b>Repair the faults</b> to watch each one fixed on the model.</p>'}
+      ${r.repaired?'<p class="note">Every fault is repaired. Fly the drone to check it, or try the next drone.</p>':'<p class="note">Press <b>Repair the faults</b> to watch each one fixed on the model.</p>'}
       ${hist}
       <div class="row"><button class="btn sm" data-act="ftCopy">Copy result for my teacher</button></div>
       ${settings}`,

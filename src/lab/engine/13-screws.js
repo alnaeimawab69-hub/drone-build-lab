@@ -1,6 +1,6 @@
 /* Drone Build Lab · Screws, nuts and fastening */
 import * as THREE from 'three';
-import { CINE, MODEL, TAU, V, easeOut } from './01-config.js';
+import { CINE, MODEL, TAU, V, easeOut, lc } from './01-config.js';
 import { ringTex } from './03-textures.js';
 import { M, std } from './04-materials.js';
 import { PROXY_GEO, PROXY_MAT, cyl } from './05-geometry.js';
@@ -58,12 +58,12 @@ export function drive(id,anim){
   else m.position.copy(base);
 }
 export function screwMsg(need,got,owner){
-  if(owner==='motor'&&got==='M3x10') return 'Too long. An M3 × 10 screw goes through the arm and into the copper windings under the motor base, and can short the motor. Motor screws must be short: M3 × 6.';
-  if(need==='M3x10'&&got==='M3x6') return 'Too short. The arm screw must pass through the arm and the bottom plate and still grip. Use M3 × 10.';
-  if(need==='M3x6'&&got==='M3x10') return 'Too long. In a standoff a 10 mm screw bottoms out before it clamps the plate. Use M3 × 6.';
-  if(need==='nut') return 'The stack is clamped with M3 nylon nuts on top of the stack standoffs. Nylon cannot short the boards.';
-  if(got==='nut') return 'A nut needs a bolt or standoff to thread onto. This hole needs a screw.';
-  if(need==='M2x5') return 'The camera mounting holes are M2. An M3 screw is too thick to fit.';
+  if(owner==='motor'&&got==='M3x10') return 'Too long. An M3 × 10 screw goes through the arm and into the motor’s copper windings. It can short-circuit the motor. Motor screws must be short: M3 × 6.';
+  if(need==='M3x10'&&got==='M3x6') return 'Too short. The arm screw must go through the arm and the bottom plate and still grip. Use M3 × 10.';
+  if(need==='M3x6'&&got==='M3x10') return 'Too long. A 10 mm screw hits the bottom of the standoff before it clamps the plate. Use M3 × 6.';
+  if(need==='nut') return 'The stack is clamped with M3 nylon nuts on top of the stack standoffs. Nylon does not conduct, so it cannot short the boards.';
+  if(got==='nut') return 'A nut needs a screw or standoff to thread onto. This hole needs a screw.';
+  if(need==='M2x5') return 'The camera holes are M2 (2 mm). An M3 screw is too thick to fit.';
   if(got==='M2x5') return 'M2 is too thin for this M3 hole. It will not grip.';
   return 'Wrong fastener for this hole.';
 }
@@ -73,7 +73,7 @@ export function tryDrive(id,kind){
   if(kind!==s.spec.kind){ mistake(secOf(),2,screwMsg(s.spec.kind,kind,HOTMAP[s.hotId].type),'Wrong fastener for this hole.'); return; }
   drive(id,true);
   const left=stageScrews(stageKey()).filter(x=>!x.driven).length;
-  toast(`${SCREWT[kind].name} fitted to the ${TYPES[HOTMAP[s.hotId].type].name.toLowerCase()}.${left?'':' Every fastener in this stage is tight.'}`,'ok');
+  toast(`${SCREWT[kind].name} fitted to the ${lc(TYPES[HOTMAP[s.hotId].type].name)}.${left?'':' All fasteners in this stage are tight.'}`,'ok');
   renderPanel();
 }
 export function autoScrews(k,anim){ stageScrews(k).filter(s=>!s.driven).forEach((s,i)=>{ const go=()=>{ if(SCR[s.id]&&!s.driven){ drive(s.id,anim); if(anim) renderPanel(); } }; anim?tween(.01,null,go,i*.06):go(); }); }

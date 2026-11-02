@@ -11,23 +11,23 @@ import { toast } from './23-toast.js';
 export const G=9.8;
 export const FL={armed:false,pos:V(),vel:V(),roll:0,pitch:0,yaw:0,yawRate:0,altT:0,man:null,sign:1,manT:0,thr:[0,0,0,0],T:0,landing:false,tour:null,last:V(),hudT:0,cur:null};
 export const MANS={
-  takeoff:{t:'Take off and hover',d:'All four motors speed up together. When total thrust is bigger than the weight the drone rises; when thrust equals weight it hovers.',dof:'heave'},
-  climb:{t:'Climb',d:'Thrust is raised above the weight, so the net force points up and the drone accelerates upward. The controller then trims back to hover.',dof:'heave'},
-  descend:{t:'Descend',d:'Thrust drops a little below the weight, so gravity wins and the drone sinks, until thrust is raised again to stop.',dof:'heave'},
-  pitchF:{t:'Pitch forward',d:'Rear motors (M1, M3) speed up and front motors (M2, M4) slow down. The nose dips, the thrust tilts forward, and part of it now pushes the drone ahead. To stop, it pitches back the other way.',dof:'pitch'},
+  takeoff:{t:'Take off and hover',d:'All four motors speed up together. When total thrust is bigger than the weight, the drone rises. When thrust equals the weight, it hovers.',dof:'heave'},
+  climb:{t:'Climb',d:'Thrust rises above the weight. The net force points up, so the drone speeds up upward. Then the controller trims back to a hover.',dof:'heave'},
+  descend:{t:'Descend',d:'Thrust drops a little below the weight. Gravity wins and the drone sinks. Then thrust rises again to stop it.',dof:'heave'},
+  pitchF:{t:'Pitch forward',d:'Rear motors (M1, M3) speed up and front motors (M2, M4) slow down. The nose dips and the thrust tilts forward. Part of the thrust now pushes the drone ahead. To stop, it tilts back the other way.',dof:'pitch'},
   pitchB:{t:'Pitch back',d:'Front motors (M2, M4) speed up and rear motors (M1, M3) slow down. The nose lifts and the tilted thrust pushes the drone backward.',dof:'pitch'},
   rollR:{t:'Roll right',d:'Left motors (M3, M4) speed up and right motors (M1, M2) slow down. The drone banks right and the tilted thrust slides it sideways.',dof:'roll'},
   rollL:{t:'Roll left',d:'Right motors (M1, M2) speed up and left motors (M3, M4) slow down. The drone banks left and slides left.',dof:'roll'},
-  yawR:{t:'Yaw right',d:`Each spinning prop twists the frame the opposite way (watch the spin arrows). Speeding up the counter-clockwise props (${motorsTurning('CCW')}) and slowing the clockwise ones (${motorsTurning('CW')}) leaves a net twist that turns the nose right. Total lift stays the same.`,dof:'yaw'},
-  yawL:{t:'Yaw left',d:`Speeding up the clockwise props (${motorsTurning('CW')}) and slowing the counter-clockwise ones (${motorsTurning('CCW')}) twists the frame to the left.`,dof:'yaw'},
-  land:{t:'Land',d:'Thrust is reduced slowly below the weight until the drone touches down, then the motors are disarmed.',dof:'heave'},
-  arm:{t:'Armed',d:'Motors idle at low speed. Thrust is far below the weight, so the drone stays on the mat.',dof:null},
+  yawR:{t:'Yaw right',d:`Each spinning propeller twists the frame the opposite way (watch the spin arrows). The counter-clockwise propellers (${motorsTurning('CCW')}) speed up and the clockwise ones (${motorsTurning('CW')}) slow down. The twists no longer cancel, so the nose turns right. Total lift stays the same.`,dof:'yaw'},
+  yawL:{t:'Yaw left',d:`The clockwise propellers (${motorsTurning('CW')}) speed up and the counter-clockwise ones (${motorsTurning('CCW')}) slow down. The frame twists to the left. Total lift stays the same.`,dof:'yaw'},
+  land:{t:'Land',d:'Thrust drops slowly below the weight until the drone touches down. Then the motors are disarmed (switched off).',dof:'heave'},
+  arm:{t:'Armed',d:'The motors are live and idle at low speed. Thrust is far below the weight, so the drone stays on the mat.',dof:null},
 };
 export const TOUR=[['takeoff',3.2],['pitchF',4.2],['rollR',4.2],['yawR',2.6],['climb',2.6],['descend',2.6],['land',3.6]];
 export function airborne(){ return FL.armed&&FL.altT>0; }
 export function doMan(name){
   const f=FL;
-  if(name==='arm'){ if(f.altT>0||f.pos.y>.05){ toast('Land before disarming.'); return; } f.armed=!f.armed; f.landing=false; f.cur=f.armed?'arm':null; renderPanel(); return; }
+  if(name==='arm'){ if(f.altT>0||f.pos.y>.05){ toast('Land before you disarm.'); return; } f.armed=!f.armed; f.landing=false; f.cur=f.armed?'arm':null; renderPanel(); return; }
   if(name==='takeoff'){ f.armed=true; f.landing=false; f.altT=5; S.flown.hover=1; }
   else if(name==='climb'||name==='descend'||name==='land'){
     if(!airborne()){ toast('Take off first.'); return; }

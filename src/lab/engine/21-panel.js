@@ -30,8 +30,8 @@ export function layoutSVG(showDirs){
 }
 /* one sentence on what props in / props out means, for the layout boxes */
 export const propsNote=()=>PROPS_OUT
-  ?'<b>Props out</b>: the front edge of each front prop sweeps outward, away from the camera, which throws less grass and dust at the lens.'
-  :'<b>Props in</b> (the usual default): the front edge of each front prop sweeps inward, toward the camera.';
+  ?'<b>Props out</b>: the front edge of each front propeller sweeps outward, away from the camera. This throws less grass and dust at the lens.'
+  :'<b>Props in</b> (the usual choice): the front edge of each front propeller sweeps inward, toward the camera.';
 export function renderAll(){ renderSteps(); renderMeta(); renderPanel(); updateViewbar(); }
 export function renderSteps(){
   const el=$('#steps'); el.hidden=S.explore||!!MODEL.sealed;
@@ -58,7 +58,7 @@ export function renderPanel(){
     head=`<div class="eyebrow">Explore</div><h2>The finished ${esc(MODEL.title)}</h2><p>Every part is fitted and wired. Click a part, or a name in the list, to see what it does and how it connects.</p>`;
     const seen=new Set(); const items=Object.values(parts).filter(p=>!seen.has(p.type)&&seen.add(p.type)).map(p=>[p.hot.id,TYPES[p.type].count>1?`${TYPES[p.type].name} (×${TYPES[p.type].count})`:TYPES[p.type].name]);
     body=`<div><h3 class="sec">Parts</h3><div class="row">${items.map(([id,nm])=>`<button class="btn sm" data-act="focus" data-h="${id}">${esc(nm)}</button>`).join('')}</div></div>
-      <div><h3 class="sec">Motor layout</h3><div class="layout">${layoutSVG(true)}<p>Diagonal motors spin the same way. Two spin clockwise and two counter-clockwise, so their twisting forces cancel out in a hover. ${propsNote()}</p></div></div>
+      <div><h3 class="sec">Motor layout</h3><div class="layout">${layoutSVG(true)}<p>Diagonal motors spin the same way. Two spin clockwise (CW) and two counter-clockwise (CCW). Their twisting forces cancel, so the drone does not spin in a hover. ${propsNote()}</p></div></div>
       <p class="note">Use <b>Exploded view</b> under the 3D view to pull the parts apart, and <b>Labels</b> to name every part.</p>`;
     foot=`<button class="btn" data-act="exploreMoves">Drone movements</button><button class="btn primary" data-act="exploreFly">Fly it: flight physics</button>`;
   } else {
@@ -74,7 +74,7 @@ export function renderPanel(){
     const labels={frame:'Next: components',mount:'Next: wiring',wire:'Next: power-up',power:'Next: propellers',props:'Next: flight',fly:'Next: knowledge check',quiz:'See my report'};
     foot=`${learn&&k!=='quiz'?`<button class="btn ghost" data-act="show">${k==='fly'?'Play demo':'Show me'}</button>`:''}<button class="btn primary" data-act="next" ${ready(k)?'':'disabled'}>${labels[k]} →</button>`;
   }
-  if(S.explore&&k==='fly'){ head=`<div class="eyebrow">Explore</div><h2>Flight physics</h2><p>Fly the finished drone and watch how motor speeds create every movement.</p>`; body=renderFly(true); foot=`<button class="btn ghost" data-act="exploreBack">← Back to ${S.backView==='fault'?'fault finding':'parts'}</button><button class="btn primary" data-act="tour">Play demo</button>`; }
+  if(S.explore&&k==='fly'){ head=`<div class="eyebrow">Explore</div><h2>Flight physics</h2><p>Fly the finished drone. Watch how the four motor speeds create every movement.</p>`; body=renderFly(true); foot=`<button class="btn ghost" data-act="exploreBack">← Back to ${S.backView==='fault'?'fault finding':'parts'}</button><button class="btn primary" data-act="tour">Play demo</button>`; }
   if(S.explore&&k==='moves') ({head,body,foot}=renderMoves());
   if(S.explore&&k==='fault') ({head,body,foot}=renderFaults());
   panel.innerHTML=`<div class="p-head">${head}</div><div class="p-body">${body}</div><div class="p-foot">${foot}</div>`;
@@ -98,7 +98,7 @@ export function renderFrame(learn){
   return `<div><h3 class="sec">Frame parts <span style="float:right;font-family:var(--f-mono);font-weight:400;letter-spacing:0">${placed}/${total} fitted</span></h3>${tray(keys)}</div>
     <div><h3 class="sec">Fastener bin <span style="float:right;font-family:var(--f-mono);font-weight:400;letter-spacing:0">${sd} tight</span></h3>${screwBin('frame',learn)}</div>
     ${checks}
-    <p class="note">Start with the <b>bottom plate</b>; everything else attaches to it. To fasten a part, pick a screw from the bin, then click a small ring on the part, or drag the screw onto it. ${learn?'Rings that take the screw you hold turn <b>green</b>.':'Assessment: a wrong screw size costs points.'}</p>`;
+    <p class="note">Start with the <b>bottom plate</b>. Everything else attaches to it. To fasten a part, pick a screw from the fastener bin. Then click a small ring on the part, or drag the screw onto it. ${learn?'Rings that take the screw you hold turn <b>green</b>.':'Assessment: a wrong screw costs points.'} <b>M3 × 10</b> means a screw 3 mm thick and 10 mm long.</p>`;
 }
 export function renderMount(learn){
   const keys=CINE?['motor','esc','fc','camera','camMount','vtx','rx','gpsMount','gps','cap','lead','led','actionCam']:['motor','esc','fc','camera','camMount','vtx','rx','gpsMount','gps','cap','lead'];
@@ -112,7 +112,7 @@ export function renderMount(learn){
   return `<div><h3 class="sec">Parts tray <span style="float:right;font-family:var(--f-mono);font-weight:400;letter-spacing:0">${placed}/${total} fitted</span></h3>${tray(keys)}</div>
     <div><h3 class="sec">Fastener bin</h3>${screwBin('mount',learn)}</div>
     ${checks}
-    <p class="note">Motor screws go in from <b>under the arm</b>: orbit below the frame to watch them. ${learn?'While you hold a part, <b>green rings</b> show where it can go. ':'Assessment: no hints. Each wrong placement or screw costs points. '}Drag a fitted part to take it off again. <b>Click the flight controller</b> to rotate it 90°. The ESC must be in place before the flight controller.</p>`;
+    <p class="note">Motor screws go in from <b>under the arm</b>. Orbit below the frame to watch them. ${learn?'While you hold a part, <b>green rings</b> show where it can go. ':'Assessment: no hints. Each wrong place or screw costs points. '}To remove a fitted part, drag it off. Fit the ESC first: the flight controller sits on top of it. <b>Click the flight controller</b> to turn it 90°. Its arrow must point to the front, or the drone flips at take-off.</p>`;
 }
 export const WGROUPS=CINE?[['lead','Battery lead'],['cap','Capacitor'],['motors','Motors'],['esc','ESC harness'],['rx','Radio receiver'],['gps','GPS module'],['vtx','Digital VTX'],['led','LED strip']]
   :[['lead','Battery lead'],['cap','Capacitor'],['motors','Motors'],['esc','ESC harness'],['rx','Radio receiver'],['gps','GPS module'],['cam','FPV camera'],['vtx','Video transmitter']];
@@ -124,10 +124,10 @@ export function renderWire(learn){
     const rows=list.map(p=>`<div class="wrow ${p.wired?'ok':''}"><span class="dot" style="background:${hex(wireColor(p.need,p.label))}"></span><span>${esc(p.label)}${g==='motors'?` · ${CORNER[+p.hotId.slice(3)]}`:''} → ${learn?esc(NETSHORT[p.need]):'?'}</span><span class="st">${p.wired?'soldered':''}</span></div>`).join('');
     return `<div class="wgroup"><header class="${d===list.length?'done':''}">${nm}<span class="r">${d}/${list.length}</span></header><div class="wrows">${rows}</div></div>`;
   }).join('');
-  return `<p class="note"><b>${done} of ${all.length}</b> wires soldered. Drag each coloured wire end on the <b>wiring diagram</b> onto its pad. A wrong pad shows <b style="color:var(--bad)">✕ WRONG</b> and the wire is not soldered. Switch to <b>3D view</b> (button under the diagram) to wire on the model instead; both stay in sync.</p>
+  return `<p class="note"><b>${done} of ${all.length}</b> wires soldered. On the <b>wiring diagram</b>, drag each coloured wire end onto its pad. A wrong pad shows <b style="color:var(--bad)">✕ WRONG</b> and the wire is not soldered. To wire on the 3D model instead, press <b>3D view</b> under the diagram. Both views stay in sync.</p>
     <div class="legend"><span><i style="background:#d8453b"></i>Power</span><span><i style="background:#2b2f35;outline:1px solid #556"></i>Ground</span>${CINE?'<span><i style="background:#4fb06d"></i>LED data</span>':'<span><i style="background:#e8c33c"></i>Video</span>'}<span><i style="background:#3d9be0"></i>TX</span><span><i style="background:#eee"></i>RX</span><span><i style="background:#8a939c"></i>Motor phases</span></div>
     ${groups}
-    <p class="note">${learn?'When you pick up a wire, the matching pads turn <b>green</b>. Serial wires cross over: TX goes to R, RX goes to T.':'Assessment: no hints. A wrong connection costs points and is not soldered.'}</p>`;
+    <p class="note">${learn?'When you pick up a wire, the matching pads turn <b>green</b>. Serial wires cross over: the TX (transmit) wire goes to an R (receive) pad, and the RX wire goes to a T pad.':'Assessment: no hints. A wrong connection costs points and is not soldered.'}</p>`;
 }
 export function renderPower(learn){
   const st=strapped(), t=S.test, bat=!!parts.bat, can=st&&t.safety&&!t.confirmed;   // no battery, no power to the motors
@@ -136,21 +136,21 @@ export function renderPower(learn){
     return `<div class="mrow"><span class="mid">M${n}</span><span class="mc">${CORNER[n]}${seen}</span><button class="btn sm" data-act="spin" data-m="${n}" ${can?'':'disabled'}>${sp?'Stop':'Spin'}</button><button class="btn sm ghost" data-act="swap" data-m="${n}" ${can?'':'disabled'}>Swap 2 wires</button></div>`; }).join('');
   return `<ol class="tasks">
     <li class="${bat?'ok':''}"><b>Fit the battery.</b> Drag it onto the rubber pad on the top plate. Its cable plugs into the battery lead at the rear.${bat?'':tray(['battery'])}</li>
-    <li class="${st?'ok':''} ${bat?'':'locked'}"><b>Strap it down.</b> Drag both straps over the battery. Each one passes through a pair of slots in the top plate; the red rubber side grips the battery.${bat&&!st?tray(['strap']):''}</li>
-    <li class="${t.safety?'ok':''} ${st?'':'locked'}"><label class="check"><input type="checkbox" id="safeChk" ${t.safety?'checked':''} ${st&&!t.confirmed?'':'disabled'}><span><b>Safety check.</b> The propellers are off. Never power-test motors with props fitted.</span></label></li>
-    <li class="${t.confirmed?'ok':''} ${t.safety?'':'locked'}"><b>Test each motor.</b> Spin it and watch the arrow over the motor. If it turns the wrong way, swap two of its three wires.
+    <li class="${st?'ok':''} ${bat?'':'locked'}"><b>Strap it down.</b> Drag both battery straps over the battery. Each strap passes through a pair of slots in the top plate. A loose battery can fly off and rip out the power cable.${bat&&!st?tray(['strap']):''}</li>
+    <li class="${t.safety?'ok':''} ${st?'':'locked'}"><label class="check"><input type="checkbox" id="safeChk" ${t.safety?'checked':''} ${st&&!t.confirmed?'':'disabled'}><span><b>Safety check.</b> The propellers are off. Never test motors with propellers fitted: a spinning blade can cut you badly.</span></label></li>
+    <li class="${t.confirmed?'ok':''} ${t.safety?'':'locked'}"><b>Test each motor.</b> Spin it and watch the arrow over the motor. If it turns the wrong way, swap any two of its three wires.
       <div class="mtable">${rows}</div>
       <div class="row" style="margin-top:10px"><button class="btn sm" data-act="spinAll" ${can?'':'disabled'}>${[1,2,3,4].some(n=>S.spin[n]!==0)?'Stop all':'Spin all'}</button><button class="btn sm primary" data-act="confirm" ${can?'':'disabled'}>Directions are correct</button></div>
     </li></ol>
-    <div class="layout">${layoutSVG(true)}<p>Required layout, seen from above. Diagonal pairs turn the same way, so the two pairs’ twisting forces cancel. ${propsNote()}</p></div>`;
+    <div class="layout">${layoutSVG(true)}<p>Required layout, seen from above. Diagonal motors turn the same way, so the twisting forces of the two pairs cancel. ${propsNote()}</p></div>`;
 }
 export function renderProps(learn){
   return `<div><h3 class="sec">Propellers</h3>${tray(['propCW','propCCW'],{propCW:'turns clockwise',propCCW:'turns counter-clockwise'})}</div>
-    ${learn?`<div class="layout">${layoutSVG(true)}<p>Match each prop to its motor. A CW prop on a CW motor pushes air down; on the wrong motor it pushes air up.</p></div>`:'<p class="note">Assessment: use the motor directions you confirmed in the test. Each wrong propeller costs points.</p>'}
-    <p class="note">The two props are mirror images. Look at the blade shape: the raised leading edge cuts into the air first.</p>`;
+    ${learn?`<div class="layout">${layoutSVG(true)}<p>Match each propeller to its motor. A CW propeller on a CW motor pushes air down. On the wrong motor it pushes air up, and the drone flips.</p></div>`:'<p class="note">Assessment: use the motor directions you checked in the motor test. Each wrong propeller costs points.</p>'}
+    <p class="note">The CW and CCW propellers are mirror images. Look at the blade shape: the raised leading edge cuts into the air first.</p>`;
 }
 export function renderFly(learn){
-  const f=FL, cur=f.cur&&MANS[f.cur]?MANS[f.cur]:{t:'Ready on the mat',d:'Press Take off. Then try each movement and watch the thrust arrows and motor bars.',dof:null};
+  const f=FL, cur=f.cur&&MANS[f.cur]?MANS[f.cur]:{t:'Ready on the mat',d:'Press Take off. Then try each movement. Watch the thrust arrows and the motor bars.',dof:null};
   const B=(m,l,dis)=>`<button class="btn" data-act="man" data-m="${m}" ${dis?'disabled':''}>${l}</button>`;
   const air=airborne();
   const dofRows=[['heave','Heave','Up and down','All four motors together'],['surge','Surge','Forward and back','Pitch first, then tilted thrust'],['sway','Sway','Left and right','Roll first, then tilted thrust'],['roll','Roll','Bank left/right','Left pair vs right pair'],['pitch','Pitch','Nose up/down','Front pair vs rear pair'],['yaw','Yaw','Turn left/right','CW pair vs CCW pair']];
@@ -172,24 +172,24 @@ export function renderFly(learn){
 }
 /* what the arrows mean; shared with the Movements activity */
 export function forceKey(){
-  return `<div class="fkey"><span><i style="background:var(--accent)"></i>Thrust: one arrow per motor, and the total</span><span><i style="background:var(--cool)"></i>Weight</span><span><i style="background:var(--ok)"></i>Net force: what speeds the drone up or slows it</span>
-    <p>All drawn to one scale: in a hover each motor arrow is a quarter of the weight, and the four add up to the total thrust. Tilt the drone and the total thrust leans with it, so the net force points sideways.</p></div>`;
+  return `<div class="fkey"><span><i style="background:var(--accent)"></i>Thrust: one arrow per motor, and the total</span><span><i style="background:var(--cool)"></i>Weight</span><span><i style="background:var(--ok)"></i>Net force: what speeds the drone up or slows it down</span>
+    <p>All arrows use one scale. In a hover each motor arrow is a quarter of the weight, and the four add up to the total thrust. When the drone tilts, the total thrust tilts too, so the net force points sideways.</p></div>`;
 }
 export const QUIZ=[
-  {q:'The arrow printed on the flight controller must point…',o:['Toward the battery strap','Toward the front of the frame','Toward motor 1','It does not matter'],a:1,why:'The board’s gyro and accelerometer define which way is forward. If the arrow points elsewhere, the controller corrects tilt in the wrong direction and the drone flips on take-off.'},
-  {q:'The GPS module’s TX wire is soldered to…',o:['The FC’s T3 pad','The FC’s 5V pad','The FC’s R3 pad','The ESC harness'],a:2,why:'Serial lines cross over: what one side transmits (TX), the other side must receive (RX).'},
-  {q:'During the motor test one motor spins the wrong way. The hardware fix is to…',o:['Swap any two of its three wires','Swap all three wires around','Fit the opposite propeller','Reverse the battery plug'],a:0,why:'A brushless motor’s direction depends on the order of its three phases. Exchanging any two of them reverses it.'},
-  {q:'The capacitor across the ESC battery pads is there to…',o:['Extend the flight time','Convert 16 V down to 5 V','Absorb voltage spikes and electrical noise','Measure battery current'],a:2,why:'Fast motor switching creates voltage spikes on the battery lines. The capacitor absorbs them, protecting the ESC and cleaning up the video.'},
-  {q:'To turn the nose to the right (clockwise seen from above), the controller…',o:['Speeds up the front motors',`Speeds up the counter-clockwise motors (${motorsTurning('CCW')})`,`Speeds up the clockwise motors (${motorsTurning('CW')})`,'Tilts the whole drone right'],a:1,why:'Each prop twists the frame opposite to its spin. Faster counter-clockwise props twist the frame clockwise, so the nose turns right while total lift stays the same.'},
-  {q:'To fly forward, which motors speed up?',o:['The rear motors','The front motors','The left motors','All four equally'],a:0,why:'Faster rear motors lift the tail, the nose dips, and the tilted thrust pushes the drone forward.'},
-  {q:'Why are the motor screws kept short (M3 × 6)?',o:['Short screws are lighter','A long screw can reach the motor windings and short the motor','Long screws strip the carbon arm','Short screws are easier to buy'],a:1,why:'The mounting holes go straight into the motor base, just below the copper windings. A screw that is too long scrapes the enamel and shorts the motor.'},
-  {q:'Why are the propellers fitted last?',o:['They are the lightest part','So the motors can be powered and tested without spinning blades','They balance the battery','The ESC needs them to start'],a:1,why:'A spinning prop can cause serious cuts. Motor direction is always checked with the props off.'},
+  {q:'The arrow printed on the flight controller must point…',o:['Toward the battery strap','Toward the front of the frame','Toward motor 1','It does not matter'],a:1,why:'The FC’s gyro and accelerometer decide which way is forward. If the arrow points elsewhere, the FC corrects tilt in the wrong direction and the drone flips at take-off.'},
+  {q:'The GPS module’s TX wire is soldered to…',o:['The FC’s T3 pad','The FC’s 5V pad','The FC’s R3 pad','The ESC harness'],a:2,why:'Serial wires cross over. What one side transmits (TX), the other side must receive (RX). So the GPS TX goes to the FC receive pad, R3.'},
+  {q:'During the motor test one motor spins the wrong way. The hardware fix is to…',o:['Swap any two of its three wires','Swap all three wires around','Fit the opposite propeller','Reverse the battery plug'],a:0,why:'A brushless motor’s direction depends on the order of its three phase wires. Swapping any two of them reverses the motor.'},
+  {q:'The capacitor across the ESC battery pads is there to…',o:['Extend the flight time','Convert 16 V down to 5 V','Absorb voltage spikes and electrical noise','Measure battery current'],a:2,why:'Fast motor switching makes voltage spikes on the battery wires. The capacitor absorbs them. This protects the ESC and cleans up the video.'},
+  {q:'To turn the nose to the right (clockwise seen from above), the controller…',o:['Speeds up the front motors',`Speeds up the counter-clockwise motors (${motorsTurning('CCW')})`,`Speeds up the clockwise motors (${motorsTurning('CW')})`,'Tilts the whole drone right'],a:1,why:'Each propeller twists the frame the opposite way to its spin. Faster counter-clockwise propellers twist the frame clockwise. The nose turns right, and total lift stays the same.'},
+  {q:'To fly forward, which motors speed up?',o:['The rear motors','The front motors','The left motors','All four equally'],a:0,why:'Faster rear motors lift the tail, so the nose dips. The tilted thrust then pushes the drone forward.'},
+  {q:'Why are the motor screws kept short (M3 × 6)?',o:['Short screws are lighter','A long screw can reach the motor windings and short the motor','Long screws strip the carbon arm','Short screws are easier to buy'],a:1,why:'The mounting holes go into the motor base, just below the copper windings. A screw that is too long scrapes the insulation off the windings and short-circuits the motor.'},
+  {q:'Why are the propellers fitted last?',o:['They are the lightest part','So the motors can be powered and tested without spinning blades','They balance the battery','The ESC needs them to start'],a:1,why:'A spinning propeller can cause serious cuts. So motor direction is always checked with the propellers off.'},
 ];
 /* model 2 adds questions on what makes it a cinematic drone */
 if(CINE) QUIZ.push(
-  {q:'Why are the front arms of this frame swept out to the sides (a “deadcat” layout)?',o:['To make the drone faster','So the front propellers stay out of the camera picture','To fit a bigger battery','So the drone can only fly forward'],a:1,why:'With the front motors moved out to the sides, the spinning propellers no longer appear at the top corners of the camera view, so the footage is clean.'},
-  {q:'Where does the HD camera’s video signal go?',o:['To the CAM pad on the flight controller','Through the coax cable to the digital VTX','To the ESC','Straight to the action camera'],a:1,why:'A digital system sends the camera picture over a thin coax cable straight to the VTX. The flight controller only talks to the VTX over UART 2 for the on-screen data.'},
-  {q:'The action camera sits in a soft TPU mount because…',o:['TPU is lighter than carbon','It soaks up motor vibration so the footage is smooth','It charges the camera','It keeps the camera cool'],a:1,why:'Vibration from the motors and props makes wobbly “jello” in the footage. A soft TPU mount damps it before it reaches the camera.'},
+  {q:'Why are the front arms of this frame swept out to the sides (a “deadcat” layout)?',o:['To make the drone faster','So the front propellers stay out of the camera picture','To fit a bigger battery','So the drone can only fly forward'],a:1,why:'The front motors sit out to the sides. The spinning propellers no longer show in the top corners of the camera picture, so the footage is clean.'},
+  {q:'Where does the HD camera’s video signal go?',o:['To the CAM pad on the flight controller','Through the coax cable to the digital VTX','To the ESC','Straight to the action camera'],a:1,why:'In a digital system the camera picture goes over a thin coax cable straight to the VTX. The flight controller only talks to the VTX over UART 2, to show flight data on screen.'},
+  {q:'The action camera sits in a soft TPU mount because…',o:['TPU is lighter than carbon','It soaks up motor vibration so the footage is smooth','It charges the camera','It keeps the camera cool'],a:1,why:'Vibration from the motors and propellers makes wobbly “jello” in the footage. A soft TPU mount absorbs it before it reaches the camera.'},
 );
 export function renderQuiz(){
   const d=S.quizDone;

@@ -84,7 +84,7 @@ export function autoProps(anim){ [1,2,3,4].forEach((n,i)=>{ const h=HOTMAP['prop
 export const ACT={
   next(){
     const k=stageKey(); if(!ready(k)) return;
-    if(k==='mount'&&S.fcRot!==0){ mistake('mount',4,'The flight controller arrow was not pointing to the front. The board would read every tilt in the wrong direction and the drone would flip on take-off. It has been turned for you.','Flight controller orientation was wrong.'); setFCRot(0); }
+    if(k==='mount'&&S.fcRot!==0){ mistake('mount',4,'The flight controller arrow did not point to the front. The FC would read every tilt in the wrong direction, and the drone would flip at take-off. It has been turned for you.','The flight controller arrow did not point to the front.'); setFCRot(0); }
     if(k==='quiz') return showReport();
     gotoStage(S.stage+1);
   },
@@ -92,12 +92,12 @@ export const ACT={
   spin(b){ const n=+b.dataset.m; setTestSpin(n,S.spin[n]===0); renderPanel(); },
   spinAll(){ const any=[1,2,3,4].some(n=>S.spin[n]!==0); [1,2,3,4].forEach(n=>setTestSpin(n,!any)); renderPanel(); },
   swap(b){ const n=+b.dataset.m; const wasRight=dirActual(n)===EXP[n]; S.test.swapped[n]=!S.test.swapped[n];
-    if(wasRight) mistake('test',4,`Motor ${n} already spun ${EXP[n]}, the correct way. Swapping two of its wires reversed it. Only swap a motor that turns the wrong way.`,`Motor ${n} was already correct.`);
-    else toast(`Two phase wires swapped on motor ${n}. Spin it again to check.`,'ok');
+    if(wasRight) mistake('test',4,`Motor ${n} already spun ${EXP[n]}, which is correct. Swapping two of its wires reversed it. Only swap the wires of a motor that turns the wrong way.`,`Motor ${n} was already correct.`);
+    else toast(`Two phase wires swapped on motor ${n}. Spin it again to check the direction.`,'ok');
     if(S.spin[n]!==0) setTestSpin(n,true); renderPanel(); },
   confirm(){ const bad=[1,2,3,4].filter(n=>dirActual(n)!==EXP[n]);
-    if(bad.length){ mistake('test',4,`Motor ${bad.join(', ')} still spins the wrong way. Compare each motor with the layout: diagonal motors turn the same way.`,'At least one motor still spins the wrong way.'); return; }
-    stopAllSpin(); S.test.confirmed=true; toast('All four motors spin the correct way. Ready for propellers.','ok'); renderPanel(); },
+    if(bad.length){ mistake('test',4,`${bad.length>1?'Motors':'Motor'} ${bad.join(', ')} still ${bad.length>1?'spin':'spins'} the wrong way. Compare each motor with the layout diagram. Diagonal motors turn the same way.`,'At least one motor still spins the wrong way.'); return; }
+    stopAllSpin(); S.test.confirmed=true; toast('All four motors spin the right way. You can now fit the propellers.','ok'); renderPanel(); },
   man(b){ FL.tour=null; doMan(b.dataset.m); },
   tour(){ if(!airborne()) doMan('takeoff'); FL.tour={i:0,t:0}; },
   quizSubmit(){ if(Object.keys(S.quizAns).length<QUIZ.length){ toast(`Answer all ${QUIZ.length} questions first.`); return; }

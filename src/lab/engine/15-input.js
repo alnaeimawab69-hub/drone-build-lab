@@ -1,6 +1,6 @@
 /* Drone Build Lab · Mouse/touch input: dragging parts, wires and screws */
 import * as THREE from 'three';
-import { $, CORNER, EXP, V } from './01-config.js';
+import { $, CORNER, EXP, V, lc } from './01-config.js';
 import { canvas, canvasHooks, controls } from './02-scene.js';
 import { M } from './04-materials.js';
 import { PROXY_MAT } from './05-geometry.js';
@@ -30,7 +30,7 @@ export function onCanvasDown(e){
 canvasHooks.down=onCanvasDown;
 window.addEventListener('pointermove',e=>{
   if(S.pendingHole){ if(Math.hypot(e.clientX-S.pendingHole.x,e.clientY-S.pendingHole.y)>6) S.pendingHole=null; return; }
-  if(S.pending){ if(Math.hypot(e.clientX-S.pending.x,e.clientY-S.pending.y)>6){ const id=S.pending.id; S.pending=null; const dep=dependents(id); if(dep.length){ toast(`Take off the ${TYPES[parts[dep[0]].type].name.toLowerCase()} first. It is fitted to this part.`); return; } if(HOTMAP[id].stage==='power') stopAllSpin(); const g=unplace(id); beginPartDrag(g.userData.typeKey,g,e); } return; }
+  if(S.pending){ if(Math.hypot(e.clientX-S.pending.x,e.clientY-S.pending.y)>6){ const id=S.pending.id; S.pending=null; const dep=dependents(id); if(dep.length){ toast(`Remove the ${lc(TYPES[parts[dep[0]].type].name)} first. It is fitted to this part.`); return; } if(HOTMAP[id].stage==='power') stopAllSpin(); const g=unplace(id); beginPartDrag(g.userData.typeKey,g,e); } return; }
   if(S.drag&&S.drag.kind==='part') movePartDrag(e);
   else if(S.drag&&S.drag.kind==='wire') moveWireDrag(e);
   else if(S.drag&&S.drag.kind==='screw') moveScrewDrag(e);
@@ -80,21 +80,21 @@ export function endPartDrag(e,cancel){
   if(cancel||!h){ removeGroup(g); }
   else if(!accepts(h,t)){
     removeGroup(g);
-    const sec=secOf(); const other=h.type==='prop'?'a propeller':'the '+TYPES[h.type].name.toLowerCase();
-    mistake(sec,2,`That spot is for ${other}. The ${nm.toLowerCase()} goes ${TYPES[t].where}.`,`Wrong place for the ${nm.toLowerCase()}.`);
+    const sec=secOf(); const other=h.type==='prop'?'a propeller':'the '+lc(TYPES[h.type].name);
+    mistake(sec,2,`That spot is for ${other}. The ${lc(nm)} goes ${TYPES[t].where}.`,`Wrong place for the ${lc(nm)}.`);
   } else if(h.type==='prop'&&propDir(t)!==EXP[h.motor]){
     removeGroup(g);
-    mistake('props',3,`Motor ${h.motor} (${CORNER[h.motor]}) spins ${EXP[h.motor]}, so it needs a ${EXP[h.motor]} propeller. A mismatched prop pushes air upward and the drone flips on take-off.`,`That propeller does not match this motor.`);
+    mistake('props',3,`Motor ${h.motor} (${CORNER[h.motor]}) spins ${EXP[h.motor]}, so it needs a ${EXP[h.motor]} propeller. The wrong propeller pushes air up, and the drone flips at take-off.`,`That propeller does not match this motor.`);
   } else {
     place(h,g,{animate:true});
-    if(h.type==='fc'){ toast(learn?'Flight controller fitted. Check the arrow: click the board to turn it until the arrow points to the front.':'Flight controller fitted.','ok'); }
+    if(h.type==='fc'){ toast(learn?'Flight controller fitted. Now click the board to turn it until the arrow points to the front.':'Flight controller fitted.','ok'); }
     else toast(`${nm} fitted${h.motor&&h.type==='motor'?' to arm '+h.motor:''}.`,'ok');
   }
   updateMarkers(); controls.enabled=true; renderPanel();
 }
 export function clickPart(id){
   const p=parts[id]; if(!p) return;
-  if(p.type==='fc'&&stageKey()==='mount'){ setFCRot((S.fcRot+1)%4); if(S.mode==='learn'&&S.fcRot===0) toast('Arrow points to the front. Correct orientation.','ok'); renderPanel(); return; }
+  if(p.type==='fc'&&stageKey()==='mount'){ setFCRot((S.fcRot+1)%4); if(S.mode==='learn'&&S.fcRot===0) toast('The arrow points to the front. The flight controller is the right way round.','ok'); renderPanel(); return; }
   showInfo(p.type);
 }
 export function infoClick(){
@@ -131,11 +131,11 @@ export function endWireDrag(e,cancel){
   if(!cancel&&d.hover){
     let src=PADS[d.from], tgt=PADS[d.hover];
     if(!src.need&&tgt.need) [src,tgt]=[tgt,src];
-    if(src.need&&tgt.need) toast('Both ends are wires. Solder a wire end to a pad on the ESC or flight controller.');
-    else if(!src.need&&!tgt.need) toast('Start from a wire end (the coloured dots and plugs), then drop it on a pad.');
+    if(src.need&&tgt.need) toast('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.');
+    else if(!src.need&&!tgt.need) toast('Start from a wire end (a coloured dot or plug). Then drop it on a pad.');
     else if(src.wired) toast('That wire is already soldered.');
     else if(tgt.net===src.need){ addWire(src.id,tgt.id); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); }
-    else mistake('wire',2,explainWire(src,tgt),'Incorrect connection. The wire was not soldered.');
+    else mistake('wire',2,explainWire(src,tgt),'Wrong pad. The wire was not soldered.');
   }
   controls.enabled=true; renderPanel();
 }

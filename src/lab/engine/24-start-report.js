@@ -21,13 +21,13 @@ export function showStart(){
   let name=''; try{ name=localStorage.getItem('dbl-name')||''; }catch(e){}
   const models=Object.values(MODELS).map(m=>`<button class="model ${m.key===MODEL.key?'on':''}" data-model="${m.key}" aria-pressed="${m.key===MODEL.key}">${modelIcon(m)}<span><em>Model ${m.no}${m.key===MODEL.key?' · selected':''}</em><b>${esc(m.title)}</b><small>${esc(m.blurb)}</small></span></button>`).join('');
   const sealed=!!MODEL.sealed, lock=sealed?'disabled title="This model is built from sealed modules. Try it in Explore or Movements."':'';
-  const props=[['in','Props in','Front props sweep in toward the camera. The usual default.'],['out','Props out','Every motor reversed: front props sweep out, away from the camera.']]
+  const props=[['in','Props in','Front propellers sweep in, toward the camera. The usual choice.'],['out','Props out','Every motor reversed. Front propellers sweep out, away from the camera.']]
     .map(([k,b,s])=>`<button class="pdir ${PROPS===k?'on':''}" data-props="${k}" aria-pressed="${PROPS===k}"><b>${b}</b><small>${s}</small></button>`).join('');
   $('#overlay').hidden=false;
   $('#overlay').innerHTML=`<div class="ov" role="dialog" aria-labelledby="ovT">
     <div class="eyebrow">Digital lab · Drone fundamentals</div>
     <h1 id="ovT">Drone Build Lab</h1>
-    <p class="lede">Build a quadcopter from zero: assemble the carbon frame screw by screw, mount every component, solder the wiring, test motor direction, fit the propellers, then fly it to see how thrust creates each movement.</p>
+    <p class="lede">Build a quadcopter from scratch. Screw the carbon frame together, mount each part, solder the wires and test the motors. Then fit the propellers and fly it to see how thrust makes each movement.</p>
     <div class="field"><label for="studentName">Your name</label><input id="studentName" autocomplete="name" value="${esc(name)}" placeholder="Shown on your report"></div>
     <h3 class="sec">1 · Choose a drone</h3>
     <div class="models">${models}</div>
@@ -35,14 +35,14 @@ export function showStart(){
     <div class="pdirs">${props}</div>
     <h3 class="sec">3 · Choose an activity</h3>
     <div class="modes">
-      <button class="mode learn" data-mode="learn" ${lock}><em>Guided</em><b>Practice</b><span>Hints show where parts and wires go. “Show me” completes any stage for you.</span></button>
-      <button class="mode assess" data-mode="assess" ${lock}><em>Scored</em><b>Assessment</b><span>No hints, timed. Mistakes cost points. Ends with a report you can copy.</span></button>
-      <button class="mode explore" data-mode="explore"><em>Free</em><b>Explore</b><span>Start with the finished drone. Pull it apart, read about each part, fly it.</span></button>
-      <button class="mode moves" data-mode="moves"><em>Flight trainer</em><b>Movements</b><span>Fly with a remote: on-screen sticks, the keyboard, or a USB radio or gamepad.</span></button>
-      <button class="mode fault" data-mode="fault"><em>Diagnose</em><b>Fault finding</b><span>A finished drone with hidden faults. Inspect it, bench-test the motors, report what is wrong.</span></button>
+      <button class="mode learn" data-mode="learn" ${lock}><em>Guided</em><b>Practice</b><span>Hints show where parts and wires go. “Show me” finishes any stage for you.</span></button>
+      <button class="mode assess" data-mode="assess" ${lock}><em>Scored</em><b>Assessment</b><span>No hints, and a timer. Mistakes cost points. You get a report to copy at the end.</span></button>
+      <button class="mode explore" data-mode="explore"><em>Free</em><b>Explore</b><span>Start with the finished drone. Take it apart, read about each part and fly it.</span></button>
+      <button class="mode moves" data-mode="moves"><em>Flight trainer</em><b>Movements</b><span>Learn the remote: on-screen sticks, the keyboard, or a USB radio or gamepad.</span></button>
+      <button class="mode fault" data-mode="fault"><em>Diagnose</em><b>Fault finding</b><span>A finished drone has hidden faults. Inspect it and test the motors. Then report what is wrong.</span></button>
     </div>
-    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so it has no build stages. Explore it part by part, fly it in Movements, or find the faults in Fault finding.</p>`:''}
-    <p class="small">Drag parts with a mouse or finger. Drag empty space to orbit, scroll or pinch to zoom.</p></div>`;
+    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so it has no build stages. Explore it part by part, fly it in Movements, or find its faults in Fault finding.</p>`:''}
+    <p class="small">Drag parts with a mouse or finger. Drag empty space to orbit. Scroll or pinch to zoom.</p></div>`;
   $('#overlay').querySelectorAll('.mode').forEach(b=>b.onclick=()=>start(b.dataset.mode));
   /* every module reads the model and the motor direction while it loads, so changing either reloads the page */
   const reload=(model,props)=>{
@@ -77,7 +77,7 @@ export function resultText(sc){
 export function showReport(){
   S.endT=S.endT||performance.now(); const sc=scores(); renderMeta();
   const bars=Object.keys(SEC).map(k=>{ const p=sc[k]/SEC[k]; return `<div class="rbar"><span>${SECNAME[k]}</span><div class="tr"><div class="fl ${p<.5?'low':p<.8?'mid':''}" style="width:${p*100}%"></div></div><span class="v">${sc[k]}/${SEC[k]}</span></div>`; }).join('');
-  const ml=S.mistakes.length?`<h3 class="sec">What to review</h3><ul class="mlist">${S.mistakes.map(m=>`<li><small>${SECNAME[m.sec]}</small>${esc(m.msg)}</li>`).join('')}</ul>`:'<p class="note" style="margin-bottom:20px">No mistakes recorded. Clean build.</p>';
+  const ml=S.mistakes.length?`<h3 class="sec">What to review</h3><ul class="mlist">${S.mistakes.map(m=>`<li><small>${SECNAME[m.sec]}</small>${esc(m.msg)}</li>`).join('')}</ul>`:'<p class="note" style="margin-bottom:20px">No mistakes recorded. A clean build.</p>';
   $('#overlay').hidden=false;
   $('#overlay').innerHTML=`<div class="ov" role="dialog" aria-labelledby="repT">
     <div class="eyebrow">${S.mode==='assess'?'Assessment report':'Practice report'} · ${esc(MODEL.title)}</div>

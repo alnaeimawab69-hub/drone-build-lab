@@ -24,15 +24,15 @@ export const MOVES={
     neg:{t:'Throttle down',d:'All four motors slow down together. Total thrust is now smaller than the weight, so the drone sinks.'}},
   yaw:{name:'Yaw',stick:'Left stick, left and right',short:'Left stick ↔',keys:'A / D',
     what:'Turns the nose left or right while the drone stays level, like shaking your head “no”.',
-    pos:{t:'Yaw right',d:`The counter-clockwise motors (${CCW}) speed up and the clockwise motors (${CW}) slow down. Each prop twists the frame the opposite way to its spin (watch the spin arrows), so the twists no longer cancel: the frame turns clockwise and the nose swings right. Total thrust stays the same, so the height does not change.`},
-    neg:{t:'Yaw left',d:`The clockwise motors (${CW}) speed up and the counter-clockwise motors (${CCW}) slow down, so the frame turns anticlockwise and the nose swings left.`}},
+    pos:{t:'Yaw right',d:`The counter-clockwise motors (${CCW}) speed up and the clockwise motors (${CW}) slow down. Each propeller twists the frame the opposite way to its spin (watch the spin arrows). The twists no longer cancel, so the frame turns clockwise and the nose swings right. Total thrust stays the same, so the height does not change.`},
+    neg:{t:'Yaw left',d:`The clockwise motors (${CW}) speed up and the counter-clockwise motors (${CCW}) slow down, so the frame turns counter-clockwise and the nose swings left.`}},
   pitch:{name:'Pitch',stick:'Right stick, up and down',short:'Right stick ↕',keys:'↑ / ↓',
     what:'Tilts the nose down or up, like nodding “yes”. Tilting forward makes the drone fly forward.',
-    pos:{t:'Pitch forward',d:'The rear motors (M1, M3) speed up and the front motors (M2, M4) slow down until the nose has dipped; then all four even out again. The tilted thrust now has a forward part that pushes the drone ahead, and the total grows a little so the height stays the same.'},
+    pos:{t:'Pitch forward',d:'The rear motors (M1, M3) speed up and the front motors (M2, M4) slow down until the nose has dipped. Then all four even out again. The tilted thrust now has a forward part that pushes the drone ahead. The total grows a little, so the height stays the same.'},
     neg:{t:'Pitch back',d:'The front motors (M2, M4) speed up and the rear motors (M1, M3) slow down until the nose has lifted. The tilted thrust then pushes the drone backward.'}},
   roll:{name:'Roll',stick:'Right stick, left and right',short:'Right stick ↔',keys:'← / →',
     what:'Tilts the drone to one side, like tilting your head towards your shoulder. The drone slides sideways that way.',
-    pos:{t:'Roll right',d:'The left motors (M3, M4) speed up and the right motors (M1, M2) slow down until the drone has banked right; then they even out. The tilted thrust slides the drone to the right.'},
+    pos:{t:'Roll right',d:'The left motors (M3, M4) speed up and the right motors (M1, M2) slow down until the drone has banked right. Then they even out. The tilted thrust slides the drone to the right.'},
     neg:{t:'Roll left',d:'The right motors (M1, M2) speed up and the left motors (M3, M4) slow down until the drone has banked left. It then slides to the left.'}},
 };
 const STICK_OF={thr:['L','y'],yaw:['L','x'],pitch:['R','y'],roll:['R','x']};
@@ -273,7 +273,7 @@ function padSetup(){
   const p=MV.pad, cfg=MV.padCfg, n=Math.max(4,p?p.axes:4);
   const rows=AXES.map(a=>`<label><span>${MOVES[a].name}</span><select data-ax="${a}">${Array.from({length:n},(_,i)=>`<option value="${i}" ${cfg.map[a][0]===i?'selected':''}>Axis ${i}</option>`).join('')}</select><span class="inv"><input type="checkbox" data-inv="${a}" ${cfg.map[a][1]?'checked':''}> invert</span></label>`).join('');
   return `<details class="padset" ${p&&!padSaved?'open':''}><summary>Controller setup</summary>
-    <p>Plug a radio transmitter in by USB (choose <b>Joystick</b> or <b>USB HID</b> on the radio) or connect a gamepad, then move a stick. Move each stick and check the channel on the remote’s screen moves the same way; if not, change the axis or tick invert.</p>
+    <p>Plug a radio transmitter in by USB (set the radio to <b>Joystick</b> or <b>USB HID</b>), or connect a gamepad. Move each stick. Check that its channel on the remote’s screen moves the same way. If not, change the axis or tick invert.</p>
     <label><span>Layout</span><select id="padPreset">${Object.entries(PAD_PRESETS).map(([k,v])=>`<option value="${k}" ${cfg.preset===k?'selected':''}>${v.name}</option>`).join('')}${cfg.preset==='custom'?'<option selected>Custom</option>':''}</select></label>
     ${rows}</details>`;
 }
@@ -304,7 +304,7 @@ export function renderMoves(){
         <div class="sticks">${stick('L','Throttle','Yaw')}${stick('R','Pitch','Roll')}</div>
         <div class="rm-src">${src}</div>
       </div>
-      <p class="note">Mode 2 transmitter, the most common layout. <b>Drag a stick</b>, use the keys, or plug in a <b>USB radio or gamepad</b>. The sticks spring back to the centre; in this trainer the centre of the throttle stick holds a hover.</p>
+      <p class="note">Mode 2 transmitter, the most common layout. <b>Drag a stick</b>, use the keys, or plug in a <b>USB radio or gamepad</b>. The sticks spring back to the centre. In this trainer, a centred throttle stick holds a hover.</p>
       ${padSetup()}
       ${quiz}
       <div class="hud"><div><small>Roll</small><span id="mvR">0°</span></div><div><small>Pitch</small><span id="mvP">0°</span></div><div><small>Heading</small><span id="mvY">0°</span></div><div><small>Height</small><span id="mvH">0 mm</span></div></div>

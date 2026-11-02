@@ -6,43 +6,43 @@ const TOC = [['outcomes', 'Learning outcomes'], ['session', 'Suggested session']
 const OUTCOMES = [
   'Name the parts of a quadcopter and explain what each one does.',
   'Assemble a frame in the correct order and choose the right fastener for each joint.',
-  'Orient the flight controller correctly and explain why the arrow must face forward.',
-  'Wire power, ground, serial (TX to RX) and video connections, observing polarity and voltage.',
-  'Check motor direction safely with the props off, and correct a reversed motor.',
-  'Match CW and CCW propellers to their motors.',
+  'Fit the flight controller (FC) the right way round and explain why its arrow must point forward.',
+  'Wire power, ground, serial (TX to RX) and video connections with the right polarity and voltage.',
+  'Check motor direction safely with the propellers off, and correct a reversed motor.',
+  'Match CW (clockwise) and CCW (counter-clockwise) propellers to their motors.',
   'Explain how changes in the four motor speeds produce heave, pitch, roll and yaw.',
-  'Inspect a finished drone systematically, diagnose faults from what they see and test, and explain what each fault would do in flight.',
+  'Inspect a finished drone step by step, find faults by looking and testing, and explain what each fault would do in flight.',
 ];
 
 /* the answer key for the Fault finding activity: [fault, models, how students find it, what it would do] */
 const FAULTS = [
-  ['Motor spins the wrong way (one motor)', 'All', 'Bench test with the props off; compare with the layout', 'No lift at that corner: flips on take-off'],
-  ['Wrong propeller, CW / CCW (one motor)', 'All', 'Compare blade shape (or the labels) with the layout', 'Prop pushes air up: flips on take-off'],
-  ['Propeller not tightened down (one motor)', 'All', 'Look at the props from the side: one sits high and tilted', 'Wobbles, shakes the drone, can fly off'],
-  ['Flight controller arrow not to the front', 'All', 'Exploded view or Top view; on model 3 lift the top shell', 'Corrects tilt the wrong way: flips'],
-  ['Motor screws missing (one motor)', '1, 2', 'Orbit under the arms and count four screws per motor', 'Motor loosens and can come off'],
-  ['Battery strap missing', '1, 2', 'Count the straps: one per pair of slots', 'Battery swings loose, can rip the power cable'],
-  ['Capacitor wired backwards', '1, 2', 'Wiring diagram: + leg on the − pad', 'Capacitor overheats and can burst'],
-  ['GPS TX and RX not crossed', '1, 2', 'Wiring diagram: TX on T3 instead of R3', 'No position: no position hold or return-to-home'],
-  ['Receiver TX and RX not crossed', '1, 2', 'Wiring diagram: TX on T1 instead of R1', 'No stick commands: will not arm or respond'],
-  ['A 5 V part on the 9 V pad', '1, 2', 'Wiring diagram: camera (model 1) or LED strip (model 2) on 9V', 'Overheats and can burn out'],
-  ['Smart battery not locked in', '3', 'Look at the battery bay from the side', 'No backup battery; vibration can unplug it'],
-  ['Gimbal camera not locked on', '3', 'Look under the nose', 'Can drop off; loses power and video'],
+  ['Motor spins the wrong way (one motor)', 'All', 'Bench test with the propellers off. Compare with the layout.', 'No lift at that corner: flips at take-off'],
+  ['Wrong propeller, CW / CCW (one motor)', 'All', 'Compare the blade shape (or the labels) with the layout.', 'Propeller pushes air up: flips at take-off'],
+  ['Propeller not tightened down (one motor)', 'All', 'Look at the propellers from the side. One sits high and tilted.', 'Wobbles, shakes the drone, can fly off'],
+  ['Flight controller arrow not to the front', 'All', 'Exploded view or Top view. On model 3, lift the top shell.', 'Corrects tilt the wrong way: flips'],
+  ['Motor screws missing (one motor)', '1, 2', 'Orbit under the arms. Count four screws per motor.', 'Motor loosens and can come off'],
+  ['Battery strap missing', '1, 2', 'Count the battery straps: one per pair of slots.', 'Battery swings loose and can rip out the power cable'],
+  ['Capacitor wired backwards', '1, 2', 'Wiring diagram: + leg on the − pad.', 'Capacitor overheats and can burst'],
+  ['GPS TX and RX not crossed', '1, 2', 'Wiring diagram: TX on T3 instead of R3.', 'No position, so no position hold or return-to-home'],
+  ['Radio receiver TX and RX not crossed', '1, 2', 'Wiring diagram: TX on T1 instead of R1.', 'No stick commands, so it will not arm or respond'],
+  ['A 5 V part on the 9 V pad', '1, 2', 'Wiring diagram: FPV camera (model 1) or LED strip (model 2) on 9V.', 'Overheats and can burn out'],
+  ['Smart battery not locked in', '3', 'Look at the battery bay from the side.', 'No backup battery, and vibration can unplug it'],
+  ['Gimbal camera not locked on', '3', 'Look under the nose.', 'Can drop off, and loses power and video'],
 ];
 
 const SCORING = [
   ['1 · Frame assembly', 15, 'Part in the wrong place (−2), wrong screw (−2)'],
   ['2 · Component mounting', 20, 'Wrong place (−2), wrong screw (−2), flight controller not facing forward when moving on (−4)'],
   ['3 · Wiring', 30, 'Each wire dropped on the wrong pad (−2)'],
-  ['4 · Power-up and motor test', 10, 'Swapping wires on a motor that was already correct (−4), confirming while a motor is still reversed (−4)'],
+  ['4 · Power-up and motor test', 10, 'Swapping wires on a motor that was already correct (−4), confirming while a motor still spins the wrong way (−4)'],
   ['5 · Propellers', 10, 'Wrong propeller on a motor (−3)'],
-  ['7 · Knowledge check', 15, 'Eight questions, points shared equally'],
+  ['7 · Knowledge check', 15, 'Eight questions (eleven on model 2), points shared equally'],
 ];
 
 const FASTENERS = [
   ['Arms to bottom plate', 'M3 × 10', 8, 'Must pass through the arm and the plate and still grip'],
-  ['Top plate to standoffs', 'M3 × 6', 6, 'A 10 mm screw bottoms out in the standoff before it clamps'],
-  ['Motors to arms (from below)', 'M3 × 6', 16, 'Longer screws touch the copper windings'],
+  ['Top plate to standoffs', 'M3 × 6', 6, 'A 10 mm screw hits the bottom of the standoff before it clamps'],
+  ['Motors to arms (from below)', 'M3 × 6', 16, 'A longer screw reaches the copper windings and shorts the motor'],
   ['Stack (on top of the flight controller)', 'M3 nylon nut', 4, 'Nylon does not conduct, so it cannot short the boards'],
   ['Camera to side plates', 'M2 × 5', 2, 'Camera mounting holes are M2'],
 ];
@@ -84,10 +84,10 @@ export default function Guide() {
             <h2>Suggested session (60–80 minutes)</h2>
             <ol>
               <li><b>Movements (10 min).</b> Before building, open the Movements activity. Students fly the drone with the remote (on-screen sticks, the keyboard, or a USB radio or gamepad), play each of throttle, yaw, pitch and roll, then take the eight-question stick quiz.</li>
-              <li><b>Explore (10 min).</b> Open the finished drone, use exploded view and the part labels, read three or four info cards.</li>
-              <li><b>Practice (30–40 min).</b> Full build with hints. Encourage students to read the explanation on each mistake rather than retrying blindly.</li>
-              <li><b>Assessment (20–30 min).</b> Fresh start, no hints, timed. Students copy the result from the report and paste it into their submission.</li>
-              <li><b>Fault finding (10–15 min, or as an extension).</b> Students diagnose a finished drone with hidden faults, then read why each one matters. Give the class one drone code so everyone gets the same faults and you can discuss them together.</li>
+              <li><b>Explore (10 min).</b> Open the finished drone. Use exploded view and the part labels. Read three or four info cards.</li>
+              <li><b>Practice (30–40 min).</b> Full build with hints. Ask students to read the explanation for each mistake, not just try again.</li>
+              <li><b>Assessment (20–30 min).</b> Fresh start, no hints, timed. Students copy the result from the report and paste it into their work.</li>
+              <li><b>Fault finding (10–15 min, or as an extension).</b> Students check a finished drone for hidden faults. Then they read why each fault matters for safety or flight. Give the class one drone code, so everyone gets the same faults and you can discuss them together.</li>
             </ol>
             <p>The flight stage is not scored. Use it to discuss Newton’s laws, torque and the six degrees of freedom.</p>
           </div>
@@ -120,7 +120,7 @@ export default function Guide() {
 
         <section className="band" id="wiring">
           <div className="wrap">
-            <div className="sec-head"><h2>Wiring reference</h2><p>23 wires. Any ground pad is accepted for a ground wire, because all grounds are connected on the board.</p></div>
+            <div className="sec-head"><h2>Wiring reference</h2><p>23 wires on model 1. Any ground (G) pad is accepted for a ground wire, because all grounds are connected on the board. FC = flight controller, ESC = electronic speed controller, VTX = video transmitter, UART = serial port.</p></div>
             <div className="table-wrap" role="region" aria-label="Wiring reference, model 1" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
@@ -135,7 +135,7 @@ export default function Guide() {
               </tbody>
             </table></div>
             <h3 className="sub-head">Model 2: CX-5 cinematic FPV (24 wires)</h3>
-            <p>Battery lead, capacitor, motors, ESC harness, receiver and GPS are wired as above. The analog camera and analog VTX are replaced by an HD camera and a digital VTX, and an LED strip is added. The HD camera has no wires to the flight controller: its coax cable goes straight to the digital VTX.</p>
+            <p>Battery lead, capacitor, motors, ESC harness, receiver and GPS are wired as above. The analogue FPV camera and video transmitter are replaced by an HD camera and a digital VTX, and an LED strip is added. The HD camera has no wires to the flight controller: its coax cable goes straight to the digital VTX.</p>
             <div className="table-wrap" role="region" aria-label="Wiring reference, model 2" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
@@ -148,7 +148,7 @@ export default function Guide() {
 
         <section id="motors">
           <div className="wrap">
-            <div className="sec-head"><h2>Motor layout</h2><p>Seen from above, front at the top. Diagonal motors turn the same way, so their twisting forces cancel in a hover. In each lab one motor starts reversed at random; students find it during the motor test.</p></div>
+            <div className="sec-head"><h2>Motor layout</h2><p>Seen from above, front at the top. Diagonal motors turn the same way, so their twisting forces cancel in a hover. In each lab, one motor chosen at random starts reversed. Students find it in the motor test.</p></div>
             <div className="table-wrap" role="region" aria-label="Motor layout" tabIndex={0}><table>
               <thead><tr><th>Motor</th><th>Corner</th><th>Spins</th><th>Propeller</th></tr></thead>
               <tbody>
@@ -161,7 +161,7 @@ export default function Guide() {
 
         <section className="band" id="faults">
           <div className="wrap">
-            <div className="sec-head"><h2>Fault finding</h2><p>Works with all three models and both motor directions. The finished drone comes with one to four hidden faults (three by default), never two on the same motor. Students inspect it, bench-test the motors with the props off and, on models 1 and 2, check the wiring diagram. Then they mark each fault they found, choosing the motor where it applies. After they submit, every fault is explained and can be repaired on the model, and the repaired drone can be flown.</p></div>
+            <div className="sec-head"><h2>Fault finding</h2><p>Works with all three models and both motor directions. The finished drone has one to four hidden faults (three by default), never two on the same motor. Students inspect it and bench-test the motors with the propellers off. On models 1 and 2 they also check the wiring diagram. Then they mark each fault they found, and the motor where it applies. After they submit, each fault is explained. Students can repair it on the model and fly the repaired drone.</p></div>
             <div className="table-wrap"><table>
               <thead><tr><th>Fault</th><th>Models</th><th>How students find it</th><th>What it would do</th></tr></thead>
               <tbody>
