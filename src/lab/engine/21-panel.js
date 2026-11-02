@@ -130,11 +130,10 @@ export function renderWire(learn){
     <p class="note">${learn?'When you pick up a wire, the matching pads turn <b>green</b>. Serial wires cross over: TX goes to R, RX goes to T.':'Assessment: no hints. A wrong connection costs points and is not soldered.'}</p>`;
 }
 export function renderPower(learn){
-  const t=S.test, bat=!!parts.bat, can=t.safety&&!t.confirmed;
+  const st=strapped(), t=S.test, bat=!!parts.bat, can=st&&t.safety&&!t.confirmed;   // no battery, no power to the motors
   const rows=[1,2,3,4].map(n=>{ const sp=S.spin[n]!==0, a=dirActual(n);
     const seen=sp&&learn?`<small class="${a===EXP[n]?'okc':'badc'}">turning ${a}${a===EXP[n]?'':' · wrong way'}</small>`:learn?`<small>should turn ${EXP[n]}</small>`:'';
     return `<div class="mrow"><span class="mid">M${n}</span><span class="mc">${CORNER[n]}${seen}</span><button class="btn sm" data-act="spin" data-m="${n}" ${can?'':'disabled'}>${sp?'Stop':'Spin'}</button><button class="btn sm ghost" data-act="swap" data-m="${n}" ${can?'':'disabled'}>Swap 2 wires</button></div>`; }).join('');
-  const st=strapped();
   return `<ol class="tasks">
     <li class="${bat?'ok':''}"><b>Fit the battery.</b> Drag it onto the rubber pad on the top plate. Its cable plugs into the battery lead at the rear.${bat?'':tray(['battery'])}</li>
     <li class="${st?'ok':''} ${bat?'':'locked'}"><b>Strap it down.</b> Drag both straps over the battery. Each one passes through a pair of slots in the top plate; the red rubber side grips the battery.${bat&&!st?tray(['strap']):''}</li>

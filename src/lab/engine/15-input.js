@@ -12,6 +12,7 @@ import { SCR, SCREWT, endScrewDrag, moveScrewDrag, pickHole, tryDrive } from './
 import { computeSnap, hotOf, insideCanvas, pickPad, pickPart, planePoint, ray, setNDC, updateMarkers } from './14-markers-picking.js';
 import { explainWire } from './16-wiring-diagram.js';
 import { mistake, secOf } from './17-scoring.js';
+import { stopAllSpin } from './18-motor-test.js';
 import { stageKey } from './20-stages.js';
 import { renderPanel } from './21-panel.js';
 import { showInfo } from './22-info-labels.js';
@@ -29,7 +30,7 @@ export function onCanvasDown(e){
 canvasHooks.down=onCanvasDown;
 window.addEventListener('pointermove',e=>{
   if(S.pendingHole){ if(Math.hypot(e.clientX-S.pendingHole.x,e.clientY-S.pendingHole.y)>6) S.pendingHole=null; return; }
-  if(S.pending){ if(Math.hypot(e.clientX-S.pending.x,e.clientY-S.pending.y)>6){ const id=S.pending.id; S.pending=null; const dep=dependents(id); if(dep.length){ toast(`Take off the ${TYPES[parts[dep[0]].type].name.toLowerCase()} first. It is fitted to this part.`); return; } const g=unplace(id); beginPartDrag(g.userData.typeKey,g,e); } return; }
+  if(S.pending){ if(Math.hypot(e.clientX-S.pending.x,e.clientY-S.pending.y)>6){ const id=S.pending.id; S.pending=null; const dep=dependents(id); if(dep.length){ toast(`Take off the ${TYPES[parts[dep[0]].type].name.toLowerCase()} first. It is fitted to this part.`); return; } if(HOTMAP[id].stage==='power') stopAllSpin(); const g=unplace(id); beginPartDrag(g.userData.typeKey,g,e); } return; }
   if(S.drag&&S.drag.kind==='part') movePartDrag(e);
   else if(S.drag&&S.drag.kind==='wire') moveWireDrag(e);
   else if(S.drag&&S.drag.kind==='screw') moveScrewDrag(e);
