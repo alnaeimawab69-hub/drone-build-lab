@@ -6,13 +6,13 @@ Three drone models, chosen on the start screen:
 
 - **Model 1 · LX-250 quadcopter** (default): 250 mm X frame, analog camera and VTX, 4S battery.
 - **Model 2 · CX-5 cinematic FPV**: 5-inch deadcat frame (front arms swept out of the camera view), aluminium camera cage, clear side panels with an LED strip, HD camera and digital VTX, action camera on a TPU mount, 2306 motors, 6S battery.
-- **Model 3 · EX-9 enterprise drone**: large industrial quad (895 mm wheelbase) with folding arms, dual hot-swap smart batteries, RTK module with two GNSS antennas, gimbal camera (zoom, wide, thermal, laser rangefinder), six-direction obstacle sensors, beacons and landing gear. It is built from sealed modules, so it is offered in Explore and Movements only. It is drawn at 30 % of real size.
+- **Model 3 · EX-9 enterprise drone**: large industrial quad (895 mm wheelbase) with folding arms, dual hot-swap smart batteries, RTK module with two GNSS antennas, gimbal camera (zoom, wide, thermal, laser rangefinder), six-direction obstacle sensors, beacons and landing gear. It is built from sealed modules, so it is offered in Explore, Movements and Fault finding only. It is drawn at 30 % of real size.
 
 Models 1 and 2 are built FPV style: yellow TPU arm guards, a TPU camera mount, a TPU GPS mount with a ceramic-patch GPS, and two battery straps on a rubber pad.
 
 The start screen also sets the **motor direction**: props in (default) or props out (every motor reversed).
 
-Four activities: Practice, Assessment, Explore, and **Movements**, a flight trainer where a drawn radio transmitter (Mode 2) flies the drone so students learn throttle, yaw, pitch and roll, with a stick quiz at the end. The sticks can be dragged, driven with the keyboard (W A S D and the arrow keys), or driven by a USB radio transmitter or gamepad (Gamepad API, with axis mapping under "Controller setup"). Every part is modelled in code. There are no imported 3D models and no brand names.
+Five activities: Practice, Assessment, Explore, **Fault finding** (a finished drone with hidden faults to diagnose; see below), and **Movements**, a flight trainer where a drawn radio transmitter (Mode 2) flies the drone so students learn throttle, yaw, pitch and roll, with a stick quiz at the end. The sticks can be dragged, driven with the keyboard (W A S D and the arrow keys), or driven by a USB radio transmitter or gamepad (Gamepad API, with axis mapping under "Controller setup"). Every part is modelled in code. There are no imported 3D models and no brand names.
 
 Built with React 19, Vite and Three.js 0.147.
 
@@ -87,7 +87,8 @@ DroneBuildLab/
         ├── 27-boot.js              start-up
         ├── 28-movements.js         Movements activity: remote, USB controller, axis rings, stick quiz
         ├── 29-enterprise.js        model 3: sealed-module parts, catalogue and mounting points
-        └── 30-lab-room.js          the studio around the drone: ESD mat on a seamless dark backdrop
+        ├── 30-lab-room.js          the studio around the drone: ESD mat on a seamless dark backdrop
+        └── 31-fault-finding.js     Fault finding activity: fault catalogue, drone codes, bench test, findings, results
 ```
 
 ## How the lab page works
@@ -119,7 +120,18 @@ Each engine module imports what it uses from the others and exports its top-leve
 - **Change scoring:** edit `SEC` in `07-catalogue.js` and the deductions passed to `mistake()`.
 - **Edit quiz questions:** `QUIZ` in `21-panel.js`.
 - **Edit the Movements activity:** `MOVES` (texts) and `stepMoves` (motion and motor mixing) in `28-movements.js`.
+- **Add a fault to Fault finding:** add an entry to `KINDS` in `31-fault-finding.js` with `label`, `find` (the hint), `why(n)`, `inject(n)` and `fix(n,anim)`. Use `per:true` for a fault on one motor, and `only:` to limit it to some models. Then add a row to `FAULTS` in `src/pages/Guide.jsx`.
 - **Edit the home or guide page:** `src/pages/Home.jsx` or `src/pages/Guide.jsx`.
+
+## Fault finding
+
+The activity starts from the finished drone (the same build as Explore), then injects 1 to 4 faults (3 by default) chosen from `KINDS` in `31-fault-finding.js`:
+
+- all models: a motor spinning the wrong way, a wrong (CW/CCW) prop, a prop that is not tightened down, the flight controller turned away from the front
+- models 1 and 2: missing motor screws, a missing battery strap, a capacitor wired backwards, GPS or receiver TX/RX not crossed, a 5 V part on the 9 V pad
+- model 3: a smart battery not locked in, the gimbal camera not locked on its mount
+
+Every fault is described against `EXP`, so props in and props out each get their own correct answers. A drone code such as `3-K7QX` (number of faults, then a seed) picks the faults with a seeded random generator, so a teacher can give a class the same drone. Students inspect the drone and bench-test the motors with the props off. On models 1 and 2 they also check the wiring diagram. Then they mark what they found. The score is out of 100: each fault found is worth an equal share, a false alarm costs 15 and a hint costs 10. The results explain every fault and can repair it on the model.
 
 ## Hosting
 
