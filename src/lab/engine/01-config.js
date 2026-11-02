@@ -8,6 +8,8 @@ export const ZERO=V();
 export const clamp=THREE.MathUtils.clamp;
 export const ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
 export const easeOut=k=>1-Math.pow(1-k,3);
+/* lower-case a part name inside a sentence ("Brushless motor" → "brushless motor") but keep abbreviations (ESC, FPV, LiPo, GPS) */
+export const lc=s=>/^[A-Z][a-z]+(?=[\s,]|$)/.test(s)?s[0].toLowerCase()+s.slice(1):s;
 export const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* ================= Drone models =================

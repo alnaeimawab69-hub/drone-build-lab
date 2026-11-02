@@ -1,5 +1,5 @@
 /* Drone Build Lab · 2D wiring diagram and wire validation */
-import { $, CINE, CORNER, EXP, MODEL, V, clamp, esc } from './01-config.js';
+import { $, CINE, CORNER, EXP, MODEL, V, clamp, esc, lc } from './01-config.js';
 import { hex, wireColor } from './04-materials.js';
 import { HARNESS_COLS, PHASE_COLS } from './05-geometry.js';
 import { HOTMAP, TYPES } from './07-catalogue.js';
@@ -136,24 +136,24 @@ $('#diagram').addEventListener('pointercancel',e=>dgEnd(e,true));
 
 export const NETNAME={'VBAT+':'battery + pad','VBAT-':'battery − pad','5V':'5 V supply','9V':'9 V supply','GND':'ground (G)','T1':'UART 1 transmit (T1)','R1':'UART 1 receive (R1)','T2':'UART 2 transmit (T2)','R2':'UART 2 receive (R2)','T3':'UART 3 transmit (T3)','R3':'UART 3 receive (R3)','LED':'LED data pad (LED)','CAM':'camera input (CAM)','VTX':'video output (VTX)','ESC':'ESC socket',M1:'motor output M1',M2:'motor output M2',M3:'motor output M3',M4:'motor output M4'};
 export function explainWire(src,tgt){
-  const need=src.need, got=tgt.net, owner=TYPES[HOTMAP[src.hotId].type].name;
+  const need=src.need, got=tgt.net, owner=lc(TYPES[HOTMAP[src.hotId].type].name);
   const pol=s=>s==='VBAT+'||s==='VBAT-';
-  if(pol(need)&&pol(got)) return `Reversed polarity. The ${owner.toLowerCase()} ${src.label} goes to the ${need==='VBAT+'?'+':'−'} pad. Reversing it can destroy the ESC${HOTMAP[src.hotId].type==='cap'?' and the capacitor (its striped leg is negative)':''} the moment the battery is plugged in.`;
-  if(pol(need)) return `The ${owner.toLowerCase()} carries full battery voltage. It belongs on the ESC battery pads, not the ${NETNAME[got]}.`;
-  if(need[0]==='M'&&got&&got[0]==='M') return `That is output ${got}. The motor on the ${CORNER[+need[1]]} arm must use ${need}, because the flight controller expects motor ${need[1]} in that corner.`;
+  if(pol(need)&&pol(got)) return `Reversed polarity. The ${owner} ${src.label} wire goes to the ${need==='VBAT+'?'+':'−'} pad. Reversed, it can destroy the ESC${HOTMAP[src.hotId].type==='cap'?' and the capacitor (its striped leg is −)':''} the moment the battery is plugged in.`;
+  if(pol(need)) return `The ${owner} carries full battery voltage. It belongs on the ESC battery pads, not the ${NETNAME[got]}.`;
+  if(need[0]==='M'&&got&&got[0]==='M') return `That is output ${got}. The motor on the ${CORNER[+need[1]]} arm must use ${need}. The flight controller expects motor ${need[1]} in that corner; otherwise it corrects with the wrong motor and the drone flips.`;
   if(/^[TR][123]$/.test(need)&&/^[TR][123]$/.test(got)){
-    if(need[1]!==got[1]) return `Wrong serial port. The ${owner.toLowerCase()} uses UART ${need[1]}; that pad belongs to UART ${got[1]}.`;
-    return 'TX and RX cross over: a transmit (TX) wire goes to a receive pad (R), and an RX wire goes to a transmit pad (T).';
+    if(need[1]!==got[1]) return `Wrong serial port (UART). The ${owner} uses UART ${need[1]}. That pad belongs to UART ${got[1]}.`;
+    return 'TX and RX cross over. A TX (transmit) wire goes to an R (receive) pad. An RX (receive) wire goes to a T (transmit) pad.';
   }
-  if(need==='5V'&&got==='9V') return `Too much voltage. The ${owner.toLowerCase()} runs on 5 V and the 9 V pad can burn it out.`;
-  if(need==='9V'&&got==='5V') return `The ${owner.toLowerCase()} is fed from the 9 V pad. 5 V is below its input range.`;
-  if(need==='LED') return 'The LED strip’s data wire (DIN) goes to the LED pad. That pad sends the colour signal; any other pad is power or a different signal.';
+  if(need==='5V'&&got==='9V') return `Too much voltage. The ${owner} runs on 5 V. The 9 V pad can burn it out.`;
+  if(need==='9V'&&got==='5V') return `The ${owner} needs the 9 V pad. 5 V is too low for it to work properly.`;
+  if(need==='LED') return 'The LED strip’s data wire (DIN) goes to the LED pad. That pad sends the colour signal. The other pads carry power or other signals.';
   if(got==='LED') return 'The LED pad only sends the LED strip’s data signal. It is not a power, ground or serial pad.';
-  if((need==='5V'||need==='9V')&&got==='GND') return 'Short circuit. A power wire on a ground pad shorts the supply.';
+  if((need==='5V'||need==='9V')&&got==='GND') return 'Short circuit. A power wire on a ground pad connects + straight to −. This can burn the board.';
   if(need==='GND'&&(got==='5V'||got==='9V')) return 'Short circuit. The ground wire must go to a G pad, not a power pad.';
   if(need==='GND') return 'Ground wires go to a G (ground) pad.';
-  if(need==='CAM'&&got==='VTX') return 'Camera video goes into the CAM pad. The VTX pad sends video out to the transmitter.';
-  if(need==='VTX'&&got==='CAM') return 'The transmitter takes video out of the flight controller from the VTX pad. CAM is the camera input.';
+  if(need==='CAM'&&got==='VTX') return 'Camera video goes into the CAM pad. The VTX pad sends video out to the video transmitter.';
+  if(need==='VTX'&&got==='CAM') return 'The video transmitter takes its video from the VTX pad. CAM is the camera input.';
   if(need==='ESC') return 'The ESC harness plugs into the ESC socket on the flight controller.';
   return `This wire needs the ${NETNAME[need]}, but that is the ${NETNAME[got]||'wrong pad'}.`;
 }

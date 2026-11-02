@@ -6,10 +6,10 @@ const TOC = [['outcomes', 'Learning outcomes'], ['session', 'Suggested session']
 const OUTCOMES = [
   'Name the parts of a quadcopter and explain what each one does.',
   'Assemble a frame in the correct order and choose the right fastener for each joint.',
-  'Orient the flight controller correctly and explain why the arrow must face forward.',
-  'Wire power, ground, serial (TX to RX) and video connections, observing polarity and voltage.',
-  'Check motor direction safely with the props off, and correct a reversed motor.',
-  'Match CW and CCW propellers to their motors.',
+  'Fit the flight controller (FC) the right way round and explain why its arrow must point forward.',
+  'Wire power, ground, serial (TX to RX) and video connections with the right polarity and voltage.',
+  'Check motor direction safely with the propellers off, and correct a reversed motor.',
+  'Match CW (clockwise) and CCW (counter-clockwise) propellers to their motors.',
   'Explain how changes in the four motor speeds produce heave, pitch, roll and yaw.',
 ];
 
@@ -17,15 +17,15 @@ const SCORING = [
   ['1 · Frame assembly', 15, 'Part in the wrong place (−2), wrong screw (−2)'],
   ['2 · Component mounting', 20, 'Wrong place (−2), wrong screw (−2), flight controller not facing forward when moving on (−4)'],
   ['3 · Wiring', 30, 'Each wire dropped on the wrong pad (−2)'],
-  ['4 · Power-up and motor test', 10, 'Swapping wires on a motor that was already correct (−4), confirming while a motor is still reversed (−4)'],
+  ['4 · Power-up and motor test', 10, 'Swapping wires on a motor that was already correct (−4), confirming while a motor still spins the wrong way (−4)'],
   ['5 · Propellers', 10, 'Wrong propeller on a motor (−3)'],
-  ['7 · Knowledge check', 15, 'Eight questions, points shared equally'],
+  ['7 · Knowledge check', 15, 'Eight questions (eleven on model 2), points shared equally'],
 ];
 
 const FASTENERS = [
   ['Arms to bottom plate', 'M3 × 10', 8, 'Must pass through the arm and the plate and still grip'],
-  ['Top plate to standoffs', 'M3 × 6', 6, 'A 10 mm screw bottoms out in the standoff before it clamps'],
-  ['Motors to arms (from below)', 'M3 × 6', 16, 'Longer screws touch the copper windings'],
+  ['Top plate to standoffs', 'M3 × 6', 6, 'A 10 mm screw hits the bottom of the standoff before it clamps'],
+  ['Motors to arms (from below)', 'M3 × 6', 16, 'A longer screw reaches the copper windings and shorts the motor'],
   ['Stack (on top of the flight controller)', 'M3 nylon nut', 4, 'Nylon does not conduct, so it cannot short the boards'],
   ['Camera to side plates', 'M2 × 5', 2, 'Camera mounting holes are M2'],
 ];
@@ -67,9 +67,9 @@ export default function Guide() {
             <h2>Suggested session (60–80 minutes)</h2>
             <ol>
               <li><b>Movements (10 min).</b> Before building, open the Movements activity. Students fly the drone with the remote (on-screen sticks, the keyboard, or a USB radio or gamepad), play each of throttle, yaw, pitch and roll, then take the eight-question stick quiz.</li>
-              <li><b>Explore (10 min).</b> Open the finished drone, use exploded view and the part labels, read three or four info cards.</li>
-              <li><b>Practice (30–40 min).</b> Full build with hints. Encourage students to read the explanation on each mistake rather than retrying blindly.</li>
-              <li><b>Assessment (20–30 min).</b> Fresh start, no hints, timed. Students copy the result from the report and paste it into their submission.</li>
+              <li><b>Explore (10 min).</b> Open the finished drone. Use exploded view and the part labels. Read three or four info cards.</li>
+              <li><b>Practice (30–40 min).</b> Full build with hints. Ask students to read the explanation for each mistake, not just try again.</li>
+              <li><b>Assessment (20–30 min).</b> Fresh start, no hints, timed. Students copy the result from the report and paste it into their work.</li>
             </ol>
             <p>The flight stage is not scored. Use it to discuss Newton’s laws, torque and the six degrees of freedom.</p>
           </div>
@@ -102,7 +102,7 @@ export default function Guide() {
 
         <section className="band" id="wiring">
           <div className="wrap">
-            <div className="sec-head"><h2>Wiring reference</h2><p>23 wires. Any ground pad is accepted for a ground wire, because all grounds are connected on the board.</p></div>
+            <div className="sec-head"><h2>Wiring reference</h2><p>23 wires on model 1. Any ground (G) pad is accepted for a ground wire, because all grounds are connected on the board. FC = flight controller, ESC = electronic speed controller, VTX = video transmitter, UART = serial port.</p></div>
             <div className="table-wrap" role="region" aria-label="Wiring reference, model 1" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
@@ -117,7 +117,7 @@ export default function Guide() {
               </tbody>
             </table></div>
             <h3 className="sub-head">Model 2: CX-5 cinematic FPV (24 wires)</h3>
-            <p>Battery lead, capacitor, motors, ESC harness, receiver and GPS are wired as above. The analog camera and analog VTX are replaced by an HD camera and a digital VTX, and an LED strip is added. The HD camera has no wires to the flight controller: its coax cable goes straight to the digital VTX.</p>
+            <p>Battery lead, capacitor, motors, ESC harness, receiver and GPS are wired as above. The analogue FPV camera and video transmitter are replaced by an HD camera and a digital VTX, and an LED strip is added. The HD camera has no wires to the flight controller: its coax cable goes straight to the digital VTX.</p>
             <div className="table-wrap" role="region" aria-label="Wiring reference, model 2" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
@@ -130,7 +130,7 @@ export default function Guide() {
 
         <section id="motors">
           <div className="wrap">
-            <div className="sec-head"><h2>Motor layout</h2><p>Seen from above, front at the top. Diagonal motors turn the same way, so their twisting forces cancel in a hover. In each lab one motor starts reversed at random; students find it during the motor test.</p></div>
+            <div className="sec-head"><h2>Motor layout</h2><p>Seen from above, front at the top. Diagonal motors turn the same way, so their twisting forces cancel in a hover. In each lab, one motor chosen at random starts reversed. Students find it in the motor test.</p></div>
             <div className="table-wrap" role="region" aria-label="Motor layout" tabIndex={0}><table>
               <thead><tr><th>Motor</th><th>Corner</th><th>Spins</th><th>Propeller</th></tr></thead>
               <tbody>
