@@ -1,7 +1,7 @@
 /* Drone Build Lab · Placing parts, pads and 3D wires */
 import * as THREE from 'three';
 import { SCALE, TAU, V, ZERO, armPos, ease, easeOut } from './01-config.js';
-import { M, hex, wireColor, wireMat } from './04-materials.js';
+import { M, WIRE_COL, hex, netKind, wireColor, wireMat } from './04-materials.js';
 import { HARNESS_COLS, PHASE_COLS, mesh, rod, strands } from './05-geometry.js';
 import { HOT, HOTMAP, TYPES } from './07-catalogue.js';
 import { PADS, S, WIRES, parts } from './08-state.js';
@@ -11,6 +11,7 @@ import { registerScrews, unregisterScrews } from './13-screws.js';
 import { updateMarkers } from './14-markers-picking.js';
 import { stageKey } from './20-stages.js';
 import { removeLabel } from './22-info-labels.js';
+import { segsFor, wireCurveFor } from './31-wire-routing.js';
 
 /* ================= Placement ================= */
 export function createPart(t){ const g=TYPES[t].build(); g.userData.typeKey=t; return g; }
@@ -68,35 +69,72 @@ export function textSprite(text,col='#e9eef2',border='rgba(255,255,255,.18)',H=.
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
   s.scale.set(H*w/h,H,1); s.renderOrder=10; return s;
 }
+/* ================= Pad labels =================
+   A wire end names its part and its pin ("GPS TX") next to a swatch of the wire's colour. A board pad shows its
+   name next to the colour that belongs on it, so a student can match colour to colour.
+   States: idle, hint (practice: a pad this wire may go to), dim (not a match), active (the wire in hand) */
+const SRC_TAG={camera:'CAM',vtx:'VTX',rx:'RX',gps:'GPS',cap:'CAP',lead:'BATT',led:'LED'};
+export function padText(p){
+  const t=HOTMAP[p.hotId].type;
+  if(!p.need) return p.def.shape==='socket'?'ESC':p.label;
+  if(t==='motor') return p.label; if(t==='esc') return 'ESC HARNESS';
+  return `${SRC_TAG[t]||''} ${p.label}`.trim();
+}
+export function padCols(net){ const k=netKind(net); return k==='phase'?PHASE_COLS:k==='harness'?HARNESS_COLS:[wireColor(net)]; }
+const LBL_BORDER={idle:'rgba(255,255,255,.22)',hint:'#5bc489',active:'#e0894a',bad:'#ff6b5e',dim:'rgba(255,255,255,.12)'};
+export function labelTexture(text,cols,state='idle',bgCol='rgba(12,17,20,.9)'){
+  const fs=44,pad=14,sw=34, c=document.createElement('canvas'), g=c.getContext('2d');
+  g.font=`600 ${fs}px "IBM Plex Mono", monospace`; const tw=g.measureText(text).width;
+  c.width=Math.ceil(tw+pad*3+sw); c.height=fs+pad+4;
+  const w=c.width,h=c.height,r=12,lw=state==='idle'||state==='dim'?3:6;
+  g.fillStyle=bgCol; g.strokeStyle=LBL_BORDER[state]||LBL_BORDER.idle; g.lineWidth=lw;
+  g.beginPath(); g.roundRect?g.roundRect(lw/2,lw/2,w-lw,h-lw,r):g.rect(lw/2,lw/2,w-lw,h-lw); g.fill(); g.stroke();
+  /* the swatch: one colour, or stripes for a bundle (motor phases, ESC harness) */
+  const sx=pad, sy=pad*.75, sh=h-pad*1.5, n=cols.length;
+  cols.forEach((col,i)=>{ g.fillStyle=hex(col); g.fillRect(sx+i*sw/n,sy,Math.ceil(sw/n),sh); });
+  g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=2; g.strokeRect(sx,sy,sw,sh);
+  g.font=`600 ${fs}px "IBM Plex Mono", monospace`; g.fillStyle=state==='dim'?'#7f8a92':'#eef2f4'; g.textAlign='left'; g.textBaseline='middle';
+  g.fillText(text,sx+sw+pad,h/2+2);
+  const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.userData={w,h}; return t;
+}
+export function setPadLabel(p,state='idle'){
+  const s=p.sprite; if(!s) return;
+  if(!p.tex) p.tex={};
+  if(!p.tex[state]) p.tex[state]=labelTexture(padText(p),padCols(p.need||p.net),state);
+  const t=p.tex[state]; s.material.map=t; s.material.opacity=state==='dim'?.4:1; s.material.needsUpdate=true;
+  const H=state==='active'?.26:.2; s.scale.set(H*t.userData.w/t.userData.h,H,1);
+}
 export function updatePadSprites(){
   const show=stageKey()==='wire';
   Object.values(PADS).forEach(p=>{
     if(show&&!p.sprite){
-      p.sprite=p.need?textSprite(p.label,'#f2b98e',hex(wireColor(p.need,p.label)),.2):textSprite(p.label,'#e9eef2','rgba(255,255,255,.18)',.2);
-      const o=(p.def.out||V(0,1,0)).clone().multiplyScalar(p.def.shape==='triple'?.5:.36);
-      p.sprite.position.copy(p.def.pos).add(o).add(V(0,.2,0)); p.vis.parent.add(p.sprite);
+      p.sprite=new THREE.Sprite(new THREE.SpriteMaterial({depthTest:false,transparent:true})); p.sprite.renderOrder=10;
+      setPadLabel(p,'idle');
+      const o=(p.def.out||V(0,1,0)).clone().multiplyScalar(p.def.shape==='triple'?.62:p.need?.42:.5);
+      p.sprite.position.copy(p.def.pos).add(o).add(V(0,p.need?.26:.2,0)); p.vis.parent.add(p.sprite);
     }
     if(p.sprite) p.sprite.visible=show&&!(p.need&&p.wired);
   });
 }
 
 /* wires */
+/* free end of a wire in hand: off the pad along its facing, then a soft sag to the cursor */
 export function wireCurve(a,b){ const d=a.distanceTo(b); const m=a.clone().lerp(b,.5); m.y+=Math.min(.2+d*.1,.9); return new THREE.CatmullRomCurve3([a,a.clone().add(V(0,.22,0)),m,b.clone().add(V(0,.22,0)),b]); }
 export function buildWireMesh(w){
   if(w.mesh){ w.mesh.traverse(o=>o.geometry&&o.geometry.dispose()); droneRoot.remove(w.mesh); }
-  const s=PADS[w.src], a=padLocal(w.src), b=padLocal(w.tgt), c=wireCurve(a,b), g=new THREE.Group();
+  const s=PADS[w.src], b=padLocal(w.tgt), c=wireCurveFor(w.src,w.tgt), g=new THREE.Group(), cap=HOTMAP[s.hotId].type==='cap';
   if(s.need[0]==='M') strands(c,3,.055,.068,5,PHASE_COLS).forEach(m=>g.add(m));
   else if(s.need==='ESC') strands(c,6,.026,0,0,HARNESS_COLS,true).forEach(m=>g.add(m));
   else {
-    const r=s.need.startsWith('VBAT')?.085:.042;
-    g.add(mesh(new THREE.TubeGeometry(c,48,r,10,false),wireMat(wireColor(s.need,s.label))));
+    const r=s.need.startsWith('VBAT')?(cap?.06:.085):.042;
+    g.add(mesh(new THREE.TubeGeometry(c,segsFor(c),r,10,false),wireMat(wireColor(s.need))));
     const tan=c.getTangentAt(1); g.add(rod(b.clone().addScaledVector(tan,-.16),b.clone(),r*.7,M.tin));
   }
   if(s.need!=='ESC'){ const bl=mesh(new THREE.SphereGeometry(s.need[0]==='M'?.17:s.need.startsWith('VBAT')?.16:.1,14,10),M.solder); bl.scale.y=.5; bl.position.copy(b); g.add(bl); }
   g.traverse(o=>{ if(o.isMesh) o.userData.noEdges=true; });
   w.mesh=g; droneRoot.add(g);
 }
-export function addWire(src,tgt){ droneRoot.updateMatrixWorld(true); const w={src,tgt,mesh:null}; WIRES.push(w); PADS[src].wired=true; if(PADS[src].sprite) PADS[src].sprite.visible=false; buildWireMesh(w); }
+export function addWire(src,tgt){ droneRoot.updateMatrixWorld(true); const w={src,tgt,mesh:null}; WIRES.push(w); PADS[src].wired=true; if(PADS[src].sprite) PADS[src].sprite.visible=false; WIRES.forEach(x=>{ if(x===w||x.src.split(':')[0]===src.split(':')[0]) buildWireMesh(x); }); }
 export let batCable=null;
 export function updateBatCable(){
   if(batCable){ batCable.forEach(m=>{m.geometry.dispose(); droneRoot.remove(m);}); batCable=null; }
@@ -106,8 +144,9 @@ export function updateBatCable(){
   const b=droneRoot.worldToLocal(parts.lead.group.userData.socket.getWorldPosition(V()));
   /* the battery's own plug mates with the connector on the battery lead, so the cable ends in a second connector body */
   const c=new THREE.CatmullRomCurve3([a.clone(),a.clone().add(V(0,.2,.9)),V((a.x+b.x)/2,(a.y+b.y)/2,Math.max(a.z,b.z)+1.6),b.clone().add(V(0,0,1.5)),b.clone().add(V(0,0,.8))]);
-  batCable=strands(c,2,.1,.11,2.5,[0xd8453b,0x2b2f35]);
+  batCable=strands(c,2,.1,.11,2.5,[WIRE_COL.power,WIRE_COL.ground]);
   const plug=mesh(new THREE.BoxGeometry(.86,.52,.8),M.connector); plug.position.copy(b).add(V(0,0,.4)); batCable.push(plug);
   batCable.forEach(m=>droneRoot.add(m));
 }
+/* routes depend on each other (bundle lanes), so a new wire re-lays every wire */
 export function rebuildWires(){ droneRoot.updateMatrixWorld(true); WIRES.forEach(buildWireMesh); updateBatCable(); }

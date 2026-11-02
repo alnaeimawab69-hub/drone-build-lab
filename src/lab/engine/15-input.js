@@ -7,16 +7,17 @@ import { PROXY_MAT } from './05-geometry.js';
 import { HOTMAP, TYPES, accepts, propDir } from './07-catalogue.js';
 import { PADS, S, parts } from './08-state.js';
 import { droneRoot } from './09-scene-content.js';
-import { addWire, createPart, dependents, padLocal, padName, place, removeGroup, setFCRot, setPadMat, unplace, wireCurve } from './12-placement.js';
+import { addWire, createPart, dependents, padName, padText, place, removeGroup, setFCRot, setPadLabel, setPadMat, unplace } from './12-placement.js';
 import { SCR, SCREWT, endScrewDrag, moveScrewDrag, pickHole, tryDrive } from './13-screws.js';
 import { computeSnap, hotOf, insideCanvas, pickPad, pickPart, planePoint, ray, setNDC, updateMarkers } from './14-markers-picking.js';
-import { explainWire } from './16-wiring-diagram.js';
+import { explainWire, wireFault } from './16-wiring-diagram.js';
 import { mistake, secOf } from './17-scoring.js';
 import { stopAllSpin } from './18-motor-test.js';
 import { stageKey } from './20-stages.js';
 import { renderPanel } from './21-panel.js';
 import { showInfo } from './22-info-labels.js';
 import { toast } from './23-toast.js';
+import { dropHeld, flashWrong, showHeld } from './31-wire-routing.js';
 
 /* ================= Pointer handling ================= */
 export function onCanvasDown(e){
@@ -104,40 +105,61 @@ export function infoClick(){
   let o=hit.object; while(o&&o!==droneRoot){ if(o.userData.isFrame) return showInfo('frame'); o=o.parent; }
 }
 
-/* wire drag */
-export let rubber=null;
+/* wire drag: the wire in hand is drawn along the route it will take, in its own colour with a glow.
+   In practice the pads it may go to light up green and the others dim; over a pad the glow turns green or red */
+export function orient(a,b){ return a&&b&&!a.need&&b.need?[b,a]:[a,b]; }
+function labelsFor(from){
+  const learn=S.mode==='learn';
+  Object.values(PADS).forEach(q=>{
+    if(q===from){ setPadLabel(q,'active'); return; }
+    if(!learn||!from.need){ setPadLabel(q,'idle'); return; }
+    setPadLabel(q,!q.need&&q.net===from.need?'hint':'dim');
+  });
+}
 export function startWireDrag(id){
   const p=PADS[id];
   if(p.need&&p.wired){ toast('That wire is already soldered.'); controls.enabled=true; return; }
   S.drag={kind:'wire',from:id,hover:null};
   if(S.mode==='learn'&&p.need) Object.values(PADS).forEach(q=>{ if(!q.need&&q.net===p.need) setPadMat(q,M.padGood); });
+  labelsFor(p); showHeld(p.need?id:id,null,null);
   document.body.classList.add('dragging');
 }
 export function moveWireDrag(e){
-  setNDC(e); const d=S.drag; const id=insideCanvas(e)?pickPad():null;
-  if(d.hover&&d.hover!==id){ const q=PADS[d.hover]; if(q) setPadMat(q,S.mode==='learn'&&!q.need&&q.net===PADS[d.from].need?M.padGood:null); }
+  setNDC(e); const d=S.drag; const id=insideCanvas(e)?pickPad():null, from=PADS[d.from];
+  const learn=S.mode==='learn';
+  if(d.hover&&d.hover!==id){ const q=PADS[d.hover]; if(q){ setPadMat(q,learn&&!q.need&&q.net===from.need?M.padGood:null); setPadLabel(q,learn&&from.need&&!q.need?(q.net===from.need?'hint':'dim'):'idle'); } }
   d.hover=id&&id!==d.from?id:null;
-  if(d.hover) setPadMat(PADS[d.hover],M.padHover);
   droneRoot.updateMatrixWorld(true);
-  const a=padLocal(d.from); const b=d.hover?padLocal(d.hover):droneRoot.worldToLocal(planePoint(PADS[d.from].vis.getWorldPosition(V())));
-  if(rubber){ rubber.geometry.dispose(); droneRoot.remove(rubber); }
-  rubber=new THREE.Mesh(new THREE.TubeGeometry(wireCurve(a,b),24,.045,5,false),M.rubber); rubber.renderOrder=6; droneRoot.add(rubber);
-  showTip(d.hover?padName(PADS[d.hover]):padName(PADS[d.from]),e.clientX,e.clientY);
+  if(d.hover){
+    const [src,tgt]=orient(from,PADS[d.hover]), pairOk=src.need&&!tgt.need&&!src.wired, right=pairOk&&tgt.net===src.need;
+    setPadMat(PADS[d.hover],learn&&pairOk?(right?M.padGood:M.padHover):M.padHover);
+    if(pairOk){ showHeld(src.id,tgt.id,null,learn?(right?'ok':'bad'):'neutral'); setPadLabel(PADS[d.hover],learn?(right?'hint':'bad'):'active'); }
+    else showHeld(d.from,null,droneRoot.worldToLocal(planePoint(PADS[d.hover].vis.getWorldPosition(V()))));
+    showTip(pairOk?`${padText(src)} → ${padText(tgt)}${learn?(right?'  ✓':'  ✕ wrong pad'):''}`:padName(PADS[d.hover]),e.clientX,e.clientY);
+  } else {
+    showHeld(d.from,null,droneRoot.worldToLocal(planePoint(from.vis.getWorldPosition(V()))));
+    showTip(padName(from),e.clientX,e.clientY);
+  }
 }
 export function endWireDrag(e,cancel){
   const d=S.drag; S.drag=null; document.body.classList.remove('dragging'); showTip(null);
-  if(rubber){ rubber.geometry.dispose(); droneRoot.remove(rubber); rubber=null; }
-  Object.values(PADS).forEach(q=>setPadMat(q,null));
+  dropHeld();
+  Object.values(PADS).forEach(q=>{ setPadMat(q,null); setPadLabel(q,'idle'); });
   if(!cancel&&d.hover){
-    let src=PADS[d.from], tgt=PADS[d.hover];
-    if(!src.need&&tgt.need) [src,tgt]=[tgt,src];
+    let [src,tgt]=orient(PADS[d.from],PADS[d.hover]);
     if(src.need&&tgt.need) toast('Both ends are wires. Solder a wire end to a pad on the ESC or flight controller.');
     else if(!src.need&&!tgt.need) toast('Start from a wire end (the coloured dots and plugs), then drop it on a pad.');
     else if(src.wired) toast('That wire is already soldered.');
     else if(tgt.net===src.need){ addWire(src.id,tgt.id); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); }
-    else mistake('wire',2,explainWire(src,tgt),'Incorrect connection. The wire was not soldered.');
+    else wrongWire(src,tgt,'Incorrect connection. The wire was not soldered.');
   }
   controls.enabled=true; renderPanel();
+}
+/* a wrong pad costs points, is not soldered, and is shown on the model: a red ghost wire and the reason.
+   The assessment shows only that it was wrong; the full explanation goes into the report */
+export function wrongWire(src,tgt,short){
+  flashWrong(src.id,tgt.id,S.mode==='learn'?wireFault(src,tgt):'Wrong pad');
+  mistake('wire',2,explainWire(src,tgt),short);
 }
 export function attemptWire(src,tgt){
   if(!src||!tgt) return 'none';
@@ -145,5 +167,5 @@ export function attemptWire(src,tgt){
   if(src.need&&tgt.need){ toast('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.'); return 'none'; }
   if(src.wired){ toast('That wire is already soldered.'); return 'none'; }
   if(tgt.net===src.need){ addWire(src.id,tgt.id); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); return 'ok'; }
-  mistake('wire',2,explainWire(src,tgt),'Wrong pad. The wire was not soldered.'); return 'bad';
+  wrongWire(src,tgt,'Wrong pad. The wire was not soldered.'); return 'bad';
 }

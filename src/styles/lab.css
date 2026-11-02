@@ -182,13 +182,19 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .diagram .tip{cursor:grab}
 .diagram .tip:hover .knob{stroke:var(--color-accent);stroke-width:3}
 .diagram .tip.done{cursor:default}
-.diagram .tgt .pad{transition:fill var(--duration-base)}
+.diagram .tgt .pad{transition:fill var(--duration-base),opacity var(--duration-base)}
 .diagram .tgt.hint .pad{fill:var(--color-success)}
+.diagram .tgt.dim{opacity:.45}
 .diagram .tgt.over .pad{fill:var(--color-accent)}
+.diagram .tgt.over.ok .pad{fill:#2f9e63}
+.diagram .tgt.over.bad .pad,.diagram .tgt.wrong .pad{fill:#e2483c}
+.diagram .tip.held .knob{stroke:var(--color-accent);stroke-width:4}
+.diagram .tip.held{opacity:.35}
 .diagram .shake{animation:dgshake .4s}
 @keyframes dgshake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 .diagram .flash text{font:700 13px var(--font-mono);fill:#fff}
 .diagram .flash{animation:dgpop 1.4s forwards}
+.diagram .flash.wrong{animation:none}
 @keyframes dgpop{0%{opacity:0;transform:translateY(6px)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.diagram .shake,.diagram .flash{animation:none}}
 

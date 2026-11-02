@@ -33,8 +33,9 @@ export function flatExtrude(shape,depth,mat){ const b=Math.min(.025,depth*.12); 
 export function boardMesh(w,h,d,side,top){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),[side,side,top,side,side,side]); m.castShadow=m.receiveShadow=true; m.position.y=h/2; return m; }
 
 /* realistic cables: twisted strands and flat ribbons following a curve */
-export const PHASE_COLS=[0x3a6fb0,0xd9b23a,0x232528];
-export const HARNESS_COLS=[0x232528,0xd8453b,0xeeeeee,0xe8c33c,0x3d9be0,0x4fb06d];
+/* motor phases: three colours that cannot be mistaken for power (red), ground (black) or a signal wire */
+export const PHASE_COLS=[0x6f58c9,0x9aa3ab,0xb86b2e];
+export const HARNESS_COLS=[0x1e2023,0xd8453b,0xf2f2ee,0xe8c33c,0x3d9be0,0x4fb06d];
 export function strands(curve,n,r,spread,twist,cols,ribbon){
   const N=60, fr=curve.computeFrenetFrames(N,false), out=[];
   for(let k=0;k<n;k++){
@@ -71,7 +72,7 @@ export function addPad(g,def,parent=g){
   else if(def.shape==='socket') vis=box(.8,.24,.34,M.nylon);
   else if(def.shape==='plug') vis=box(.7,.2,.3,M.nylon);
   else if(def.shape==='bundle'){ vis=new THREE.Group(); [-.12,0,.12].forEach(z=>{const c=cyl(.06,.06,.36,M.tin,8); c.rotation.z=Math.PI/2; c.position.z=z; vis.add(c);}); }
-  else if(def.need) vis=mesh(new THREE.SphereGeometry(.1,14,10),wireMat(wireColor(def.need,def.label)));
+  else if(def.need) vis=mesh(new THREE.SphereGeometry(.1,14,10),wireMat(wireColor(def.need)));
   else vis=box(.24,.04,.24,M.copper);
   vis.position.copy(def.pos); parent.add(vis);
   vis.traverse(o=>{ if(o.isMesh) o.userData.m0=o.material; });

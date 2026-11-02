@@ -87,7 +87,8 @@ DroneBuildLab/
         ├── 27-boot.js              start-up
         ├── 28-movements.js         Movements activity: remote, USB controller, axis rings, stick quiz
         ├── 29-enterprise.js        model 3: sealed-module parts, catalogue and mounting points
-        └── 30-lab-room.js          the studio around the drone: ESD mat on a seamless dark backdrop
+        ├── 30-lab-room.js          the studio around the drone: ESD mat on a seamless dark backdrop
+        └── 31-wire-routing.js      3D wire routes round the stack, the wire in hand, wrong-pad feedback
 ```
 
 ## How the lab page works
@@ -111,6 +112,8 @@ Each engine module imports what it uses from the others and exports its top-leve
 - Force arrows share one scale (`FORCE_LEN` in `09-scene-content.js` per weight), so the four motor arrows add up to the total thrust. `drawForces` in `19-flight.js` draws them for both flight and Movements.
 - Model 3 is built at real size and drawn smaller with `droneRoot.scale` (`MODEL.scale`). Arrows and helpers that must keep their bench size are scaled by `1/SCALE`.
 - Wiring is checked by net: a wire end has a `need` (for example `R1`), a pad has a `net`. They must match.
+- Wire colours come from one table, `WIRE_COL` / `wireColor(net)` in `04-materials.js`, used by the 3D wires, the pad labels, the diagram and the panel legend. Colour follows the net a wire must reach (an `R` pad takes the TX colour).
+- 3D wires are routed by `wireRoute()` in `31-wire-routing.js`: motor wires along the arms, battery wires to the back of the ESC, everything for the FC round a ring just outside the board, the GPS through the cable hole in the top plate. Moving a part means checking its route there, and its box in `DG_SRC` (`16-wiring-diagram.js`) so the diagram still puts it on the same side as the model.
 
 ## Common changes
 
