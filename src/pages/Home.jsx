@@ -1,4 +1,5 @@
 import SiteHeader from '../components/SiteHeader.jsx';
+import Icon from '../components/Icon.jsx';
 import lab3d from '../assets/img/lab-3d.png';
 import wiringDiagram from '../assets/img/wiring-diagram.png';
 import cadView from '../assets/img/cad-view.png';
@@ -37,15 +38,15 @@ export default function Home() {
   return (
     <>
       <SiteHeader current="index.html" />
-      <main>
+      <main id="main">
         <section className="hero">
           <div className="wrap grid">
             <div>
               <div className="eyebrow">Digital lab · Drone fundamentals</div>
               <h1>From bare carbon to first flight.</h1>
               <p className="lede">Students build a quadcopter in the browser, choosing a 250 mm trainer quad or a 5-inch cinematic FPV drone: bolt the frame together, mount and fasten every component with the right screw, solder 23 wires, test motor direction, fit the propellers and fly it to see how thrust creates each movement.</p>
-              <div className="ctas"><a className="btn primary" href="lab.html">Open the lab →</a><a className="btn" href="guide.html">Teacher guide</a></div>
-              <div className="facts"><span><b>7</b> stages</span><span><b>36</b> fasteners</span><span><b>23–24</b> wires</span><span><b>3</b> drone models</span><span><b>4</b> activities</span><span>runs in any modern browser</span></div>
+              <div className="ctas"><a className="btn primary" href="lab.html">Open the lab <Icon name="arrow" /></a><a className="btn" href="guide.html">Teacher guide</a></div>
+              <ul className="facts" aria-label="At a glance"><li><b>7</b> stages</li><li><b>36</b> fasteners</li><li><b>23–24</b> wires</li><li><b>3</b> drone models</li><li><b>4</b> activities</li><li>runs in any modern browser</li></ul>
             </div>
             <div className="shot"><img src={lab3d} alt="The finished quadcopter on the workbench in the 3D lab" width="1400" height="900" /></div>
           </div>
@@ -65,7 +66,7 @@ export default function Home() {
             <div className="sec-head"><div className="eyebrow">Four ways to use it</div><h2>Practise with hints, then prove it without them</h2></div>
             <div className="modes">
               {MODES.map(([cls, tag, title, text]) => (
-                <div key={cls} className={'mode ' + cls}><em>{tag}</em><h3>{title}</h3><p>{text}</p></div>
+                <article key={cls} className={'mode ' + cls}><em>{tag}</em><h3>{title}</h3><p>{text}</p></article>
               ))}
             </div>
           </div>
@@ -76,7 +77,7 @@ export default function Home() {
             <Feature eyebrow="Wiring" title="A wiring chart students can actually solder" img={wiringDiagram} alt="The 2D wiring diagram with flight controller, ESC and components">
               <li>Flight controller in the centre, every pad labelled, components around it</li>
               <li>Wires drawn in their real colours with right-angle routing</li>
-              <li>A wrong pad flashes <b style={{ color: '#ec6a5e' }}>✕ WRONG</b> and the wire stays unsoldered</li>
+              <li>A wrong pad flashes <span className="mark-bad">✕ WRONG</span> and the wire stays unsoldered</li>
               <li>Switch to the 3D model at any time; both views stay in sync</li>
             </Feature>
             <Feature eyebrow="CAD view" title="Switch the model to a technical drawing" img={cadView} alt="The drone in CAD view with dimension lines and a title block" flip>
@@ -88,10 +89,10 @@ export default function Home() {
         </section>
 
         <section>
-          <div className="wrap" style={{ textAlign: 'center' }}>
+          <div className="wrap center">
             <h2>Ready to build?</h2>
-            <p className="lede" style={{ margin: '12px auto 24px' }}>Works with a mouse or a touchscreen. No install, no account.</p>
-            <a className="btn primary" href="lab.html">Open the lab →</a>
+            <p className="lede">Works with a mouse or a touchscreen. No install, no account.</p>
+            <a className="btn primary" href="lab.html">Open the lab <Icon name="arrow" /></a>
           </div>
         </section>
       </main>

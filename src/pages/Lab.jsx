@@ -38,7 +38,7 @@ export default function Lab() {
                 <dt>Drawn</dt><dd id="tbName">Student</dd>
               </dl>
             </div>
-            <div className="viewbar" id="viewbar">
+            <div className="viewbar" id="viewbar" role="toolbar" aria-label="View">
               <button className="btn sm ghost" id="btnLabels" aria-pressed="false">Labels</button>
               <button className="btn sm ghost" id="btnCad" aria-pressed="false">CAD lines</button>
               <button className="btn sm ghost" id="btnDiag" aria-pressed="true" hidden>Wiring diagram</button>
