@@ -1,4 +1,5 @@
 import SiteHeader from '../components/SiteHeader.jsx';
+import Icon from '../components/Icon.jsx';
 
 const TOC = [['outcomes', 'Learning outcomes'], ['session', 'Suggested session'], ['scoring', 'Scoring'], ['fasteners', 'Fasteners'], ['wiring', 'Wiring'], ['motors', 'Motor layout'], ['run', 'Running and hosting']];
 
@@ -43,13 +44,13 @@ export default function Guide() {
   return (
     <>
       <SiteHeader current="guide.html" />
-      <main>
+      <main id="main">
         <section>
           <div className="wrap prose">
             <div className="eyebrow">Teacher guide</div>
-            <h1 style={{ fontSize: 'clamp(34px,5vw,52px)', marginTop: 10 }}>Running the lab in class</h1>
-            <p className="lede" style={{ marginTop: 14 }}>Everything you need to set a session: what students learn, how the score is built, and the reference answers for screws, wiring and motor direction.</p>
-            <div className="toc">{TOC.map(([id, label]) => <a key={id} href={'#' + id}>{label}</a>)}</div>
+            <h1 className="page-title">Running the lab in class</h1>
+            <p className="lede">Everything you need to set a session: what students learn, how the score is built, and the reference answers for screws, wiring and motor direction.</p>
+            <nav className="toc" aria-label="On this page">{TOC.map(([id, label]) => <a key={id} href={'#' + id}>{label}</a>)}</nav>
           </div>
         </section>
 
@@ -77,11 +78,11 @@ export default function Guide() {
         <section className="band" id="scoring">
           <div className="wrap">
             <div className="sec-head"><h2>Scoring (assessment mode)</h2><p>Each stage has a fixed number of points. Mistakes subtract from that stage only and never go below zero.</p></div>
-            <div className="table-wrap"><table>
+            <div className="table-wrap" role="region" aria-label="Scoring by stage" tabIndex={0}><table>
               <thead><tr><th>Stage</th><th className="num">Points</th><th>What costs points</th></tr></thead>
               <tbody>
                 {SCORING.map(([stage, pts, cost]) => <tr key={stage}><td>{stage}</td><td className="num">{pts}</td><td>{cost}</td></tr>)}
-                <tr><td><b>Total</b></td><td className="num"><b>100</b></td><td>Distinction 85+ · Merit 70+ · Pass 50+</td></tr>
+                <tr className="total"><td><b>Total</b></td><td className="num"><b>100</b></td><td>Distinction 85+ · Merit 70+ · Pass 50+</td></tr>
               </tbody>
             </table></div>
           </div>
@@ -90,7 +91,7 @@ export default function Guide() {
         <section id="fasteners">
           <div className="wrap">
             <div className="sec-head"><h2>Fastener reference</h2><p>36 fasteners in total. The motor screw length is the classic mistake: a long screw reaches the windings and shorts the motor.</p></div>
-            <div className="table-wrap"><table>
+            <div className="table-wrap" role="region" aria-label="Fastener reference" tabIndex={0}><table>
               <thead><tr><th>Joint</th><th>Fastener</th><th className="num">Qty</th><th>Why this one</th></tr></thead>
               <tbody>
                 {FASTENERS.map(([joint, f, qty, why]) => <tr key={joint}><td>{joint}</td><td><code>{f}</code></td><td className="num">{qty}</td><td>{why}</td></tr>)}
@@ -102,7 +103,7 @@ export default function Guide() {
         <section className="band" id="wiring">
           <div className="wrap">
             <div className="sec-head"><h2>Wiring reference</h2><p>23 wires. Any ground pad is accepted for a ground wire, because all grounds are connected on the board.</p></div>
-            <div className="table-wrap"><table>
+            <div className="table-wrap" role="region" aria-label="Wiring reference, model 1" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
                 <tr><td>Battery lead</td><td><Dot c={RED} />+ · <Dot c={BLACK} />−</td><td>ESC + · ESC −</td><td>Polarity</td></tr>
@@ -115,9 +116,9 @@ export default function Guide() {
                 <tr><td>Video transmitter</td><td>VIN · G · <Dot c={YELLOW} />VID</td><td><b>9V</b> · G · VTX</td><td>VTX runs on 9 V, not 5 V</td></tr>
               </tbody>
             </table></div>
-            <h3 style={{ marginTop: 28 }}>Model 2: CX-5 cinematic FPV (24 wires)</h3>
+            <h3 className="sub-head">Model 2: CX-5 cinematic FPV (24 wires)</h3>
             <p>Battery lead, capacitor, motors, ESC harness, receiver and GPS are wired as above. The analog camera and analog VTX are replaced by an HD camera and a digital VTX, and an LED strip is added. The HD camera has no wires to the flight controller: its coax cable goes straight to the digital VTX.</p>
-            <div className="table-wrap"><table>
+            <div className="table-wrap" role="region" aria-label="Wiring reference, model 2" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
                 <tr><td>Digital VTX</td><td>VIN · G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td><b>9V</b> · G · <b>R2</b> · <b>T2</b></td><td>On-screen data over UART 2</td></tr>
@@ -130,7 +131,7 @@ export default function Guide() {
         <section id="motors">
           <div className="wrap">
             <div className="sec-head"><h2>Motor layout</h2><p>Seen from above, front at the top. Diagonal motors turn the same way, so their twisting forces cancel in a hover. In each lab one motor starts reversed at random; students find it during the motor test.</p></div>
-            <div className="table-wrap"><table>
+            <div className="table-wrap" role="region" aria-label="Motor layout" tabIndex={0}><table>
               <thead><tr><th>Motor</th><th>Corner</th><th>Spins</th><th>Propeller</th></tr></thead>
               <tbody>
                 {MOTORS.map(([m, corner, spin, prop]) => <tr key={m}><td>{m}</td><td>{corner}</td><td>{spin}</td><td>{prop}</td></tr>)}
@@ -144,12 +145,12 @@ export default function Guide() {
           <div className="wrap prose">
             <h2>Running and hosting</h2>
             <p>The lab is a website built with React and Vite. Students only need a modern browser; the 3D library is bundled in, and the fonts load from the internet.</p>
-            <h3 style={{ marginTop: 22 }}>On one computer</h3>
+            <h3>On one computer</h3>
             <p>Install <a href="https://nodejs.org">Node.js</a>, then in the project folder run:</p>
             <pre>{`npm install
 npm run dev`}</pre>
             <p>Open the address it prints (for example <code>http://localhost:5173</code>).</p>
-            <h3 style={{ marginTop: 22 }}>For a whole class</h3>
+            <h3>For a whole class</h3>
             <ol>
               <li>Run <code>npm run build</code>. The finished site is written to the <code>dist</code> folder.</li>
               <li>Upload the contents of <code>dist</code> to any static host, for example Vercel, Netlify or GitHub Pages.</li>
@@ -160,7 +161,7 @@ npm run dev`}</pre>
       </main>
 
       <footer>
-        <div className="wrap"><span>Drone Build Lab · Teacher guide</span><a href="lab.html">Open the lab →</a></div>
+        <div className="wrap"><span>Drone Build Lab · Teacher guide</span><a href="lab.html">Open the lab <Icon name="arrow" /></a></div>
       </footer>
     </>
   );
