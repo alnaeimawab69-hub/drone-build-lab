@@ -27,7 +27,7 @@ export function ready(k){
     case 'frame': return HOT.filter(h=>h.stage==='frame').every(h=>parts[h.id])&&stageScrews('frame').every(s=>s.driven);
     case 'mount': return HOT.filter(h=>h.stage==='mount').every(h=>parts[h.id])&&stageScrews('mount').every(s=>s.driven)&&(S.mode!=='learn'||S.fcRot===0);
     case 'wire': return srcPads().length>0&&srcPads().every(p=>p.wired);
-    case 'power': return S.test.confirmed;
+    case 'power': return S.test.confirmed&&strapped();   // the battery must still be fitted and strapped, not just tested
     case 'props': return HOT.filter(h=>h.stage==='props').every(h=>parts[h.id]);
     case 'fly': return ['hover','pitch','roll','yaw'].every(m=>S.flown[m]);
     case 'quiz': return S.quizDone;
