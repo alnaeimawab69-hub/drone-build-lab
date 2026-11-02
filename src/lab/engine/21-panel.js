@@ -1,6 +1,7 @@
 /* Drone Build Lab · Side panel rendering for every stage, quiz */
 import { $, CINE, CORNER, EXP, MODEL, PROPS_OUT, esc, motorsTurning } from './01-config.js';
-import { hex, wireColor } from './04-materials.js';
+import { WIRE_COL, hex, wireColor, wireLegend } from './04-materials.js';
+import { HARNESS_COLS, PHASE_COLS } from './05-geometry.js';
 import { HOT, HOTMAP, SEC, STAGES, TYPES } from './07-catalogue.js';
 import { S, parts } from './08-state.js';
 import { THUMB } from './10-thumbnails.js';
@@ -122,8 +123,8 @@ export function renderWire(learn){
     const rows=list.map(p=>`<div class="wrow ${p.wired?'ok':''}"><span class="dot" style="background:${hex(wireColor(p.need,p.label))}"></span><span>${esc(p.label)}${g==='motors'?` · ${CORNER[+p.hotId.slice(3)]}`:''} → ${learn?esc(NETSHORT[p.need]):'?'}</span><span class="st">${p.wired?'soldered':''}</span></div>`).join('');
     return `<div class="wgroup"><header class="${d===list.length?'done':''}">${nm}<span class="r">${d}/${list.length}</span></header><div class="wrows">${rows}</div></div>`;
   }).join('');
-  return `<p class="note"><b>${done} of ${all.length}</b> wires soldered. Drag each coloured wire end on the <b>wiring diagram</b> onto its pad. A wrong pad shows <b style="color:var(--bad)">✕ WRONG</b> and the wire is not soldered. Switch to <b>3D view</b> (button under the diagram) to wire on the model instead; both stay in sync.</p>
-    <div class="legend"><span><i style="background:#d8453b"></i>Power</span><span><i style="background:#2b2f35;outline:1px solid #556"></i>Ground</span>${CINE?'<span><i style="background:#4fb06d"></i>LED data</span>':'<span><i style="background:#e8c33c"></i>Video</span>'}<span><i style="background:#3d9be0"></i>TX</span><span><i style="background:#eee"></i>RX</span><span><i style="background:#8a939c"></i>Motor phases</span></div>
+  return `<p class="note"><b>${done} of ${all.length}</b> wires soldered. Drag each coloured wire end on the <b>wiring diagram</b> onto its pad. Match the colours: each pad shows the colour that belongs on it. A wrong pad is shown in <b style="color:var(--bad)">red</b> with the reason, and the wire is not soldered. Switch to <b>3D view</b> (button under the diagram) to wire on the model instead; both stay in sync.</p>
+    <div class="legend">${wireLegend(CINE).map(([k,l])=>{ const c=k==='phase'?`linear-gradient(90deg,${PHASE_COLS.map(hex).join(',')})`:k==='harness'?`linear-gradient(90deg,${HARNESS_COLS.map(hex).join(',')})`:hex(WIRE_COL[k]); return `<span><i style="background:${c}${k==='ground'?';outline:1px solid #556':''}"></i>${l}</span>`; }).join('')}</div>
     ${groups}
     <p class="note">${learn?'When you pick up a wire, the matching pads turn <b>green</b>. Serial wires cross over: TX goes to R, RX goes to T.':'Assessment: no hints. A wrong connection costs points and is not soldered.'}</p>`;
 }

@@ -64,15 +64,28 @@ export const M={
 };
 M.carbonTop=M.carbon.clone();
 export const WIRE_MATS={};
-export function wireColor(need,label){
-  if(need==='VBAT+'||need==='5V'||need==='9V') return 0xd8453b;
-  if(need==='VBAT-'||need==='GND') return 0x2b2f35;
-  if(need==='CAM'||need==='VTX') return 0xe8c33c;
-  if(need==='LED') return 0x4fb06d;
-  if(need&&need[0]==='M') return 0x8a939c;
-  if(need==='ESC') return 0xc9ced3;
-  if(label==='TX') return 0x3d9be0;
-  return 0xeeeeee;
+/* ================= Wire colours =================
+   One table for the 3D wires, the wiring diagram, the pad labels and the panel legend, so they always agree.
+   Colour follows the net the wire end must reach: red = positive supply, black = ground, then one clear colour
+   per signal. A serial TX wire lands on an R pad, so R pads carry the TX colour and T pads the RX colour. */
+export const WIRE_COL={power:0xd8453b,ground:0x1e2023,video:0xe8c33c,led:0x4fb06d,tx:0x3d9be0,rx:0xf2f2ee,phase:0x8a939c,harness:0xc9ced3};
+export function netKind(net){
+  if(!net) return 'other';
+  if(net==='VBAT+'||net==='5V'||net==='9V') return 'power';
+  if(net==='VBAT-'||net==='GND') return 'ground';
+  if(net==='CAM'||net==='VTX') return 'video';
+  if(net==='LED') return 'led';
+  if(/^R[123]$/.test(net)) return 'tx';
+  if(/^T[123]$/.test(net)) return 'rx';
+  if(net[0]==='M') return 'phase';
+  if(net==='ESC') return 'harness';
+  return 'other';
+}
+export function wireColor(need){ return WIRE_COL[netKind(need)]??0xc9ced3; }
+/* legend rows: [kind, label]. Each model only lists the signals it actually has */
+export function wireLegend(cine){
+  return [['power','Power + (VBAT, 5V, 9V)'],['ground','Ground − (G)'],cine?['led','LED data']:['video','Video'],['tx','TX → R pad'],['rx','RX → T pad'],['phase','Motor phases A · B · C'],['harness','ESC harness']];
 }
 export const hex=c=>'#'+c.toString(16).padStart(6,'0');
-export function wireMat(c){ return WIRE_MATS[c]||(WIRE_MATS[c]=std({color:c,roughness:.42,metalness:.05})); }
+/* wire insulation: the colour is converted from sRGB so a red wire on the model is the same red as on the diagram */
+export function wireMat(c){ return WIRE_MATS[c]||(WIRE_MATS[c]=std({color:new THREE.Color(c).convertSRGBToLinear(),roughness:.5,metalness:0})); }

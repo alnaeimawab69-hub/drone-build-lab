@@ -31,7 +31,8 @@ const FASTENERS = [
 ];
 
 const Dot = ({ c }) => <span className="dot" style={{ background: c }}></span>;
-const RED = '#d8453b', BLACK = '#2b2f35', YELLOW = '#e8c33c', BLUE = '#3d9be0', WHITE = '#eee', GREY = '#8a939c';
+/* the same wire colours as the lab (WIRE_COL in src/lab/engine/04-materials.js) */
+const RED = '#d8453b', BLACK = '#1e2023', YELLOW = '#e8c33c', BLUE = '#3d9be0', WHITE = '#f2f2ee', PHASES = 'linear-gradient(90deg,#6f58c9,#9aa3ab,#b86b2e)';
 
 const MOTORS = [
   ['M1', 'Rear right', 'Clockwise', 'CW'],
@@ -102,18 +103,18 @@ export default function Guide() {
 
         <section className="band" id="wiring">
           <div className="wrap">
-            <div className="sec-head"><h2>Wiring reference</h2><p>23 wires. Any ground pad is accepted for a ground wire, because all grounds are connected on the board.</p></div>
+            <div className="sec-head"><h2>Wiring reference</h2><p>23 wires. Colours follow the usual convention: red for positive supply, black for ground, then one colour per signal. Any ground pad is accepted for a ground wire, because all grounds are connected on the board.</p></div>
             <div className="table-wrap" role="region" aria-label="Wiring reference, model 1" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
                 <tr><td>Battery lead</td><td><Dot c={RED} />+ · <Dot c={BLACK} />−</td><td>ESC + · ESC −</td><td>Polarity</td></tr>
                 <tr><td>Capacitor</td><td><Dot c={RED} />+ · <Dot c={BLACK} />− (striped leg)</td><td>ESC + · ESC −</td><td>Absorbs voltage spikes</td></tr>
-                <tr><td>Motors 1–4</td><td><Dot c={GREY} />3 phase wires</td><td>ESC M1–M4</td><td>Each corner has its own output</td></tr>
+                <tr><td>Motors 1–4</td><td><Dot c={PHASES} />3 phase wires</td><td>ESC M1–M4</td><td>Each corner has its own output</td></tr>
                 <tr><td>ESC</td><td><Dot c="#c9ced3" />harness</td><td>FC ESC socket</td><td>Signals and current sensing</td></tr>
-                <tr><td>Radio receiver</td><td>5V · G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td>5V · G · <b>R1</b> · <b>T1</b></td><td>TX crosses to RX (UART 1)</td></tr>
-                <tr><td>GPS module</td><td>5V · G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td>5V · G · <b>R3</b> · <b>T3</b></td><td>TX crosses to RX (UART 3)</td></tr>
-                <tr><td>FPV camera</td><td>5V · G · <Dot c={YELLOW} />VID</td><td>5V · G · CAM</td><td>Video goes in on CAM</td></tr>
-                <tr><td>Video transmitter</td><td>VIN · G · <Dot c={YELLOW} />VID</td><td><b>9V</b> · G · VTX</td><td>VTX runs on 9 V, not 5 V</td></tr>
+                <tr><td>Radio receiver</td><td><Dot c={RED} />5V · <Dot c={BLACK} />G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td>5V · G · <b>R1</b> · <b>T1</b></td><td>TX crosses to RX (UART 1)</td></tr>
+                <tr><td>GPS module</td><td><Dot c={RED} />5V · <Dot c={BLACK} />G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td>5V · G · <b>R3</b> · <b>T3</b></td><td>TX crosses to RX (UART 3)</td></tr>
+                <tr><td>FPV camera</td><td><Dot c={RED} />5V · <Dot c={BLACK} />G · <Dot c={YELLOW} />VID</td><td>5V · G · CAM</td><td>Video goes in on CAM</td></tr>
+                <tr><td>Video transmitter</td><td><Dot c={RED} />VIN · <Dot c={BLACK} />G · <Dot c={YELLOW} />VID</td><td><b>9V</b> · G · VTX</td><td>VTX runs on 9 V, not 5 V</td></tr>
               </tbody>
             </table></div>
             <h3 className="sub-head">Model 2: CX-5 cinematic FPV (24 wires)</h3>
@@ -121,8 +122,8 @@ export default function Guide() {
             <div className="table-wrap" role="region" aria-label="Wiring reference, model 2" tabIndex={0}><table>
               <thead><tr><th>From</th><th>Wire</th><th>To</th><th>Key idea</th></tr></thead>
               <tbody>
-                <tr><td>Digital VTX</td><td>VIN · G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td><b>9V</b> · G · <b>R2</b> · <b>T2</b></td><td>On-screen data over UART 2</td></tr>
-                <tr><td>LED strip</td><td>5V · G · <Dot c="#4fb06d" />DIN</td><td>5V · G · <b>LED</b></td><td>Data wire goes to the LED pad</td></tr>
+                <tr><td>Digital VTX</td><td><Dot c={RED} />VIN · <Dot c={BLACK} />G · <Dot c={BLUE} />TX · <Dot c={WHITE} />RX</td><td><b>9V</b> · G · <b>R2</b> · <b>T2</b></td><td>On-screen data over UART 2</td></tr>
+                <tr><td>LED strip</td><td><Dot c={RED} />5V · <Dot c={BLACK} />G · <Dot c="#4fb06d" />DIN</td><td>5V · G · <b>LED</b></td><td>Data wire goes to the LED pad</td></tr>
               </tbody>
             </table></div>
           </div>

@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { ARM, CINE, MODEL, TAU, V, armPos } from './01-config.js';
 import { propBlurTex } from './03-textures.js';
-import { M, std, wireMat } from './04-materials.js';
+import { M, WIRE_COL, std, wireColor, wireMat } from './04-materials.js';
 import { PHASE_COLS, addPad, boardMesh, box, circHole, cyl, flatExtrude, mesh, rod, roundBox, rrShape, slotHole, smd, strands, tube } from './05-geometry.js';
 
 /* ================= Builders (all geometry made here, no imported models) ================= */
@@ -41,6 +41,11 @@ export function buildCamPlate(){
 }
 /* battery straps: each one passes down through a pair of slots, one slot on each side of the battery */
 export const PLATE_T=CINE?.25:.22;                       // top plate thickness
+/* cable hole in the top plate, rear left: the GPS wires drop through it to the flight controller.
+   Beside the battery and the GPS mount, clear of the strap slots and standoffs */
+export const CABLE_HOLE=CINE?V(-2.3,0,4.3):V(-1.95,0,3.75);
+const cableHole=(sh,Y)=>sh.holes.push(circHole(CABLE_HOLE.x,Y(CABLE_HOLE.z),.24));
+function grommet(g){ const r=mesh(new THREE.TorusGeometry(.24,.05,8,24),M.black); r.rotation.x=Math.PI/2; r.position.set(CABLE_HOLE.x,PLATE_T,CABLE_HOLE.z); g.add(r); }
 export const STRAP_X=MODEL.bat[0]/2+.35;                  // slot distance from the centre line
 export const STRAP_Z=[-1,1].map(s=>MODEL.batZ+s*(CINE?1.6:1.9));
 const strapSlots=(sh,Y)=>{ for(const z of STRAP_Z) for(const x of [-STRAP_X,STRAP_X]){ const p=new THREE.Path(), y=Y(z); p.moveTo(x-.11,y-.36); p.lineTo(x+.11,y-.36); p.lineTo(x+.11,y+.36); p.lineTo(x-.11,y+.36); p.lineTo(x-.11,y-.36); sh.holes.push(p); } };
@@ -49,19 +54,19 @@ function batteryPad(g){ const [W,,L]=MODEL.bat, p=box(W-.2,.06,L-.4,M.batPad,0,P
 export function buildTopPlate(){
   if(CINE) return buildTopPlateC();
   const g=new THREE.Group(), ts=rrShape(5.2,9.2,.6);
-  strapSlots(ts,z=>-z);
+  strapSlots(ts,z=>-z); cableHole(ts,z=>-z);
   for(const x of [-2.35,2.35]) for(const z of [-4,0,4.2]) ts.holes.push(circHole(x,-z,.15));
-  g.add(flatExtrude(ts,PLATE_T,M.carbonTop));
+  g.add(flatExtrude(ts,PLATE_T,M.carbonTop)); grommet(g);
   batteryPad(g);
   return g;
 }
 /* model 2: longer, wider top plate with a TPU mount for the action camera at the front */
 function buildTopPlateC(){
   const g=new THREE.Group(), cz=.5, ts=rrShape(6.2,12,.6), A=MODEL.alu, Y=z=>-(z-cz);
-  strapSlots(ts,Y);
+  strapSlots(ts,Y); cableHole(ts,Y);
   for(const x of [-A,A]) for(const z of [-4,0,4.2]) ts.holes.push(circHole(x,Y(z),.15));
   for(const [x,z] of [[-1.6,-1.2],[1.6,-1.2]]) ts.holes.push(circHole(x,Y(z),.45));
-  const pl=flatExtrude(ts,PLATE_T,M.carbonTop); pl.position.z=cz; g.add(pl);
+  const pl=flatExtrude(ts,PLATE_T,M.carbonTop); pl.position.z=cz; g.add(pl); grommet(g);
   batteryPad(g);
   /* action-camera mount: soft TPU base with three prongs */
   const base=mesh(roundBox(3.4,.3,2.4,.1,4),M.tpu); base.position.set(0,.4,-3.7); g.add(base);
@@ -277,8 +282,8 @@ export function buildLead(){
   const g=new THREE.Group();
   g.add(box(.9,.55,1.0,M.connector,0,0,.6));
   g.add(box(.94,.12,.3,M.connector,0,.3,.25));
-  g.add(tube([V(.22,0,.1),V(.25,-.05,-1.2),V(.25,.25,-2.65)],.11,wireMat(0xd8453b)));
-  g.add(tube([V(-.22,0,.1),V(-.25,-.05,-1.2),V(-.25,.25,-2.65)],.11,wireMat(0x2b2f35)));
+  g.add(tube([V(.22,0,.1),V(.25,-.05,-1.2),V(.25,.25,-2.65)],.11,wireMat(WIRE_COL.power)));
+  g.add(tube([V(-.22,0,.1),V(-.25,-.05,-1.2),V(-.25,.25,-2.65)],.11,wireMat(WIRE_COL.ground)));
   addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.25,.25,-2.72),out:V(0,1,0)});
   addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.25,.25,-2.72),out:V(0,1,0)});
   const sock=new THREE.Object3D(); sock.position.set(0,0,1.12); g.add(sock); g.userData.socket=sock;
@@ -329,8 +334,9 @@ function buildHDVTX(){
 /* clear side panel between the plates */
 export function buildPanel(){
   const g=new THREE.Group();
-  const p=box(.1,2.75,9.4,M.panel); p.castShadow=false; p.userData.noEdges=true; g.add(p);
-  for(const y of [-1.33,1.33]) g.add(box(.14,.1,9.4,M.black,0,y,0));
+  /* the panel stops short of the arms, so the arms and the motor wires on them pass underneath */
+  const p=box(.1,2.4,9.4,M.panel,0,.175,0); p.castShadow=false; p.userData.noEdges=true; g.add(p);
+  for(const y of [-.98,1.33]) g.add(box(.14,.1,9.4,M.black,0,y,0));
   return g;
 }
 /* LED strip on the inside of the right panel; its three wires leave from the front end */
@@ -339,7 +345,7 @@ export function buildLED(){
   g.add(box(.06,.34,6.4,M.ledStrip));
   for(let i=0;i<10;i++){ const l=box(.07,.18,.24,M.led,-.03,0,-2.9+i*.64); l.castShadow=false; g.add(l); }
   for(const [k,l,need,z] of [['5v','5V','5V',-3.05],['g','G','GND',-2.75],['din','DIN','LED',-2.45]]){
-    g.add(rod(V(-.03,-.1,z),V(-.3,-.1,z),.03,wireMat(need==='5V'?0xd8453b:need==='GND'?0x2b2f35:0x4fb06d)));
+    g.add(rod(V(-.03,-.1,z),V(-.3,-.1,z),.03,wireMat(wireColor(need))));
     addPad(g,{key:k,label:l,need,pos:V(-.35,-.1,z),out:V(-1,0,0)});
   }
   return g;
