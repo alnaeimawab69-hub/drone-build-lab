@@ -18,6 +18,7 @@ const MODES = [
   ['assess', 'Scored', 'Assessment', 'No hints and a running timer. Wrong parts, screws and wires cost points. The report breaks the score down by stage and lists what to review.'],
   ['explore', 'Free', 'Explore', 'Start with the finished drone. Pull it apart in exploded view, read what each part does and how it connects, then fly it.'],
   ['moves', '3D animation', 'Movements', 'Learn throttle, yaw, pitch and roll with a remote: on-screen sticks, the keyboard (WASD and arrows) or a USB radio or gamepad. Rotation axes, spin arrows, force arrows and motor bars show what each stick does. Ends with a quick quiz.'],
+  ['fault', 'Diagnose', 'Fault finding', 'A finished drone fails its pre-flight check. Students inspect it, bench-test the motors with the props off and check the wiring, then report each hidden fault: reversed motors, wrong or loose props, a turned flight controller, crossed TX and RX, and more. Every fault is then explained and repaired. A drone code gives the whole class the same drone, and the result can be copied for the teacher.'],
 ];
 
 function Feature({ eyebrow, title, img, alt, flip, children }) {
@@ -45,7 +46,7 @@ export default function Home() {
               <h1>From bare carbon to first flight.</h1>
               <p className="lede">Students build a quadcopter in the browser, choosing a 250 mm trainer quad or a 5-inch cinematic FPV drone: bolt the frame together, mount and fasten every component with the right screw, solder 23 wires, test motor direction, fit the propellers and fly it to see how thrust creates each movement.</p>
               <div className="ctas"><a className="btn primary" href="lab.html">Open the lab →</a><a className="btn" href="guide.html">Teacher guide</a></div>
-              <div className="facts"><span><b>7</b> stages</span><span><b>36</b> fasteners</span><span><b>23–24</b> wires</span><span><b>3</b> drone models</span><span><b>4</b> activities</span><span>runs in any modern browser</span></div>
+              <div className="facts"><span><b>7</b> stages</span><span><b>36</b> fasteners</span><span><b>23–24</b> wires</span><span><b>3</b> drone models</span><span><b>5</b> activities</span><span>runs in any modern browser</span></div>
             </div>
             <div className="shot"><img src={lab3d} alt="The finished quadcopter on the workbench in the 3D lab" width="1400" height="900" /></div>
           </div>
@@ -62,7 +63,7 @@ export default function Home() {
 
         <section id="modes">
           <div className="wrap">
-            <div className="sec-head"><div className="eyebrow">Four ways to use it</div><h2>Practise with hints, then prove it without them</h2></div>
+            <div className="sec-head"><div className="eyebrow">Five ways to use it</div><h2>Practise with hints, prove it without them, then find what is wrong</h2></div>
             <div className="modes">
               {MODES.map(([cls, tag, title, text]) => (
                 <div key={cls} className={'mode ' + cls}><em>{tag}</em><h3>{title}</h3><p>{text}</p></div>

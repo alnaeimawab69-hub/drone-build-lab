@@ -41,6 +41,7 @@ button,input{font:inherit;color:inherit}
 .chip.assess{border-color:var(--accent);color:var(--accent)}
 .chip.learn{border-color:var(--ok);color:var(--ok)}
 .chip.explore{border-color:var(--cool);color:var(--cool)}
+.chip.fault{border-color:var(--bad);color:var(--bad)}
 .meta .bad{color:var(--bad)}
 
 /* main */
@@ -236,13 +237,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;max-width:340px}
 .field label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .field input{padding:9px 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2)}
-.modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.mode{display:flex;flex-direction:column;gap:6px;text-align:left;padding:16px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel-2);cursor:pointer;transition:border-color .15s,transform .15s}
+.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.mode{display:flex;flex-direction:column;gap:6px;text-align:left;padding:14px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel-2);cursor:pointer;transition:border-color .15s,transform .15s}
 .mode:hover{border-color:var(--accent);transform:translateY(-1px)}
 .mode b{font-family:var(--f-display);font-size:21px;font-weight:700}
 .mode span{font-size:12.5px;color:var(--muted)}
 .mode em{font-style:normal;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
-.mode.learn em{color:var(--ok)} .mode.assess em{color:var(--accent)} .mode.explore em{color:var(--cool)} .mode.moves em{color:var(--warn)}
+.mode.learn em{color:var(--ok)} .mode.assess em{color:var(--accent)} .mode.explore em{color:var(--cool)} .mode.moves em{color:var(--warn)} .mode.fault em{color:var(--bad)}
 .ov h3.sec{margin:0 0 8px}
 .models{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}
 .mode:disabled{opacity:.38;cursor:not-allowed;transform:none;border-color:var(--line-2)}
@@ -276,6 +277,24 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .mlist{margin:0 0 20px;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto}
 .mlist li{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--panel-2);border-left:3px solid var(--bad)}
 .mlist li small{display:block;color:var(--muted);font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+
+/* fault finding */
+.ftlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);overflow:hidden}
+.ftrow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;padding:7px 10px;font-size:13px;border-top:1px solid var(--line)}
+.ftrow:first-child{border-top:0}
+.ftrow.on{background:var(--accent-soft)}
+.ftm{display:flex;gap:4px;margin-left:auto}
+.ftm .btn{min-width:38px;font-family:var(--f-mono)}
+.ftset{font-size:12.5px;color:var(--muted)}
+.ftset summary{cursor:pointer;color:var(--fg)}
+.ftset>*+*{margin-top:8px}
+.ftcode{font-family:var(--f-mono);letter-spacing:.06em}
+.ftin{width:130px;padding:5px 9px;border-radius:7px;border:1px solid var(--line-2);background:var(--panel-2);font-family:var(--f-mono);text-transform:uppercase}
+.mlist.ftres{max-height:none;margin:0}
+.mlist.ftres li.ok{border-left-color:var(--ok)}
+.mlist.ftres li.warn{border-left-color:var(--warn)}
+.mlist.ftres li small{margin-bottom:2px}
+.mlist.ftres li i{color:var(--muted)}
 
 /* movements activity: the sticks sit on a drawn radio transmitter */
 .remote{position:relative;margin-top:22px;padding:12px 10px 10px;border-radius:26px 26px 34px 34px;background:linear-gradient(180deg,#2a343b,#1b2227 70%);border:1px solid var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 8px 22px rgba(0,0,0,.35)}
