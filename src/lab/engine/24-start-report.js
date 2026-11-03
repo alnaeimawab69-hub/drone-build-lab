@@ -20,7 +20,7 @@ function modelIcon(m){
 export function showStart(){
   let name=''; try{ name=localStorage.getItem('dbl-name')||''; }catch(e){}
   const models=Object.values(MODELS).map(m=>`<button class="model ${m.key===MODEL.key?'on':''}" data-model="${m.key}" aria-pressed="${m.key===MODEL.key}">${modelIcon(m)}<span><em>Model ${m.no}${m.key===MODEL.key?' · selected':''}</em><b>${esc(m.title)}</b><small>${esc(m.blurb)}</small></span></button>`).join('');
-  const sealed=!!MODEL.sealed, lock=sealed?'disabled title="This model is built from sealed modules. Try it in Explore or Movements."':'';
+  const sealed=!!MODEL.sealed;
   const props=[['in','Props in','Front propellers sweep in, toward the camera. The usual choice.'],['out','Props out','Every motor reversed. Front propellers sweep out, away from the camera.']]
     .map(([k,b,s])=>`<button class="pdir ${PROPS===k?'on':''}" data-props="${k}" aria-pressed="${PROPS===k}"><b>${b}</b><small>${s}</small></button>`).join('');
   $('#overlay').hidden=false;
@@ -35,13 +35,13 @@ export function showStart(){
     <div class="pdirs">${props}</div>
     <h3 class="sec">3 · Choose an activity</h3>
     <div class="modes">
-      <button class="mode learn" data-mode="learn" ${lock}><em>Guided</em><b>Practice</b><span>Hints show where parts and wires go. “Show me” finishes any stage for you.</span></button>
-      <button class="mode assess" data-mode="assess" ${lock}><em>Scored</em><b>Assessment</b><span>No hints, and a timer. Mistakes cost points. You get a report to copy at the end.</span></button>
+      <button class="mode learn" data-mode="learn"><em>Guided</em><b>Practice</b><span>Hints show where parts and wires go. “Show me” finishes any stage for you.</span></button>
+      <button class="mode assess" data-mode="assess"><em>Scored</em><b>Assessment</b><span>No hints, and a timer. Mistakes cost points. You get a report to copy at the end.</span></button>
       <button class="mode explore" data-mode="explore"><em>Free</em><b>Explore</b><span>Start with the finished drone. Take it apart, read about each part and fly it.</span></button>
       <button class="mode moves" data-mode="moves"><em>Flight trainer</em><b>Movements</b><span>Learn the remote: on-screen sticks, the keyboard, or a USB radio or gamepad.</span></button>
       <button class="mode fault" data-mode="fault"><em>Diagnose</em><b>Fault finding</b><span>A finished drone has hidden faults. Inspect it and test the motors. Then report what is wrong.</span></button>
     </div>
-    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so it has no build stages. Explore it part by part, fly it in Movements, or find its faults in Fault finding.</p>`:''}
+    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so its build has no screws and no soldering. Assemble the airframe, fit the modules, test the motors, fit the props and fly.</p>`:''}
     <p class="small">Drag parts with a mouse or finger. Drag empty space to orbit. Scroll or pinch to zoom.</p></div>`;
   $('#overlay').querySelectorAll('.mode').forEach(b=>b.onclick=()=>start(b.dataset.mode));
   /* every module reads the model and the motor direction while it loads, so changing either reloads the page */

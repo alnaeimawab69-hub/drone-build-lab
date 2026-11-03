@@ -80,7 +80,7 @@ export const droneRoot=new THREE.Group(); droneRoot.scale.setScalar(SCALE); scen
 
 HOT.forEach(h=>{
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:ringTex,depthTest:false,transparent:true}));
-  s.scale.setScalar(1.4); s.renderOrder=8; s.position.copy(h.pos).add(h.mk||V(0,.3,0)); s.visible=false;
+  s.scale.setScalar(1.4/SCALE); s.renderOrder=8; s.position.copy(h.pos).add(h.mk||V(0,.3,0)); s.visible=false;
   droneRoot.add(s); h.marker=s;
 });
 

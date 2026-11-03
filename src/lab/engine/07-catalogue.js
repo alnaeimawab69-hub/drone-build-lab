@@ -131,6 +131,12 @@ export const STAGES=[
   {key:'props',title:'Fit the propellers',short:'Props',goal:'Fit a CW (clockwise) or CCW (counter-clockwise) propeller to match each motor. A wrong propeller flips the drone at take-off.'},
   {key:'fly',title:'Flight physics',short:'Fly',goal:'Fly the finished drone. Watch how the four motor speeds create every movement.'},
   {key:'quiz',title:'Knowledge check',short:'Check',goal:CINE?'Eleven questions on what you just built.':'Eight questions on what you just built.'},
-];
-export const SEC={frame:15,mount:20,wire:30,test:10,props:10,quiz:15};
+].filter(s=>!(EX&&s.key==='wire'));   // model 3's modules click together: nothing to solder
+if(EX){
+  Object.assign(STAGES[0],{title:'Assemble the airframe',goal:'Fit the fuselage, then click the four folding arms and the two landing gear legs onto it. Every module locks in with a quick-release connector, so there are no screws.'});
+  Object.assign(STAGES[1],{goal:'Drag each module into place: flight controller, top shell, motors, cameras, RTK, sensors and lights.'});
+  Object.assign(STAGES[2],{goal:'Slide both smart batteries into the bay, then check each motor spins the right way.'});
+}
+/* model 3 has no wiring section, so its 30 points are shared across the other sections */
+export const SEC=EX?{frame:20,mount:30,test:15,props:15,quiz:20}:{frame:15,mount:20,wire:30,test:10,props:10,quiz:15};
 export const SECNAME={frame:'Frame assembly',mount:'Component mounting',wire:'Wiring and soldering',test:'Power-up and motor test',props:'Propellers',quiz:'Knowledge check'};

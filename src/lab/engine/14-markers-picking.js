@@ -31,6 +31,8 @@ export function screenOf(world){ const p=world.clone().project(camera); const r=
 export function pickPad(){ const list=Object.values(PADS).map(p=>p.proxy); const hit=ray.intersectObjects(list,false)[0]; return hit?hit.object.userData.padId:null; }
 export function hotOf(o){ while(o&&o!==droneRoot){ if(o.userData.hotId) return o.userData.hotId; o=o.parent; } return null; }
 export function pickPart(stage){ const list=Object.values(parts).filter(p=>p.hot.stage===stage).map(p=>p.group); const hit=ray.intersectObjects(list,true)[0]; return hit?hotOf(hit.object):null; }
-export function computeSnap(x,y){ let best=null,bd=64; const k=stageKey();
-  for(const h of HOT){ if(h.stage!==k||parts[h.id]||!reqOk(h)) continue; const s=screenOf(h.marker.getWorldPosition(V())); const d=Math.hypot(s.x-x,s.y-y); if(d<bd){bd=d;best=h;} }
+/* a spot that takes the held part wins over a nearer one that does not (an arm dragged over the plate's edge holes) */
+export function computeSnap(x,y,t){ let best=null,bd=64,fit=false; const k=stageKey();
+  for(const h of HOT){ if(h.stage!==k||parts[h.id]||!reqOk(h)) continue; const s=screenOf(h.marker.getWorldPosition(V())); const d=Math.hypot(s.x-x,s.y-y), ok=!!t&&accepts(h,t);
+    if(d<64&&(ok&&!fit||ok===fit&&d<bd)){bd=d;best=h;fit=ok;} }
   return best; }

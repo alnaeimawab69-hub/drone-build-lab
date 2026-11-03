@@ -1,5 +1,5 @@
 /* Drone Build Lab · Render loop */
-import { $ } from './01-config.js';
+import { $, SCALE } from './01-config.js';
 import { camera, controls, renderer, scene } from './02-scene.js';
 import { HOT } from './07-catalogue.js';
 import { PADS, S, parts } from './08-state.js';
@@ -26,7 +26,7 @@ export function loop(now){
     /* the spin arrow turns the same way as its prop, slowly enough to follow by eye */
     const r=spinRings[n-1]; if(r.visible) r.rotation.y+=Math.sign(w)*(1.2+Math.abs(w)*.04)*dt; }
   const pulse=1.3+.14*Math.sin(clockT*4);
-  HOT.forEach(h=>{ if(h.marker.visible) h.marker.scale.setScalar(S.drag&&S.drag.snap===h?1.8:pulse); });
+  HOT.forEach(h=>{ if(h.marker.visible) h.marker.scale.setScalar((S.drag&&S.drag.snap===h?1.8:pulse)/SCALE); });   // same on-screen size on the smaller-drawn model 3
   for(const s of Object.values(SCR)) if(s.marker.visible) s.marker.scale.setScalar(S.drag&&S.drag.hole===s.id?.95:.55+.08*Math.sin(clockT*4));
   if(k==='wire'&&S.mode==='learn'&&!S.drag){ const sc=1+.3*(.5+.5*Math.sin(clockT*5)); for(const p of Object.values(PADS)) if(p.need) p.vis.scale.setScalar(p.wired?1:sc); }
   if(S.dirty&&!S.drag){ S.dirty=false; renderPanel(); }

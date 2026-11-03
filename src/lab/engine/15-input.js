@@ -69,8 +69,9 @@ export function movePartDrag(e){
   const d=S.drag, g=d.group;
   if(!insideCanvas(e)){ g.visible=false; d.snap=null; updateMarkers(); showTip(TYPES[d.typeKey].name,e.clientX,e.clientY); return; }
   g.visible=true; setNDC(e);
-  d.snap=computeSnap(e.clientX,e.clientY);
-  if(d.snap){ const h=d.snap; g.position.copy(h.pos); g.rotation.set(h.rotX||0,h.rotY||0,0); }
+  d.snap=computeSnap(e.clientX,e.clientY,d.typeKey);
+  /* only preview the part where it fits; a wrong spot still counts as a mistake on drop */
+  if(d.snap&&accepts(d.snap,d.typeKey)){ const h=d.snap; g.position.copy(h.pos); g.rotation.set(h.rotX||0,h.rotY||0,0); }
   else { const wp=planePoint(controls.target.clone()); g.position.copy(droneRoot.worldToLocal(wp)); g.rotation.set(0,d.typeKey==='motor'?-Math.PI/4:0,0); }
   updateMarkers(); showTip(d.snap?d.snap.label:TYPES[d.typeKey].name,e.clientX,e.clientY);
 }

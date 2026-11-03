@@ -1,5 +1,5 @@
 /* Drone Build Lab · Stage flow, auto-complete and panel actions */
-import { $, EXP, V, ease } from './01-config.js';
+import { $, EX, EXP, V, ease } from './01-config.js';
 import { camera, controls } from './02-scene.js';
 import { M } from './04-materials.js';
 import { HOT, HOTMAP, SEC, STAGES } from './07-catalogue.js';
@@ -88,12 +88,13 @@ export const ACT={
     if(k==='quiz') return showReport();
     gotoStage(S.stage+1);
   },
+  back(){ if(S.stage>0) gotoStage(S.stage-1); },
   show(){ const k=stageKey(); if(k==='frame') autoFrame(true); if(k==='mount') autoMount(true); if(k==='wire') autoWire(true); if(k==='power') autoPower(); if(k==='props') autoProps(true); if(k==='fly'){ if(!airborne()) doMan('takeoff'); FL.tour={i:0,t:0}; } renderPanel(); },
   spin(b){ const n=+b.dataset.m; setTestSpin(n,S.spin[n]===0); renderPanel(); },
   spinAll(){ const any=[1,2,3,4].some(n=>S.spin[n]!==0); [1,2,3,4].forEach(n=>setTestSpin(n,!any)); renderPanel(); },
   swap(b){ const n=+b.dataset.m; const wasRight=dirActual(n)===EXP[n]; S.test.swapped[n]=!S.test.swapped[n];
-    if(wasRight) mistake('test',4,`Motor ${n} already spun ${EXP[n]}, which is correct. Swapping two of its wires reversed it. Only swap the wires of a motor that turns the wrong way.`,`Motor ${n} was already correct.`);
-    else toast(`Two phase wires swapped on motor ${n}. Spin it again to check the direction.`,'ok');
+    if(wasRight) mistake('test',4,EX?`Motor ${n} already spun ${EXP[n]}, which is correct. Reversing it in the ESC settings made it wrong. Only reverse a motor that turns the wrong way.`:`Motor ${n} already spun ${EXP[n]}, which is correct. Swapping two of its wires reversed it. Only swap the wires of a motor that turns the wrong way.`,`Motor ${n} was already correct.`);
+    else toast(EX?`Motor ${n} reversed in the ESC settings. Spin it again to check the direction.`:`Two phase wires swapped on motor ${n}. Spin it again to check the direction.`,'ok');
     if(S.spin[n]!==0) setTestSpin(n,true); renderPanel(); },
   confirm(){ const bad=[1,2,3,4].filter(n=>dirActual(n)!==EXP[n]);
     if(bad.length){ mistake('test',4,`${bad.length>1?'Motors':'Motor'} ${bad.join(', ')} still ${bad.length>1?'spin':'spins'} the wrong way. Compare each motor with the layout diagram. Diagonal motors turn the same way.`,'At least one motor still spins the wrong way.'); return; }
@@ -112,6 +113,7 @@ export const ACT={
   report(){ showReport(); },
 };
 /* the fault finding activity keeps its own actions (FT_ACT in 31-fault-finding.js) */
+$('#steps').addEventListener('click',e=>{ const b=e.target.closest('[data-stage]'); const i=b?+b.dataset.stage:-1; if(i>=0&&i<S.stage&&!S.explore) gotoStage(i); });
 $('#panel').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(!b||b.disabled) return; const f=ACT[b.dataset.act]||FT_ACT[b.dataset.act]; f&&f(b); });
 $('#panel').addEventListener('change',e=>{
   const t=e.target;

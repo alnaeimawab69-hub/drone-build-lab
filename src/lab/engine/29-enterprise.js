@@ -1,6 +1,6 @@
 /* Drone Build Lab · Model 3 (EX-9 enterprise drone): parts, catalogue and mounting points.
    Built at real size in cm like the other models; droneRoot draws it at MODEL.scale so it fits the bench.
-   Its parts are sealed modules, so it is offered in Explore and Movements only (no screws, no wiring). */
+   Its parts are sealed modules that click in, so its build has no screws and no wiring stage. */
 import * as THREE from 'three';
 import { ARM, ARM_ANG, DEG, MODEL, TAU, V, armPos } from './01-config.js';
 import { exBatTex } from './03-textures.js';
@@ -163,50 +163,50 @@ function buildBatteryEX(){
 
 /* ================= Catalogue ================= */
 export const EX_TYPES={
-  body:{name:'Fuselage',count:1,build:buildBody,lab:V(-3.4,6.6,3),
+  body:{name:'Fuselage',count:1,where:'in the centre of the mat',build:buildBody,lab:V(-3.4,6.6,3),
     role:'The main body. It carries the arms, the landing gear, the battery bay and all the electronics, sealed against dust and rain.',links:'Arms clip into its sides; the landing gear bolts underneath; the batteries slide into the bay at the rear.',spec:'Magnesium and composite shell · weather-sealed (dust and rain resistant)'},
-  arm:{name:'Folding arm',count:4,build:buildArmEX,
+  arm:{name:'Folding arm',count:4,where:'on a joint at the side of the fuselage',build:buildArmEX,
     role:'Holds a motor 45 cm from the centre. The arm folds back for transport and locks open with a sleeve. Each motor pod has its own ESC (speed controller) close to the motor, and a light underneath.',links:'Folding joint on the fuselage; power and signal wires run inside the carbon tube to the ESC in the pod.',spec:'Carbon fibre tube · 895 mm wheelbase (motor to motor, diagonal)'},
-  gear:{name:'Landing gear',count:2,build:buildGear,lab:V(0,1.2,0),
+  gear:{name:'Landing gear',count:2,where:'under the fuselage',build:buildGear,lab:V(0,1.2,0),
     role:'Keeps the gimbal camera off the ground for take-off and landing. The radio antennas for the remote link are built into the legs, low and well apart.',links:'Bolts to the bottom of the fuselage. Antenna cables run up into the body.',spec:'Carbon struts · two antennas in each leg for the long-range video and control link'},
-  fc:{name:'Flight controller',count:1,build:buildFCEX,ex:V(0,13,0),lab:V(0,1.2,0),
+  fc:{name:'Flight controller',count:1,where:'inside the body, before the top shell goes on',build:buildFCEX,ex:V(0,13,0),lab:V(0,1.2,0),
     role:'The FC (flight controller) is the brain. It has three IMUs (motion sensors) and two barometers (height sensors). If one sensor fails, the FC compares them, ignores the faulty one and keeps flying.',links:'Every ESC, both batteries, the RTK and satellite receivers, the obstacle sensors, the gimbal and the radio link.',spec:'Three IMUs · two barometers · the printed arrow points to the front'},
-  cover:{name:'Top shell',count:1,build:buildCover,ex:V(0,24,0),lab:V(0,1.6,0),
+  cover:{name:'Top shell',count:1,where:'on top of the body, over the flight controller',build:buildCover,ex:V(0,24,0),lab:V(0,1.6,0),
     role:'Closes the body over the flight controller. The connector on top is a payload port for extra equipment such as a loudspeaker or a spotlight.',links:'Clips onto the fuselage. The payload port is wired to the flight controller.',spec:'Accessory port: power and data for an extra payload'},
-  motor:{name:'Brushless motor',count:4,build:buildMotorEX,lab:V(0,2.6,0),
+  motor:{name:'Brushless motor',count:4,where:'on a motor pod at an arm tip',build:buildMotorEX,lab:V(0,2.6,0),
     role:'A large, slow-turning motor for big propellers. It is more efficient than a small, fast motor, so the drone can fly for about 45 minutes.',links:'Three phase wires to the ESC inside its motor pod.',spec:'Outer-rotor motor · about 130 KV (rpm per volt) · cooling slots in the bell'},
-  camera:{name:'FPV camera',count:1,build:buildFPVEX,ex:V(0,0,-8),lab:V(0,1.3,0),
+  camera:{name:'FPV camera',count:1,where:'in the nose',build:buildFPVEX,ex:V(0,0,-8),lab:V(0,1.3,0),
     role:'A small forward camera that gives the pilot a live view for flying (FPV: first-person view). The gimbal camera is then free to point wherever the inspection needs.',links:'Video to the flight controller and the radio link.',spec:'Fixed, wide-angle, low delay'},
-  gimbal:{name:'Gimbal camera',count:1,build:buildGimbal,ex:V(0,-5,-12),lab:V(0,-1.2,-2.2),
+  gimbal:{name:'Gimbal camera',count:1,where:'on the quick-release mount under the nose',build:buildGimbal,ex:V(0,-5,-12),lab:V(0,-1.2,-2.2),
     role:'The inspection camera. Three motors keep it steady while the drone moves. It combines a zoom camera, a wide camera, a thermal camera that sees heat, and a laser rangefinder that measures distance.',links:'Quick-release mount under the nose (orange button) for power, video and control.',spec:'3-axis stabiliser (gimbal) · zoom, wide and thermal cameras · laser rangefinder'},
-  rtk:{name:'RTK module',count:1,build:buildRTK,ex:V(0,32,0),lab:V(0,4.6,0),
+  rtk:{name:'RTK module',count:1,where:'on top of the top shell',build:buildRTK,ex:V(0,32,0),lab:V(0,4.6,0),
     role:'RTK (real-time kinematic) corrects satellite positioning with data from a ground station. Accuracy is about 1 cm instead of about 1 m. Its two antennas also tell the drone which way it faces, so it does not need a compass near steel structures.',links:'Plugs into the top of the body; uses the radio link to receive corrections.',spec:'Two GNSS (satellite) antennas on folding masts · centimetre-level position'},
-  vision:{name:'Obstacle sensors',count:1,build:buildVision,lab:V(0,8.2,-6.6),
+  vision:{name:'Obstacle sensors',count:1,where:'around the body, one pair on each side',build:buildVision,lab:V(0,8.2,-6.6),
     role:'Pairs of cameras on all six sides see depth, like two eyes. A time-of-flight sensor (the small square window) measures distance with invisible light. The drone brakes or steers around obstacles.',links:'Wired to the flight controller.',spec:'Six directions · dual vision + time-of-flight · senses obstacles up to about 40 m'},
-  lights:{name:'Beacons and lights',count:1,build:buildLights,lab:V(0,10.8,-.5),
+  lights:{name:'Beacons and lights',count:1,where:'on top of and underneath the body',build:buildLights,lab:V(0,10.8,-.5),
     role:'Red anti-collision beacons on top and underneath make the drone visible to aircraft and people. The white light underneath helps the downward sensors land in the dark.',links:'Powered by the flight controller.',spec:'Anti-collision beacons · downward auxiliary light'},
-  battery:{name:'Smart battery',count:2,build:buildBatteryEX,ex:V(0,14,0),lab:V(0,2.4,0),
+  battery:{name:'Smart battery',count:2,where:'in the battery bay at the rear',build:buildBatteryEX,ex:V(0,14,0),lab:V(0,2.4,0),
     role:'Two batteries share the load. Either one can power the drone alone, so you can change one without switching off (hot swap). Each battery reports its charge, temperature and health.',links:'Slides into the rear bay and locks; the connector at its base plugs into the body.',spec:'12S (twelve cells in series) · 52.8 V when full · 5935 mAh each · heats itself in cold weather'},
-  propCW:{name:'Propeller, CW',count:2,build:()=>buildPropEX('CW'),lab:V(0,.9,0),
+  propCW:{name:'Propeller, CW',count:2,where:'on a motor that spins clockwise',build:()=>buildPropEX('CW'),lab:V(0,.9,0),
     role:'Big, slow two-blade propeller. Pushes air down when it turns clockwise (CW), seen from above. Folds for transport.',links:'Clamps onto a motor that spins clockwise.',spec:'21 inch (53 cm) · two folding blades'},
-  propCCW:{name:'Propeller, CCW',count:2,build:()=>buildPropEX('CCW'),lab:V(0,.9,0),
+  propCCW:{name:'Propeller, CCW',count:2,where:'on a motor that spins counter-clockwise',build:()=>buildPropEX('CCW'),lab:V(0,.9,0),
     role:'Mirror image of the CW propeller. Pushes air down when it turns counter-clockwise (CCW), seen from above.',links:'Clamps onto a motor that spins counter-clockwise.',spec:'21 inch (53 cm) · two folding blades'},
   frame:{name:'Folding airframe',role:'A sealed body with four folding carbon arms. Everything is a module that clicks in, so the drone is serviced by swapping parts, not by soldering.',links:'Arms, landing gear, batteries, gimbal and RTK all attach with quick-release connectors.',spec:'895 mm wheelbase · about 6.3 kg take-off weight · up to 9 kg'},
 };
 export function exHot(){
   const B=MODEL.bat;
   return [
-    {id:'body',type:'body',stage:'frame',pos:V(0,0,0),label:'Centre'},
-    ...[1,2,3,4].map(n=>({id:'arm'+n,type:'arm',stage:'frame',pos:V(0,0,0),rotY:ARM_ANG[n]*DEG,motor:n,label:'Arm '+n})),
-    ...[1,2].map(i=>({id:'gear'+i,type:'gear',stage:'frame',pos:V(i===1?16:-16,0,0),rotY:i===1?0:Math.PI,label:i===1?'Right leg':'Left leg'})),
+    {id:'body',type:'body',stage:'frame',pos:V(0,0,0),label:'Centre',mk:V(0,25.5,0)},
+    ...[1,2,3,4].map(n=>({id:'arm'+n,type:'arm',stage:'frame',pos:V(0,0,0),rotY:ARM_ANG[n]*DEG,motor:n,requires:'body',label:'Arm '+n,mk:armPos(n,19).setY(27)})),
+    ...[1,2].map(i=>({id:'gear'+i,type:'gear',stage:'frame',pos:V(i===1?16:-16,0,0),rotY:i===1?0:Math.PI,requires:'body',label:i===1?'Right leg':'Left leg',mk:V(0,1.5,0)})),
     {id:'fc',type:'fc',stage:'mount',pos:V(0,27,-4),label:'Inside the body'},
     {id:'cover',type:'cover',stage:'mount',pos:V(0,31.6,-7),requires:'fc',label:'Top of the body'},
     ...[1,2,3,4].map(n=>({id:'mot'+n,type:'motor',stage:'mount',pos:armPos(n).setY(POD_TOP),rotY:ARM_ANG[n]*DEG,motor:n,requires:'arm'+n,label:'Motor pod '+n})),
     {id:'cam',type:'camera',stage:'mount',pos:V(0,26.2,-21.3),label:'Nose'},
     {id:'gimbal',type:'gimbal',stage:'mount',pos:V(0,21,-12),label:'Under the nose'},
     {id:'rtk',type:'rtk',stage:'mount',pos:V(0,33.4,-8),requires:'cover',label:'On top'},
-    {id:'vision',type:'vision',stage:'mount',pos:V(0,0,0),label:'All sides'},
-    {id:'lights',type:'lights',stage:'mount',pos:V(0,0,0),label:'Top and bottom'},
+    {id:'vision',type:'vision',stage:'mount',pos:V(0,0,0),requires:'body',label:'All sides',mk:V(0,26.6,-20.6)},
+    {id:'lights',type:'lights',stage:'mount',pos:V(0,0,0),requires:'cover',label:'Top and bottom',mk:V(0,34.5,-1.6)},
     {id:'bat',type:'battery',stage:'power',pos:V(-B[0]/2-.4,30.3,MODEL.batZ),label:'Battery bay, left'},
     {id:'bat2',type:'battery',stage:'power',pos:V(B[0]/2+.4,30.3,MODEL.batZ),label:'Battery bay, right'},
     ...[1,2,3,4].map(n=>({id:'prop'+n,type:'prop',stage:'props',pos:armPos(n).setY(EX_PROP_Y),motor:n,label:'Motor '+n})),

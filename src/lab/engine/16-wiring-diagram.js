@@ -13,9 +13,10 @@ import { renderPanel, updateViewbar } from './21-panel.js';
 export const DG={fc:{cx:600,cy:260,s:120/1.8},esc:{cx:600,cy:610,s:55}};
 export const DG_SRC={
   cam:{box:[565,24,130,60,'FPV CAMERA','5V · G · VIDEO OUT'],tips:[[600,112],[637,112],[673,112]]},
-  vtx:{box:[870,182,140,62,'VIDEO TRANSMITTER','5.8 GHz · 9 V in'],tips:[[805,213],[805,243],[805,273]]},
-  gps:{box:[110,226,140,66,'GPS MODULE','UART 3'],tips:[[400,230],[400,260],[400,290],[400,320]]},
-  rx:{box:[110,372,150,66,'RADIO RECEIVER','2.4 GHz · UART 1'],tips:[[400,388],[400,412],[400,436],[400,460]]},
+  /* boxes span all their wire ends so every lead leaves the box straight */
+  vtx:{box:[870,190,140,100,'VIDEO TRANSMITTER','5.8 GHz · 9 V in'],tips:[[805,213],[805,243],[805,273]]},
+  gps:{box:[110,216,140,116,'GPS MODULE','UART 3'],tips:[[400,230],[400,260],[400,290],[400,320]]},
+  rx:{box:[110,372,150,100,'RADIO RECEIVER','2.4 GHz · UART 1'],tips:[[400,388],[400,412],[400,436],[400,460]]},
   lead:{box:[420,814,150,46,'BATTERY LEAD',CINE?'to 6S LiPo · 12 AWG':'to 4S LiPo · 12 AWG'],tips:[[560,772],[520,772]]},
   cap:{box:[650,814,150,46,'CAPACITOR',CINE?'50 V · 1000 µF':'35 V · 1000 µF'],tips:[[720,772],[690,772]]},
   mot4:{circ:[300,545,44],tips:[[410,563]]}, mot2:{circ:[900,545,44],tips:[[790,563]]},
@@ -41,7 +42,6 @@ export function dgAnchor(h,tip){
   const [x,y,w,hh]=c.box; return [clamp(tip[0],x,x+w),clamp(tip[1],y,y+hh)];
 }
 export function dgRoute(a,b,tgt){
-  if(tgt.net==='ESC') return `M${a[0]},${a[1]} V470 H455 V${b[1]} H${b[0]}`;
   const o=tgt.def.out||V(0,1,0);
   return Math.abs(o.z)>.5?`M${a[0]},${a[1]} H${b[0]} V${b[1]}`:`M${a[0]},${a[1]} V${b[1]} H${b[0]}`;
 }
@@ -66,12 +66,17 @@ export function renderDiagram(){
     const lab=p.def.shape==='socket'?`<text x="${x}" y="${y+4}" text-anchor="middle" style="font-size:10px;font-weight:700;fill:#1b1f23">ESC</text>`:`<text class="t-pad" x="${lx}" y="${ly}" text-anchor="middle">${esc(p.label)}</text>`;
     return `<g class="tgt" data-tgt="${p.id}" data-net="${p.net}">${shape}${lab}<rect x="${x-15}" y="${y-15}" width="30" height="30" fill="transparent"/></g>`;
   }).join('');
-  const wired=WIRES.map(w=>{ const src=PADS[w.src], tgt=PADS[w.tgt]; if(!src||!tgt) return ''; const tip=dgXY(src), a=src.hotId==='esc'?tip:dgAnchor(src.hotId,tip); return dgStroke(`M${a[0]},${a[1]} L${tip[0]},${tip[1]} `+dgRoute(tip,dgXY(tgt),tgt).replace(/^M[^ ]+ /,''),src)+`<circle cx="${dgXY(tgt)[0]}" cy="${dgXY(tgt)[1]}" r="5" fill="#dfe3e6" stroke="#6b7378"/>`; }).join('');
+  /* the ESC harness runs straight up between the stacked boards, so it is drawn under the FC board */
+  const wire=w=>{ const src=PADS[w.src], tgt=PADS[w.tgt]; if(!src||!tgt) return ''; const tip=dgXY(src), a=src.hotId==='esc'?tip:dgAnchor(src.hotId,tip); return dgStroke(`M${a[0]},${a[1]} L${tip[0]},${tip[1]} `+dgRoute(tip,dgXY(tgt),tgt).replace(/^M[^ ]+ /,''),src)+`<circle cx="${dgXY(tgt)[0]}" cy="${dgXY(tgt)[1]}" r="5" fill="#dfe3e6" stroke="#6b7378"/>`; };
+  const isHarness=w=>PADS[w.tgt]?.net==='ESC';
+  const harness=WIRES.filter(isHarness).map(wire).join(''), wired=WIRES.filter(w=>!isHarness(w)).map(wire).join('');
   const tips=pads.filter(p=>p.need&&!p.wired).map(p=>{
     const tip=dgXY(p), a=p.hotId==='esc'?[tip[0],tip[1]+14]:dgAnchor(p.hotId,tip), c=wireColor(p.need,p.label), col=c===0x2b2f35?'#3a3f46':hex(c);
-    const dx=tip[0]-a[0], dy=tip[1]-a[1], dl=Math.hypot(dx,dy)||1, lx=tip[0]+dx/dl*20, ly=tip[1]+dy/dl*20+4;
+    /* label sits past the knob along the lead: beside it for sideways leads (anchored so it never overlaps the knob), above or below otherwise */
+    const dx=tip[0]-a[0], dy=tip[1]-a[1], side=Math.abs(dx)>Math.abs(dy), off=p.need[0]==='M'?18:15;
+    const lx=side?tip[0]+Math.sign(dx)*off:tip[0], ly=side?tip[1]+4:tip[1]+Math.sign(dy||1)*(off+5)+4, anchor=side?(dx>0?'start':'end'):'middle';
     const knob=p.need[0]==='M'?`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="11" fill="#8a939c" stroke="#111" stroke-width="1.5"/>`:p.need==='ESC'?`<rect class="knob" x="${tip[0]-22}" y="${tip[1]-8}" width="44" height="16" rx="3" fill="#e9e6dc" stroke="#111" stroke-width="1.5"/>`:`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="9" fill="${col}" stroke="#111" stroke-width="1.5"/>`;
-    const lab=p.need==='ESC'?`<text class="t-tip" x="${tip[0]}" y="${tip[1]+4}" text-anchor="middle" style="font-size:9px">HARNESS</text>`:`<text class="t-tip" x="${lx}" y="${ly}" text-anchor="middle">${esc(p.need[0]==='M'?'3 wires':p.label)}</text>`;
+    const lab=p.need==='ESC'?`<text class="t-tip" x="${tip[0]}" y="${tip[1]+4}" text-anchor="middle" style="font-size:9px">HARNESS</text>`:`<text class="t-tip" x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(p.need[0]==='M'?'3 wires':p.label)}</text>`;
     return `<g class="tip" data-src="${p.id}">${p.hotId==='esc'?'':`<line x1="${a[0]}" y1="${a[1]}" x2="${tip[0]}" y2="${tip[1]}" stroke="#0d0f11" stroke-width="6.5"/><line x1="${a[0]}" y1="${a[1]}" x2="${tip[0]}" y2="${tip[1]}" stroke="${p.need[0]==='M'?'#8a939c':col}" stroke-width="4"/>`}${knob}${lab}</g>`;
   }).join('');
   const comp=Object.entries(DG_SRC).filter(([h])=>parts[h]).map(([h,c])=>{
@@ -88,12 +93,13 @@ export function renderDiagram(){
     <g transform="translate(40,700)"><text class="t-h" style="fill:#b2382b">Default ports</text>
       ${(CINE?[['UART 1','Receiver'],['UART 2','Digital VTX'],['UART 3','GPS'],['LED','LED strip data']]:[['UART 1','Receiver'],['UART 3','GPS'],['CAM','Camera video in'],['VTX','Video out to VTX']]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
     <g transform="translate(40,800)"><text style="font:700 12px var(--f-mono);fill:#b2382b">⚠ Capacitor required</text><text class="t-s" y="16">absorbs voltage spikes</text></g>
+    <rect x="490" y="500" width="220" height="220" rx="14" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
+    <text x="600" y="616" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">4-IN-1 ESC</text><text x="600" y="632" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">stack, lower board</text>
+    ${harness}
     <rect x="480" y="140" width="240" height="240" rx="18" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
     ${[[495,155],[705,155],[495,365],[705,365]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="#d4a93c" stroke-width="3"/>`).join('')}
     <path d="M600,222 l18,26 h-10 v26 h-16 v-26 h-10 z" fill="#f2f2ee"/><text x="600" y="296" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">FRONT</text>
     <text x="600" y="318" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">FLIGHT CONTROLLER</text>
-    <rect x="490" y="500" width="220" height="220" rx="14" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
-    <text x="600" y="616" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">4-IN-1 ESC</text><text x="600" y="632" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">stack, lower board</text>
     ${comp}${wired}${tgtSvg}${tips}
     <text x="1060" y="870" text-anchor="end" class="t-s">${done} of ${total} wires soldered</text>
     <path id="dgTemp" d="" fill="none" stroke="#e0894a" stroke-width="4" stroke-dasharray="8 6" stroke-linecap="round" pointer-events="none"/>

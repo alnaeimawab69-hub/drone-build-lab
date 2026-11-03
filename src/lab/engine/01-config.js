@@ -18,7 +18,7 @@ export const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':
    arm: centre-to-motor (1 unit = 1 cm) · ang: arm angles in degrees (0 = right, 90 = front)
    armT: arm thickness · plate: bottom plate [width, length] · alu: standoff x offset · bat: battery [w, h, l]
    cg: height of the centre of gravity · propR: prop radius · scale: drawn size (1 = real size) · view: camera distance factor
-   sealed: built from sealed modules, so only Explore and Movements are offered */
+   sealed: built from sealed modules: no screws, no wiring stage */
 export const MODELS={
   lx250:{key:'lx250',no:1,name:'LX-250',title:'LX-250 quadcopter',tag:'250 mm quad',
     blurb:'Classic X frame, analog video, 4S power. The first build.',

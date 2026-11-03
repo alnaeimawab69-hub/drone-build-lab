@@ -1,5 +1,5 @@
 /* Drone Build Lab · Side panel rendering for every stage, quiz */
-import { $, CINE, CORNER, EXP, MODEL, PROPS_OUT, esc, motorsTurning } from './01-config.js';
+import { $, CINE, CORNER, EX, EXP, MODEL, PROPS_OUT, esc, motorsTurning } from './01-config.js';
 import { hex, wireColor } from './04-materials.js';
 import { HOT, HOTMAP, SEC, STAGES, TYPES } from './07-catalogue.js';
 import { S, parts } from './08-state.js';
@@ -34,8 +34,10 @@ export const propsNote=()=>PROPS_OUT
   :'<b>Props in</b> (the usual choice): the front edge of each front propeller sweeps inward, toward the camera.';
 export function renderAll(){ renderSteps(); renderMeta(); renderPanel(); updateViewbar(); }
 export function renderSteps(){
-  const el=$('#steps'); el.hidden=S.explore||!!MODEL.sealed;
-  el.innerHTML=STAGES.map((s,i)=>`<li class="${i<S.stage?'done':i===S.stage?'cur':''}"${i===S.stage?' aria-current="step"':''}><span class="n">${i<S.stage?'✓':i+1}</span><span class="l">${s.short}</span></li>`).join('');
+  const el=$('#steps'); el.hidden=S.explore;
+  /* finished steps are buttons that jump back to that stage */
+  el.innerHTML=STAGES.map((s,i)=>{ const inner=`<span class="n">${i<S.stage?'✓':i+1}</span><span class="l">${s.short}</span>`;
+    return `<li class="${i<S.stage?'done':i===S.stage?'cur':''}"${i===S.stage?' aria-current="step"':''}>${i<S.stage?`<button type="button" data-stage="${i}" title="Back to ${s.short}" aria-label="Back to stage ${i+1}: ${s.short}">${inner}</button>`:inner}</li>`; }).join('');
 }
 export function fmtTime(ms){ const s=Math.floor(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 export function renderMeta(){
@@ -50,8 +52,6 @@ export function updateViewbar(){ const k=stageKey(), dg=k==='wire'||(k==='fault'
 export function renderPanel(){
   if(S.drag){ S.dirty=true; return; }
   const k=stageKey(), learn=S.mode==='learn', panel=$('#panel');
-  /* model 3 has no build stages; until Explore or Movements starts there is nothing to show */
-  if(MODEL.sealed&&!S.explore){ panel.innerHTML=''; renderSteps(); renderMeta(); return; }
   const keepScroll=panel.querySelector('.p-body')?.scrollTop||0;
   let head='', body='', foot='';
   if(k==='explore'){
@@ -71,8 +71,8 @@ export function renderPanel(){
     if(k==='props') body=renderProps(learn);
     if(k==='fly') body=renderFly(learn);
     if(k==='quiz') body=renderQuiz();
-    const labels={frame:'Next: components',mount:'Next: wiring',wire:'Next: power-up',power:'Next: propellers',props:'Next: flight',fly:'Next: knowledge check',quiz:'See my report'};
-    foot=`${learn&&k!=='quiz'?`<button class="btn ghost" data-act="show">${k==='fly'?'Play demo':'Show me'}</button>`:''}<button class="btn primary" data-act="next" ${ready(k)?'':'disabled'}>${labels[k]} →</button>`;
+    const labels={frame:'Next: components',mount:EX?'Next: power-up':'Next: wiring',wire:'Next: power-up',power:'Next: propellers',props:'Next: flight',fly:'Next: knowledge check',quiz:'See my report'};
+    foot=`${S.stage>0?'<button class="btn ghost" data-act="back">← Back</button>':''}${learn&&k!=='quiz'?`<button class="btn ghost" data-act="show">${k==='fly'?'Play demo':'Show me'}</button>`:''}<button class="btn primary" data-act="next" ${ready(k)?'':'disabled'}>${labels[k]} →</button>`;
   }
   if(S.explore&&k==='fly'){ head=`<div class="eyebrow">Explore</div><h2>Flight physics</h2><p>Fly the finished drone. Watch how the four motor speeds create every movement.</p>`; body=renderFly(true); foot=`<button class="btn ghost" data-act="exploreBack">← Back to ${S.backView==='fault'?'fault finding':'parts'}</button><button class="btn primary" data-act="tour">Play demo</button>`; }
   if(S.explore&&k==='moves') ({head,body,foot}=renderMoves());
@@ -89,8 +89,11 @@ export function screwBin(k,learn){
 }
 export function screwCount(k,owner){ const l=stageScrews(k).filter(s=>HOTMAP[s.hotId].type===owner); return [l.filter(s=>s.driven).length,(SCREW_SPEC[owner]||[]).length*HOT.filter(h=>h.type===owner).length]; }
 export function renderFrame(learn){
-  const keys=CINE?['plateB','arm','nylSt','aluSt','camPlate','tplate','panel']:['plateB','arm','nylSt','aluSt','camPlate','tplate'];
+  const keys=EX?['body','arm','gear']:CINE?['plateB','arm','nylSt','aluSt','camPlate','tplate','panel']:['plateB','arm','nylSt','aluSt','camPlate','tplate'];
   const placed=HOT.filter(h=>h.stage==='frame'&&parts[h.id]).length, total=HOT.filter(h=>h.stage==='frame').length;
+  if(EX) return `<div><h3 class="sec">Airframe modules <span style="float:right;font-family:var(--f-mono);font-weight:400;letter-spacing:0">${placed}/${total} fitted</span></h3>${tray(keys)}</div>
+    ${learn?checklist(keys,''):''}
+    <p class="note">Start with the <b>fuselage</b>; the arms and legs clip into it. ${learn?'While you hold a module, <b>green rings</b> show where it can go.':'Assessment: no hints. Each wrong placement costs points.'} There are no screws: each module locks with a quick-release connector.</p>`;
   const sd=stageScrews('frame').filter(s=>s.driven).length;
   const line=(l,[d,t])=>`<li class="${d===t?'ok':''}">${l}<span class="r">${d}/${t}</span></li>`;
   const checks=learn?`<div><h3 class="sec">Checklist</h3><ul class="checks">${keys.map(t=>{ const c=TYPES[t].count, d=c-left(t); return `<li class="${d===c?'ok':''}">${TYPES[t].name}<span class="r">${d}/${c}</span></li>`; }).join('')}
@@ -100,10 +103,15 @@ export function renderFrame(learn){
     ${checks}
     <p class="note">Start with the <b>bottom plate</b>. Everything else attaches to it. To fasten a part, pick a screw from the fastener bin. Then click a small ring on the part, or drag the screw onto it. ${learn?'Rings that take the screw you hold turn <b>green</b>.':'Assessment: a wrong screw costs points.'} <b>M3 × 10</b> means a screw 3 mm thick and 10 mm long.</p>`;
 }
+/* model 3 checklist: one line per module type, plus any extra lines */
+const checklist=(keys,extra)=>`<div><h3 class="sec">Checklist</h3><ul class="checks">${keys.map(t=>{ const c=TYPES[t].count, d=c-left(t); return `<li class="${d===c?'ok':''}">${TYPES[t].name}<span class="r">${d}/${c}</span></li>`; }).join('')}${extra}</ul></div>`;
 export function renderMount(learn){
-  const keys=CINE?['motor','esc','fc','camera','camMount','vtx','rx','gpsMount','gps','cap','lead','led','actionCam']:['motor','esc','fc','camera','camMount','vtx','rx','gpsMount','gps','cap','lead'];
+  const keys=EX?['fc','cover','motor','camera','gimbal','rtk','vision','lights']:CINE?['motor','esc','fc','camera','camMount','vtx','rx','gpsMount','gps','cap','lead','led','actionCam']:['motor','esc','fc','camera','camMount','vtx','rx','gpsMount','gps','cap','lead'];
   const placed=HOT.filter(h=>h.stage==='mount'&&parts[h.id]).length, total=HOT.filter(h=>h.stage==='mount').length;
   let checks='';
+  if(EX) return `<div><h3 class="sec">Modules <span style="float:right;font-family:var(--f-mono);font-weight:400;letter-spacing:0">${placed}/${total} fitted</span></h3>${tray(keys)}</div>
+    ${learn?checklist(keys,`<li class="${parts.fc&&S.fcRot===0?'ok':parts.fc?'warn':''}">Flight controller arrow points to the front</li>`):''}
+    <p class="note">${learn?'While you hold a module, <b>green rings</b> show where it can go. ':'Assessment: no hints. Each wrong placement costs points. '}<b>Click the flight controller</b> to rotate it 90°, and turn its arrow to the front <b>before</b> the top shell closes over it. The RTK module and the lights sit on the top shell. Drag a fitted module to take it off again.</p>`;
   if(learn){
     checks=`<div><h3 class="sec">Checklist</h3><ul class="checks">${keys.map(t=>{ const c=TYPES[t].count, d=c-left(t); return `<li class="${d===c?'ok':''}">${TYPES[t].name}<span class="r">${d}/${c}</span></li>`; }).join('')}
       <li class="${parts.fc&&S.fcRot===0?'ok':parts.fc?'warn':''}">Flight controller arrow points to the front</li>
@@ -131,14 +139,16 @@ export function renderWire(learn){
 }
 export function renderPower(learn){
   const st=strapped(), t=S.test, bat=!!parts.bat, can=st&&t.safety&&!t.confirmed;   // no battery, no power to the motors
+  const fix=EX?'Reverse':'Swap 2 wires';
   const rows=[1,2,3,4].map(n=>{ const sp=S.spin[n]!==0, a=dirActual(n);
     const seen=sp&&learn?`<small class="${a===EXP[n]?'okc':'badc'}">turning ${a}${a===EXP[n]?'':' · wrong way'}</small>`:learn?`<small>should turn ${EXP[n]}</small>`:'';
-    return `<div class="mrow"><span class="mid">M${n}</span><span class="mc">${CORNER[n]}${seen}</span><button class="btn sm" data-act="spin" data-m="${n}" ${can?'':'disabled'}>${sp?'Stop':'Spin'}</button><button class="btn sm ghost" data-act="swap" data-m="${n}" ${can?'':'disabled'}>Swap 2 wires</button></div>`; }).join('');
+    return `<div class="mrow"><span class="mid">M${n}</span><span class="mc">${CORNER[n]}${seen}</span><button class="btn sm" data-act="spin" data-m="${n}" ${can?'':'disabled'}>${sp?'Stop':'Spin'}</button><button class="btn sm ghost" data-act="swap" data-m="${n}" ${can?'':'disabled'}>${fix}</button></div>`; }).join('');
   return `<ol class="tasks">
-    <li class="${bat?'ok':''}"><b>Fit the battery.</b> Drag it onto the rubber pad on the top plate. Its cable plugs into the battery lead at the rear.${bat?'':tray(['battery'])}</li>
-    <li class="${st?'ok':''} ${bat?'':'locked'}"><b>Strap it down.</b> Drag both battery straps over the battery. Each strap passes through a pair of slots in the top plate. A loose battery can fly off and rip out the power cable.${bat&&!st?tray(['strap']):''}</li>
+    ${EX?`<li class="${st?'ok':''}"><b>Fit both smart batteries.</b> Slide each one into the bay at the rear until it locks. Either battery can power the drone alone, so one can be swapped while the other keeps it running.${st?'':tray(['battery'])}</li>`
+    :`<li class="${bat?'ok':''}"><b>Fit the battery.</b> Drag it onto the rubber pad on the top plate. Its cable plugs into the battery lead at the rear.${bat?'':tray(['battery'])}</li>
+    <li class="${st?'ok':''} ${bat?'':'locked'}"><b>Strap it down.</b> Drag both battery straps over the battery. Each strap passes through a pair of slots in the top plate. A loose battery can fly off and rip out the power cable.${bat&&!st?tray(['strap']):''}</li>`}
     <li class="${t.safety?'ok':''} ${st?'':'locked'}"><label class="check"><input type="checkbox" id="safeChk" ${t.safety?'checked':''} ${st&&!t.confirmed?'':'disabled'}><span><b>Safety check.</b> The propellers are off. Never test motors with propellers fitted: a spinning blade can cut you badly.</span></label></li>
-    <li class="${t.confirmed?'ok':''} ${t.safety?'':'locked'}"><b>Test each motor.</b> Spin it and watch the arrow over the motor. If it turns the wrong way, swap any two of its three wires.
+    <li class="${t.confirmed?'ok':''} ${t.safety?'':'locked'}"><b>Test each motor.</b> Spin it and watch the arrow over the motor. ${EX?'If it turns the wrong way, reverse it in the ESC settings. Each ESC is sealed inside its motor pod, so there are no wires to swap.':'If it turns the wrong way, swap any two of its three wires.'}
       <div class="mtable">${rows}</div>
       <div class="row" style="margin-top:10px"><button class="btn sm" data-act="spinAll" ${can?'':'disabled'}>${[1,2,3,4].some(n=>S.spin[n]!==0)?'Stop all':'Spin all'}</button><button class="btn sm primary" data-act="confirm" ${can?'':'disabled'}>Directions are correct</button></div>
     </li></ol>
@@ -185,6 +195,14 @@ export const QUIZ=[
   {q:'Why are the motor screws kept short (M3 × 6)?',o:['Short screws are lighter','A long screw can reach the motor windings and short the motor','Long screws strip the carbon arm','Short screws are easier to buy'],a:1,why:'The mounting holes go into the motor base, just below the copper windings. A screw that is too long scrapes the insulation off the windings and short-circuits the motor.'},
   {q:'Why are the propellers fitted last?',o:['They are the lightest part','So the motors can be powered and tested without spinning blades','They balance the battery','The ESC needs them to start'],a:1,why:'A spinning propeller can cause serious cuts. So motor direction is always checked with the propellers off.'},
 ];
+/* model 3 has no soldering, capacitor or screws: those four questions become questions on its modules */
+if(EX){
+  QUIZ.splice(6,1,{q:'Why does the RTK module have two antennas about 16 cm apart?',o:['For a stronger radio signal','So the drone knows which way it faces without a compass','So one is a spare','To balance the drone'],a:1,why:'Two satellite antennas a known distance apart give the direction the drone faces. That works next to steel structures, where a compass is pulled off course.'});
+  QUIZ.splice(1,3,
+    {q:'Why does the flight controller have three motion sensors (IMUs)?',o:['To fly three times faster','So it can ignore one that fails and keep flying','One for each camera','To measure the batteries'],a:1,why:'The controller compares the three sensors. If one disagrees with the other two, it is ignored and the drone keeps flying safely.'},
+    {q:'During the motor test one motor spins the wrong way. Its ESC is sealed inside the motor pod, so the fix is to…',o:['Reverse that motor in the ESC settings','Fit the opposite propeller','Swap the two batteries','Fold the arm the other way'],a:0,why:'A brushless motor’s direction is the order in which the ESC drives its three phases. On a sealed pod that order is changed in the ESC settings, not by swapping two wires.'},
+    {q:'Why does this drone carry two smart batteries?',o:['Each motor pair needs its own battery','Either can power it alone, so one can be swapped without switching off','Two batteries charge faster','To keep the drone level'],a:1,why:'Hot swap: with one battery out, the other keeps the drone and its sensors running, so an inspection can carry on without a restart.'});
+}
 /* model 2 adds questions on what makes it a cinematic drone */
 if(CINE) QUIZ.push(
   {q:'Why are the front arms of this frame swept out to the sides (a “deadcat” layout)?',o:['To make the drone faster','So the front propellers stay out of the camera picture','To fit a bigger battery','So the drone can only fly forward'],a:1,why:'The front motors sit out to the sides. The spinning propellers no longer show in the top corners of the camera picture, so the footage is clean.'},
