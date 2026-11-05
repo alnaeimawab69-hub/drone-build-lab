@@ -78,7 +78,7 @@ export function stepFlight(dt){
   if(f.landing&&f.pos.y<.01&&f.altT===0){ f.armed=false; f.landing=false; f.cur=null; renderPanel(); }
   droneRoot.position.copy(f.pos);
   const d=f.pos.clone().sub(f.last); camera.position.add(d); controls.target.add(d); f.last.copy(f.pos);
-  for(let n=1;n<=4;n++){ const fr=f.thr[n-1]/(G/4); S.spin[n]=f.armed?(EXP[n]==='CW'?-1:1)*(10+32*Math.sqrt(Math.max(0,fr))):0; }
+  for(let n=1;n<=4;n++){ const fr=f.thr[n-1]/(G/4); S.spin[n]=f.armed?(EXP[n]==='CW'?-1:1)*(20+64*Math.sqrt(Math.max(0,fr))):0; }
   showSpinRings(S.spinArrows&&f.armed);
   /* on the mat the ground pushes back, so the net force is zero there */
   drawForces(f.armed?f.thr:null,T,up,ground?V():acc);

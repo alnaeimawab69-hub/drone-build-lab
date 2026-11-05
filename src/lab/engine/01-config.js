@@ -22,12 +22,12 @@ export const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':
 export const MODELS={
   lx250:{key:'lx250',no:1,name:'LX-250',title:'LX-250 quadcopter',tag:'250 mm quad',
     blurb:'Classic X frame, analog video, 4S power. The first build.',
-    arm:12.5,ang:{1:-45,2:45,3:-135,4:135},armT:.45,plate:[5.6,10.5],alu:2.35,bat:[3,2.6,7],batZ:0,prop:'5 in',cg:2.6,propR:6.35},
+    arm:12.5,ang:{1:-45,2:45,3:-135,4:135},armT:.45,plate:[5.6,10.5],alu:2.35,bat:[3,2.6,7],batZ:1.1,prop:'5 in',cg:2.6,propR:6.35},
   cx5:{key:'cx5',no:2,name:'CX-5',title:'CX-5 cinematic FPV',tag:'5-inch cinematic FPV',
     blurb:'Deadcat frame for clean footage, HD digital video, action camera, 6S power.',
     arm:11.5,ang:{1:-45,2:30,3:-135,4:150},armT:.6,plate:[6.6,11],alu:2.9,bat:[3.4,3,6],batZ:1.1,prop:'5.1 in',cg:2.8,propR:6.5},
   ex9:{key:'ex9',no:3,name:'EX-9',title:'EX-9 enterprise drone',tag:'enterprise inspection drone',
-    blurb:'Large industrial quad: folding arms, two hot-swap batteries, RTK positioning, gimbal camera, obstacle sensors. Explore, Movements and Fault finding.',
+    blurb:'Large industrial quad: folding arms, two hot-swap batteries, RTK positioning, gimbal camera, obstacle sensors. Explore and Movements.',
     arm:44.75,ang:{1:-51,2:51,3:-129,4:129},armT:3,plate:[20,30],alu:0,bat:[8,5.5,15],batZ:8.2,prop:'21 in',cg:27,propR:26.7,armLblY:29.5,scale:.3,view:1.9,sealed:true},
 };
 function pickModel(){

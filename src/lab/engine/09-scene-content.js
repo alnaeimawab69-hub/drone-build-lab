@@ -82,6 +82,13 @@ HOT.forEach(h=>{
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:ringTex,depthTest:false,transparent:true}));
   s.scale.setScalar(1.4/SCALE); s.renderOrder=8; s.position.copy(h.pos).add(h.mk||V(0,.3,0)); s.visible=false;
   droneRoot.add(s); h.marker=s;
+  /* a bobbing arrow over the spot, shown while a part that fits it is being dragged (practice and assessment) */
+  const a=new THREE.Group(), am=new THREE.MeshBasicMaterial({color:0xe0894a,depthTest:false,transparent:true,opacity:.95});
+  const head=new THREE.Mesh(new THREE.ConeGeometry(.32,.6,16),am); head.rotation.x=Math.PI; head.position.y=.3; a.add(head);
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.9,10),am); shaft.position.y=1.05; a.add(shaft);
+  a.traverse(o=>{ o.renderOrder=9; o.userData.noStyle=true; o.raycast=()=>{}; });
+  a.scale.setScalar(1/SCALE); a.position.copy(s.position).add(V(0,.35/SCALE,0)); a.visible=false; a.userData.y0=a.position.y;
+  droneRoot.add(a); h.arrow=a;
 });
 
 /* flight visuals. Every force arrow is drawn to one scale: the weight is FORCE_LEN long, so four motors at hover

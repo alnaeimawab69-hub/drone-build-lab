@@ -24,7 +24,7 @@ export function updateLabels(){
   for(const id in LBL) if(!on||!parts[id]) removeLabel(id);
   if(on){
     for(const id in parts){ const p=parts[id];
-      if(!p.group.visible){ removeLabel(id); continue; }          // props taken off for the fault finding bench test
+      if(!p.group.visible){ removeLabel(id); continue; }
       /* one label per kind of part where the copies sit side by side (second strap, second battery) */
       if(p.type==='aluSt'||p.type==='nylSt'||p.type==='camPlate'||p.type==='panel'||(p.type==='arm'&&p.hot.motor!==2)||id==='strap2'||id==='bat2') continue;
       if(!LBL[id]){ const d=document.createElement('div'); d.className='plabel'; d.textContent=partLabel(p); d.onclick=()=>showInfo(p.type); box.appendChild(d); LBL[id]=d; }

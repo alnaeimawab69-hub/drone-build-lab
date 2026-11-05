@@ -40,23 +40,34 @@ export const SCREW_SPEC=MODEL.sealed?{}:{
   camera:[-1,1].map(s=>({p:[s*(CINE?1.27:1.21),0,0],out:[s,0,0],kind:'M2x5'})),
 };
 export const SCR={};
+/* a small bobbing arrow over each hole that takes the fastener being held (practice and assessment), pointing into the hole */
+const ARROW_MAT=new THREE.MeshBasicMaterial({color:0xe0894a,depthTest:false,transparent:true,opacity:.95});
+const ARROW_HEAD=new THREE.ConeGeometry(.16,.3,12).rotateX(Math.PI).translate(0,.15,0), ARROW_SHAFT=new THREE.CylinderGeometry(.045,.045,.45,8).translate(0,.52,0);
+function screwArrow(pos,out){
+  const a=new THREE.Group(); a.add(new THREE.Mesh(ARROW_HEAD,ARROW_MAT),new THREE.Mesh(ARROW_SHAFT,ARROW_MAT));
+  a.traverse(o=>{ o.renderOrder=9; o.userData.noStyle=true; o.raycast=()=>{}; });
+  a.quaternion.setFromUnitVectors(V(0,1,0),out); a.position.copy(pos).addScaledVector(out,.25); a.userData.p0=a.position.clone(); a.userData.out=out; a.visible=false; return a;
+}
 export function registerScrews(hotId,g){
   (SCREW_SPEC[HOTMAP[hotId].type]||[]).forEach((spec,i)=>{
     const id=hotId+'#'+i, pos=V(...spec.p);
     const proxy=new THREE.Mesh(PROXY_GEO,PROXY_MAT); proxy.position.copy(pos); proxy.userData.screwId=id; g.add(proxy);
     const mk=new THREE.Sprite(new THREE.SpriteMaterial({map:ringTex,depthTest:false,transparent:true})); mk.scale.setScalar(.6); mk.renderOrder=9; mk.position.copy(pos).addScaledVector(V(...spec.out),.05); g.add(mk);
-    SCR[id]={id,hotId,spec,g,proxy,marker:mk,driven:false,mesh:null};
+    const arrow=screwArrow(pos,V(...spec.out)); g.add(arrow);
+    SCR[id]={id,hotId,spec,g,proxy,marker:mk,arrow,driven:false,mesh:null};
   });
 }
-export function unregisterScrews(hotId){ for(const id in SCR) if(SCR[id].hotId===hotId){ const s=SCR[id]; [s.proxy,s.marker,s.mesh].forEach(o=>o&&o.parent&&o.parent.remove(o)); delete SCR[id]; } }
+export function unregisterScrews(hotId){ for(const id in SCR) if(SCR[id].hotId===hotId){ const s=SCR[id]; [s.proxy,s.marker,s.arrow,s.mesh].forEach(o=>o&&o.parent&&o.parent.remove(o)); delete SCR[id]; } }
 export const stageScrews=k=>Object.values(SCR).filter(s=>HOTMAP[s.hotId].stage===k);
 export function drive(id,anim){
-  const s=SCR[id]; s.driven=true; s.marker.visible=false;
+  const s=SCR[id]; s.driven=true; s.marker.visible=false; s.arrow.visible=false;
   const m=buildScrew(s.spec.kind), out=V(...s.spec.out), base=V(...s.spec.p), qa=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),out), qs=new THREE.Quaternion();
   m.quaternion.copy(qa); s.g.add(m); s.mesh=m;
   if(anim){ m.position.copy(base).addScaledVector(out,1.1); tween(.6,k=>{ const e=easeOut(k); m.position.copy(base).addScaledVector(out,(1-e)*1.1); m.quaternion.copy(qa).multiply(qs.setFromAxisAngle(V(0,1,0),-e*TAU*3)); }); }
   else m.position.copy(base);
 }
+export function undrive(id){ const s=SCR[id]; if(!s||!s.driven) return false; s.driven=false; if(s.mesh&&s.mesh.parent) s.mesh.parent.remove(s.mesh); s.mesh=null; updateScrewMarkers(); return true; }
+export const screwDriven=id=>!!(SCR[id]&&SCR[id].driven);
 export function screwMsg(need,got,owner){
   if(owner==='motor'&&got==='M3x10') return 'Too long. An M3 × 10 screw goes through the arm and into the motor’s copper windings. It can short-circuit the motor. Motor screws must be short: M3 × 6.';
   if(need==='M3x10'&&got==='M3x6') return 'Too short. The arm screw must go through the arm and the bottom plate and still grip. Use M3 × 10.';
@@ -71,7 +82,7 @@ export function tryDrive(id,kind){
   const s=SCR[id]; if(!s||s.driven) return;
   if(!kind){ toast('Choose a screw or nut from the fastener bin first.'); return; }
   if(kind!==s.spec.kind){ mistake(secOf(),2,screwMsg(s.spec.kind,kind,HOTMAP[s.hotId].type),'Wrong fastener for this hole.'); return; }
-  drive(id,true);
+  drive(id,true); S.undo.push({k:'screw',id,stage:stageKey()});
   const left=stageScrews(stageKey()).filter(x=>!x.driven).length;
   toast(`${SCREWT[kind].name} fitted to the ${lc(TYPES[HOTMAP[s.hotId].type].name)}.${left?'':' All fasteners in this stage are tight.'}`,'ok');
   renderPanel();
@@ -81,7 +92,7 @@ export function pickHole(){ const k=stageKey(); const list=Object.values(SCR).fi
 export function updateScrewMarkers(){
   const k=stageKey(), hold=S.loaded;
   Object.values(SCR).forEach(s=>{
-    const show=!S.explore&&!s.driven&&HOTMAP[s.hotId].stage===k&&!(S.drag&&S.drag.kind==='part'); s.marker.visible=show; if(!show) return;
+    const show=!S.explore&&!s.driven&&HOTMAP[s.hotId].stage===k&&!(S.drag&&S.drag.kind==='part'); s.marker.visible=show; s.arrow.visible=show&&!!hold&&hold===s.spec.kind; if(!show) return;
     let c=S.cad?0x2c3a42:0xe3eaed,o=.9;
     if(S.mode==='learn'&&hold){ const ok=hold===s.spec.kind; c=ok?0x5bc489:0x65777e; o=ok?1:.35; }
     if(S.drag&&S.drag.kind==='screw'&&S.drag.hole===s.id){ c=0xe0894a; o=1; }
