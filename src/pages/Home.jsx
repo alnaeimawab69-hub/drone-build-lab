@@ -19,7 +19,6 @@ const MODES = [
   ['assess', 'Scored', 'Assessment', 'No hints, and a running timer. Wrong parts, screws and wires cost points. The report shows the score for each stage and lists what to review.'],
   ['explore', 'Free', 'Explore', 'Start with the finished drone. Pull it apart in exploded view, read what each part does and how it connects, then fly it.'],
   ['moves', '3D animation', 'Movements', 'Learn throttle, yaw, pitch and roll with a remote: on-screen sticks, the keyboard (WASD and arrow keys) or a USB radio or gamepad. Rotation axes, spin arrows, force arrows and motor bars show what each stick does. Ends with a short quiz.'],
-  ['fault', 'Diagnose', 'Fault finding', 'A finished drone fails its pre-flight check. Students inspect it, test the motors with the propellers off and check the wiring. Then they report each hidden fault, such as a reversed motor, a wrong or loose propeller, a turned flight controller or crossed TX and RX wires. Each fault is then explained and repaired. A drone code gives the whole class the same drone, and the result can be copied for the teacher.'],
 ];
 
 function Feature({ eyebrow, title, img, alt, flip, children }) {

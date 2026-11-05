@@ -74,10 +74,4 @@ export const TEX_MAKE={
 };
 export const smallPcb=(label,col)=>ctex(256,256,(g,w)=>{ g.fillStyle=col; g.fillRect(0,0,w,w); g.strokeStyle='rgba(150,220,190,.1)'; g.lineWidth=3; for(let i=0;i<10;i++){g.beginPath();g.moveTo(Math.random()*w,Math.random()*w);g.lineTo(Math.random()*w,Math.random()*w);g.stroke();} g.fillStyle='rgba(238,242,240,.85)'; g.font='600 30px "IBM Plex Mono", monospace'; g.textAlign='center'; g.fillText(label,w/2,w*.86); });
 export const escTex=TEX_MAKE.esc(), fcTex=TEX_MAKE.fc(), vtxTex=TEX_MAKE.vtx(), rxTex=TEX_MAKE.rx(), gpsTex=TEX_MAKE.gps(), batTex=TEX_MAKE.bat(), frontTex=TEX_MAKE.front(), exBatTex=TEX_MAKE.exbat();
-/* spinning-prop blur seen from above: faint near the hub, stronger towards the tips, a bright ring where the tips pass */
-export const propBlurTex=ctex(256,256,(g,w)=>{ const c=w/2, rg=g.createRadialGradient(c,c,c*.08,c,c,c);
-  rg.addColorStop(0,'rgba(40,46,52,0)'); rg.addColorStop(.2,'rgba(40,46,52,.18)'); rg.addColorStop(.86,'rgba(28,32,37,.42)'); rg.addColorStop(.93,'rgba(28,32,37,.5)'); rg.addColorStop(1,'rgba(28,32,37,0)');
-  g.fillStyle=rg; g.fillRect(0,0,w,w);
-  g.strokeStyle='rgba(235,246,250,.95)'; g.lineWidth=5; g.beginPath(); g.arc(c,c,c*.94,0,TAU); g.stroke();
-  g.strokeStyle='rgba(235,246,250,.35)'; g.lineWidth=2; for(const r of [.55,.75]){ g.beginPath(); g.arc(c,c,c*r,0,TAU); g.stroke(); } });
 export const ringTex=ctex(128,128,(g,w)=>{ g.strokeStyle='#fff'; g.lineWidth=9; g.beginPath(); g.arc(w/2,w/2,w*.38,0,TAU); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.arc(w/2,w/2,w*.1,0,TAU); g.fill(); });

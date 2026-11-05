@@ -1,6 +1,6 @@
 /* Drone Build Lab · Geometry helpers, rounded boxes, twisted cables, solder pads */
 import * as THREE from 'three';
-import { TAU, V, clamp } from './01-config.js';
+import { CINE, TAU, V, clamp } from './01-config.js';
 import { M, std, wireColor, wireMat } from './04-materials.js';
 
 /* ================= Geometry helpers ================= */
@@ -34,7 +34,9 @@ export function boardMesh(w,h,d,side,top){ const m=new THREE.Mesh(new THREE.BoxG
 
 /* realistic cables: twisted strands and flat ribbons following a curve */
 export const PHASE_COLS=[0x3a6fb0,0xd9b23a,0x232528];
-export const HARNESS_COLS=[0x232528,0xd8453b,0xeeeeee,0xe8c33c,0x3d9be0,0x4fb06d];
+/* model 1: the 8-wire ESC-to-FC harness, in pin order (colours of a common 4-in-1 ESC cable) */
+export const HARNESS_PINS=CINE?null:['S1','S2','S3','S4','GND','VBAT','CUR','TLM'];
+export const HARNESS_COLS=CINE?[0x232528,0xd8453b,0xeeeeee,0xe8c33c,0x3d9be0,0x4fb06d]:[0x3d6fd8,0x3fae55,0xe8c33c,0xe8812c,0x232528,0xd8453b,0x8e55c8,0x3bb3b0];
 export function strands(curve,n,r,spread,twist,cols,ribbon){
   const N=60, fr=curve.computeFrenetFrames(N,false), out=[];
   for(let k=0;k<n;k++){

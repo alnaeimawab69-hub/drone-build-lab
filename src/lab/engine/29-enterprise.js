@@ -6,7 +6,7 @@ import { ARM, ARM_ANG, DEG, MODEL, TAU, V, armPos } from './01-config.js';
 import { exBatTex } from './03-textures.js';
 import { M, std } from './04-materials.js';
 import { boardMesh, box, cyl, mesh, rod, roundBox } from './05-geometry.js';
-import { makeRing, propDisc } from './06-builders.js';
+import { makeRing } from './06-builders.js';
 
 const POD_TOP=31;                                        // top of the motor pods at the arm tips
 export const EX_PROP_Y=POD_TOP+4.9;                      // top of the motor, where the prop sits
@@ -146,9 +146,8 @@ function buildPropEX(dir){
   const geo=new THREE.ExtrudeGeometry(sh,{depth:.22,bevelEnabled:false,curveSegments:14}); geo.rotateX(-Math.PI/2); geo.translate(0,-.11,0);
   for(let k=0;k<2;k++){ const pv=new THREE.Group(); pv.rotation.y=k*Math.PI;
     const hinge=box(1.4,.9,1.6,M.darkMetal,1.7,.6,0); pv.add(hinge);
-    const bl=mesh(geo,propMat); bl.rotation.x=-.16*s; bl.position.y=.6; pv.add(bl);
+    const bl=mesh(geo,dir==='CW'?M.propCW:M.propCCW); bl.rotation.x=-.16*s; bl.position.y=.6; pv.add(bl);
     const tip=box(.9,.24,.9,M.orange,25.3,.6,.15*s); pv.add(tip); sp.add(pv); }
-  const disc=propDisc(MODEL.propR); disc.position.y=.62; g.add(disc); g.userData.disc=disc;
   return g;
 }
 /* smart flight battery: slides into a bay at the rear; two batteries let you swap one while the drone stays powered */

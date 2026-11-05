@@ -231,7 +231,7 @@ export function stepMoves(dt){
      the tilt is changing; yaw keeps a small one to push against air drag. The differences cancel, so the four always add up to T */
   const b=T/G, R=clamp(-eR*1.4,-.45,.45), P=clamp(-eP*1.4,-.45,.45), Y=clamp(-eY*.12+I.yaw*.12,-.45,.45)*YAW_MIX;
   MV.lv=[b-R+P-Y, b-R-P+Y, b+R+P+Y, b+R-P-Y].map(x=>Math.max(.15,x));
-  for(let n=1;n<=4;n++) S.spin[n]=(EXP[n]==='CW'?-1:1)*(12+26*MV.lv[n-1]);
+  for(let n=1;n<=4;n++) S.spin[n]=(EXP[n]==='CW'?-1:1)*(24+52*MV.lv[n-1]);
   showSpinRings(S.spinArrows);
   drawForces(MV.lv.map(x=>x*G/4),T,up,V(acc.x,MV.ay,acc.z));
   /* what is moving now: highlight that axis */

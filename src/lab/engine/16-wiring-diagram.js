@@ -1,7 +1,7 @@
 /* Drone Build Lab · 2D wiring diagram and wire validation */
 import { $, CINE, CORNER, EXP, MODEL, V, clamp, esc, lc } from './01-config.js';
 import { hex, wireColor } from './04-materials.js';
-import { HARNESS_COLS, PHASE_COLS } from './05-geometry.js';
+import { HARNESS_COLS, HARNESS_PINS, PHASE_COLS } from './05-geometry.js';
 import { HOTMAP, TYPES } from './07-catalogue.js';
 import { PADS, S, WIRES, parts } from './08-state.js';
 import { srcPads } from './12-placement.js';
@@ -43,31 +43,38 @@ export function dgAnchor(h,tip){
 }
 export function dgRoute(a,b,tgt){
   const o=tgt.def.out||V(0,1,0);
-  return Math.abs(o.z)>.5?`M${a[0]},${a[1]} H${b[0]} V${b[1]}`:`M${a[0]},${a[1]} V${b[1]} H${b[0]}`;
+  if(Math.abs(o.z)>.5) return `M${a[0]},${a[1]} H${b[0]} V${b[1]}`;
+  if(Math.abs(o.x)<.5||a[1]===b[1]) return `M${a[0]},${a[1]} V${b[1]} H${b[0]}`;
+  /* sideways pads: change rows half way across, offset by the climb, so two crossed-over TX/RX wires never run on top of each other */
+  const mx=(a[0]+b[0])/2+(b[1]-a[1])*.5;
+  return `M${a[0]},${a[1]} H${mx} V${b[1]} H${b[0]}`;
 }
 export function dgStroke(d,src){
   const need=src.need;
   const strand=(c,dx,w=4)=>`<path d="${d}" transform="translate(${dx},${dx})" fill="none" stroke="#0d0f11" stroke-width="${w+2.5}" stroke-linejoin="round"/><path d="${d}" transform="translate(${dx},${dx})" fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round"/>`;
   if(need[0]==='M') return PHASE_COLS.map((c,i)=>strand(hex(c),(i-1)*3.5,3)).join('');
-  if(need==='ESC') return HARNESS_COLS.map((c,i)=>strand(hex(c),(i-2.5)*2.6,2.2)).join('');
+  if(need==='ESC') return HARNESS_COLS.map((c,i)=>strand(hex(c),(i-(HARNESS_COLS.length-1)/2)*2.6,2.2)).join('');
   const c=wireColor(need,src.label); return strand(c===0x2b2f35?'#3a3f46':hex(c),0,need.startsWith('VBAT')?6:4);
 }
+const pins8=(x,y)=>HARNESS_COLS.map((c,i)=>`<rect x="${x-25.5+i*6.5}" y="${y-3}" width="5" height="6" rx="1" fill="${hex(c)}" stroke="#0d0f11" stroke-width=".6"/>`).join('');
 export function renderDiagram(){
-  /* also shown in fault finding (models 1 and 2), where students check the finished wiring */
-  const k=stageKey(), el=$('#diagram'), on=(k==='wire'||(k==='fault'&&!MODEL.sealed))&&S.diagram; el.hidden=!on; $('#viewport').classList.toggle('dg',on); updateViewbar(); if(!on) return;
+  const k=stageKey(), el=$('#diagram'), on=k==='wire'&&S.diagram; el.hidden=!on; $('#viewport').classList.toggle('dg',on); updateViewbar(); if(!on) return;
   const learn=S.mode==='learn', pads=Object.values(PADS);
   const tgtSvg=pads.filter(p=>!p.need).map(p=>{
     const [x,y]=dgXY(p), o=p.def.out||V(0,1,0), lx=x-o.x*24, ly=y-o.z*24+4;
     let shape;
     if(p.def.shape==='triple') shape=[-14,0,14].map(dy=>`<rect class="pad" x="${x-7}" y="${y+dy-5}" width="14" height="10" rx="2" fill="#d4a93c"/>`).join('');
     else if(p.def.shape==='big') shape=`<rect class="pad" x="${x-12}" y="${y-9}" width="24" height="18" rx="3" fill="${p.net==='VBAT+'?'#c8402f':'#d4a93c'}"/>`;
-    else if(p.def.shape==='socket') shape=`<rect class="pad" x="${x-24}" y="${y-9}" width="48" height="18" rx="3" fill="#e9e6dc"/>`;
+    else if(p.def.shape==='socket') shape=HARNESS_PINS?`<rect class="pad" x="${x-30}" y="${y-9}" width="60" height="18" rx="3" fill="#e9e6dc"/>${pins8(x,y+3)}`:`<rect class="pad" x="${x-24}" y="${y-9}" width="48" height="18" rx="3" fill="#e9e6dc"/>`;
     else shape=`<rect class="pad" x="${x-8}" y="${y-8}" width="16" height="16" rx="3" fill="#d4a93c"/>`;
-    const lab=p.def.shape==='socket'?`<text x="${x}" y="${y+4}" text-anchor="middle" style="font-size:10px;font-weight:700;fill:#1b1f23">ESC</text>`:`<text class="t-pad" x="${lx}" y="${ly}" text-anchor="middle">${esc(p.label)}</text>`;
+    const lab=p.def.shape==='socket'?(HARNESS_PINS?`<text x="${x}" y="${y-1}" text-anchor="middle" style="font-size:7px;font-weight:700;fill:#1b1f23">ESC · 8 PIN</text>`:`<text x="${x}" y="${y+4}" text-anchor="middle" style="font-size:10px;font-weight:700;fill:#1b1f23">ESC</text>`):`<text class="t-pad" x="${lx}" y="${ly}" text-anchor="middle">${esc(p.label)}</text>`;
     return `<g class="tgt" data-tgt="${p.id}" data-net="${p.net}">${shape}${lab}<rect x="${x-15}" y="${y-15}" width="30" height="30" fill="transparent"/></g>`;
   }).join('');
   /* the ESC harness runs straight up between the stacked boards, so it is drawn under the FC board */
-  const wire=w=>{ const src=PADS[w.src], tgt=PADS[w.tgt]; if(!src||!tgt) return ''; const tip=dgXY(src), a=src.hotId==='esc'?tip:dgAnchor(src.hotId,tip); return dgStroke(`M${a[0]},${a[1]} L${tip[0]},${tip[1]} `+dgRoute(tip,dgXY(tgt),tgt).replace(/^M[^ ]+ /,''),src)+`<circle cx="${dgXY(tgt)[0]}" cy="${dgXY(tgt)[1]}" r="5" fill="#dfe3e6" stroke="#6b7378"/>`; };
+  /* a motor's three phase wires run side by side, then each one lands on its own contact of the triple pad (contacts 14 apart) */
+  const motorWire=(a,tip,b)=>PHASE_COLS.map((c,i)=>{ const k=i-1, bend=b[0]+(tip[0]>b[0]?24:-24), d=`M${a[0]},${a[1]+k*5} L${tip[0]},${tip[1]+k*6} L${bend},${b[1]+k*14} H${b[0]}`;
+    return `<path d="${d}" fill="none" stroke="#0d0f11" stroke-width="5.5" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${hex(c)}" stroke-width="3" stroke-linejoin="round"/><circle cx="${b[0]}" cy="${b[1]+k*14}" r="3.5" fill="#dfe3e6" stroke="#6b7378"/>`; }).join('');
+  const wire=w=>{ const src=PADS[w.src], tgt=PADS[w.tgt]; if(!src||!tgt) return ''; const tip=dgXY(src), a=src.hotId==='esc'?tip:dgAnchor(src.hotId,tip); if(src.need[0]==='M') return motorWire(a,tip,dgXY(tgt)); return dgStroke(`M${a[0]},${a[1]} L${tip[0]},${tip[1]} `+dgRoute(tip,dgXY(tgt),tgt).replace(/^M[^ ]+ /,''),src)+`<circle cx="${dgXY(tgt)[0]}" cy="${dgXY(tgt)[1]}" r="5" fill="#dfe3e6" stroke="#6b7378"/>`; };
   const isHarness=w=>PADS[w.tgt]?.net==='ESC';
   const harness=WIRES.filter(isHarness).map(wire).join(''), wired=WIRES.filter(w=>!isHarness(w)).map(wire).join('');
   const tips=pads.filter(p=>p.need&&!p.wired).map(p=>{
@@ -75,8 +82,8 @@ export function renderDiagram(){
     /* label sits past the knob along the lead: beside it for sideways leads (anchored so it never overlaps the knob), above or below otherwise */
     const dx=tip[0]-a[0], dy=tip[1]-a[1], side=Math.abs(dx)>Math.abs(dy), off=p.need[0]==='M'?18:15;
     const lx=side?tip[0]+Math.sign(dx)*off:tip[0], ly=side?tip[1]+4:tip[1]+Math.sign(dy||1)*(off+5)+4, anchor=side?(dx>0?'start':'end'):'middle';
-    const knob=p.need[0]==='M'?`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="11" fill="#8a939c" stroke="#111" stroke-width="1.5"/>`:p.need==='ESC'?`<rect class="knob" x="${tip[0]-22}" y="${tip[1]-8}" width="44" height="16" rx="3" fill="#e9e6dc" stroke="#111" stroke-width="1.5"/>`:`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="9" fill="${col}" stroke="#111" stroke-width="1.5"/>`;
-    const lab=p.need==='ESC'?`<text class="t-tip" x="${tip[0]}" y="${tip[1]+4}" text-anchor="middle" style="font-size:9px">HARNESS</text>`:`<text class="t-tip" x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(p.need[0]==='M'?'3 wires':p.label)}</text>`;
+    const knob=p.need[0]==='M'?`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="11" fill="#8a939c" stroke="#111" stroke-width="1.5"/>`:p.need==='ESC'?(HARNESS_PINS?`<rect class="knob" x="${tip[0]-30}" y="${tip[1]-8}" width="60" height="16" rx="3" fill="#e9e6dc" stroke="#111" stroke-width="1.5"/>${pins8(tip[0],tip[1])}`:`<rect class="knob" x="${tip[0]-22}" y="${tip[1]-8}" width="44" height="16" rx="3" fill="#e9e6dc" stroke="#111" stroke-width="1.5"/>`):`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="9" fill="${col}" stroke="#111" stroke-width="1.5"/>`;
+    const lab=p.need==='ESC'?(HARNESS_PINS?`<text class="t-tip" x="${tip[0]}" y="${tip[1]+22}" text-anchor="middle" style="font:700 9px var(--f-mono);fill:#f2f2ee">8-WIRE HARNESS · TO FC</text>`:`<text class="t-tip" x="${tip[0]}" y="${tip[1]+4}" text-anchor="middle" style="font-size:9px">HARNESS</text>`):`<text class="t-tip" x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(p.need[0]==='M'?'3 wires':p.label)}</text>`;
     return `<g class="tip" data-src="${p.id}">${p.hotId==='esc'?'':`<line x1="${a[0]}" y1="${a[1]}" x2="${tip[0]}" y2="${tip[1]}" stroke="#0d0f11" stroke-width="6.5"/><line x1="${a[0]}" y1="${a[1]}" x2="${tip[0]}" y2="${tip[1]}" stroke="${p.need[0]==='M'?'#8a939c':col}" stroke-width="4"/>`}${knob}${lab}</g>`;
   }).join('');
   const comp=Object.entries(DG_SRC).filter(([h])=>parts[h]).map(([h,c])=>{
@@ -89,9 +96,11 @@ export function renderDiagram(){
     <g transform="translate(40,84)"><text class="t-h" y="0">Stack specifications</text>
       ${[['Mounting','30.5 × 30.5 mm'],['Input','3–6S LiPo'],['BEC','5 V 2 A · 9 V 2 A'],['Receiver','UART 1'],['GPS','UART 3'],CINE?['Video','UART 2 · digital']:['Video','CAM in · VTX out']].map(([k,v],i)=>`<text class="t-s" y="${20+i*17}">${k}</text><text y="${20+i*17}" x="92" style="font-size:11px">${v}</text>`).join('')}</g>
     <g transform="translate(870,40)"><text class="t-h">Wire colours</text>
-      ${[['#d8453b','Power (+, 5V, 9V)'],['#3a3f46','Ground (G, −)'],CINE?['#4fb06d','LED data']:['#e8c33c','Video'],['#3d9be0','TX (transmit)'],['#eeeeee','RX (receive)'],['#8a939c','Motor phases']].map(([c,l],i)=>`<rect x="0" y="${12+i*18}" width="22" height="7" rx="2" fill="${c}" stroke="#0d0f11"/><text class="t-s" x="30" y="${19+i*18}">${l}</text>`).join('')}</g>
+      ${[['#d8453b','Power (+, 5V, 9V)'],['#3a3f46','Ground (G, −)'],CINE?['#4fb06d','LED data']:['#e8c33c','Video'],[hex(wireColor('R1','TX')),'TX (transmit)'],['#eeeeee','RX (receive)'],['#8a939c','Motor phases']].map(([c,l],i)=>`<rect x="0" y="${12+i*18}" width="22" height="7" rx="2" fill="${c}" stroke="#0d0f11"/><text class="t-s" x="30" y="${19+i*18}">${l}</text>`).join('')}</g>
     <g transform="translate(40,700)"><text class="t-h" style="fill:#b2382b">Default ports</text>
       ${(CINE?[['UART 1','Receiver'],['UART 2','Digital VTX'],['UART 3','GPS'],['LED','LED strip data']]:[['UART 1','Receiver'],['UART 3','GPS'],['CAM','Camera video in'],['VTX','Video out to VTX']]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
+    ${HARNESS_PINS?`<g transform="translate(40,496)"><text class="t-h">ESC harness · 8 wires</text>
+      ${HARNESS_PINS.map((k,i)=>`<rect x="0" y="${10+i*16}" width="22" height="7" rx="2" fill="${hex(HARNESS_COLS[i])}" stroke="#0d0f11"/><text y="${17+i*16}" x="30" style="font-size:10px;font-weight:600">${k}</text><text class="t-s" y="${17+i*16}" x="70">${['Motor 1 signal','Motor 2 signal','Motor 3 signal','Motor 4 signal','Ground','Battery voltage','Current sensor','Telemetry'][i]}</text>`).join('')}</g>`:''}
     <g transform="translate(40,800)"><text style="font:700 12px var(--f-mono);fill:#b2382b">⚠ Capacitor required</text><text class="t-s" y="16">absorbs voltage spikes</text></g>
     <rect x="490" y="500" width="220" height="220" rx="14" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
     <text x="600" y="616" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">4-IN-1 ESC</text><text x="600" y="632" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">stack, lower board</text>
@@ -161,7 +170,7 @@ export function explainWire(src,tgt){
   if(need==='GND') return 'Ground wires go to a G (ground) pad.';
   if(need==='CAM'&&got==='VTX') return 'Camera video goes into the CAM pad. The VTX pad sends video out to the video transmitter.';
   if(need==='VTX'&&got==='CAM') return 'The video transmitter takes its video from the VTX pad. CAM is the camera input.';
-  if(need==='ESC') return 'The ESC harness plugs into the ESC socket on the flight controller.';
+  if(need==='ESC') return HARNESS_PINS?'The 8-wire ESC harness (S1 to S4, GND, VBAT, CUR, TLM) plugs into the 8-pin ESC socket on the flight controller.':'The ESC harness plugs into the ESC socket on the flight controller.';
   return `This wire needs the ${NETNAME[need]}, but that is the ${NETNAME[got]||'wrong pad'}.`;
 }
 export const NETSHORT={'VBAT+':'ESC +','VBAT-':'ESC −','5V':'FC 5V','9V':'FC 9V','GND':'a G pad','T1':'FC T1','R1':'FC R1','T2':'FC T2','R2':'FC R2','T3':'FC T3','R3':'FC R3','LED':'FC LED','CAM':'FC CAM','VTX':'FC VTX','ESC':'FC ESC socket',M1:'ESC M1',M2:'ESC M2',M3:'ESC M3',M4:'ESC M4'};

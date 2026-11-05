@@ -87,7 +87,7 @@ export function endPartDrag(e,cancel){
     removeGroup(g);
     mistake('props',3,`Motor ${h.motor} (${CORNER[h.motor]}) spins ${EXP[h.motor]}, so it needs a ${EXP[h.motor]} propeller. The wrong propeller pushes air up, and the drone flips at take-off.`,`That propeller does not match this motor.`);
   } else {
-    place(h,g,{animate:true});
+    place(h,g,{animate:true}); S.undo.push({k:'part',id:h.id,stage:stageKey()});
     if(h.type==='fc'){ toast(learn?'Flight controller fitted. Now click the board to turn it until the arrow points to the front.':'Flight controller fitted.','ok'); }
     else toast(`${nm} fitted${h.motor&&h.type==='motor'?' to arm '+h.motor:''}.`,'ok');
   }
@@ -135,7 +135,7 @@ export function endWireDrag(e,cancel){
     if(src.need&&tgt.need) toast('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.');
     else if(!src.need&&!tgt.need) toast('Start from a wire end (a coloured dot or plug). Then drop it on a pad.');
     else if(src.wired) toast('That wire is already soldered.');
-    else if(tgt.net===src.need){ addWire(src.id,tgt.id); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); }
+    else if(tgt.net===src.need){ addWire(src.id,tgt.id); S.undo.push({k:'wire',id:src.id,stage:'wire'}); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); }
     else mistake('wire',2,explainWire(src,tgt),'Wrong pad. The wire was not soldered.');
   }
   controls.enabled=true; renderPanel();
@@ -145,6 +145,6 @@ export function attemptWire(src,tgt){
   if(!src.need&&tgt.need) [src,tgt]=[tgt,src];
   if(src.need&&tgt.need){ toast('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.'); return 'none'; }
   if(src.wired){ toast('That wire is already soldered.'); return 'none'; }
-  if(tgt.net===src.need){ addWire(src.id,tgt.id); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); return 'ok'; }
+  if(tgt.net===src.need){ addWire(src.id,tgt.id); S.undo.push({k:'wire',id:src.id,stage:'wire'}); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); return 'ok'; }
   mistake('wire',2,explainWire(src,tgt),'Wrong pad. The wire was not soldered.'); return 'bad';
 }

@@ -1,5 +1,6 @@
 /* Drone Build Lab · Materials for every surface, plus wire colours */
 import * as THREE from 'three';
+import { CINE } from './01-config.js';
 import { batTex, escTex, fcTex, gpsTex, rxTex, vtxTex, weaveTex } from './03-textures.js';
 
 /* ================= Materials ================= */
@@ -29,6 +30,9 @@ export const M={
   batEnd:std({color:0x24282d,roughness:.6}),
   prop:new THREE.MeshPhysicalMaterial({color:0x24495c,roughness:.35,transparent:true,opacity:.92,side:THREE.DoubleSide,clearcoat:.25,clearcoatRoughness:.3,envMapIntensity:.35}),
   propHub:std({color:0x3d6c80,roughness:.4}),
+  /* teaching colours, so the two kinds are easy to tell apart: CW red, CCW blue */
+  propCW:new THREE.MeshPhysicalMaterial({color:0xa81d16,roughness:.4,side:THREE.DoubleSide,clearcoat:.25,clearcoatRoughness:.3,envMapIntensity:.35}),
+  propCCW:new THREE.MeshPhysicalMaterial({color:0x1a4fae,roughness:.4,side:THREE.DoubleSide,clearcoat:.25,clearcoatRoughness:.3,envMapIntensity:.35}),
   antenna:std({color:0x1b1d20,roughness:.5}),
   pcbG:std({color:0x0e2b26,roughness:.6}),
   pcbB:std({color:0x0f1a2e,roughness:.6}),
@@ -71,7 +75,7 @@ export function wireColor(need,label){
   if(need==='LED') return 0x4fb06d;
   if(need&&need[0]==='M') return 0x8a939c;
   if(need==='ESC') return 0xc9ced3;
-  if(label==='TX') return 0x3d9be0;
+  if(label==='TX') return CINE?0x3d9be0:0x34a853;   // model 1: green TX, like a standard 4-wire UART cable
   return 0xeeeeee;
 }
 export const hex=c=>'#'+c.toString(16).padStart(6,'0');

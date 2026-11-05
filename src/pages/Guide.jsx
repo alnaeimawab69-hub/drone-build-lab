@@ -1,7 +1,7 @@
 import SiteHeader from '../components/SiteHeader.jsx';
 import Icon from '../components/Icon.jsx';
 
-const TOC = [['outcomes', 'Learning outcomes'], ['session', 'Suggested session'], ['scoring', 'Scoring'], ['fasteners', 'Fasteners'], ['wiring', 'Wiring'], ['motors', 'Motor layout'], ['faults', 'Fault finding'], ['run', 'Running and hosting']];
+const TOC = [['outcomes', 'Learning outcomes'], ['session', 'Suggested session'], ['scoring', 'Scoring'], ['fasteners', 'Fasteners'], ['wiring', 'Wiring'], ['motors', 'Motor layout'], ['run', 'Running and hosting']];
 
 const OUTCOMES = [
   'Name the parts of a quadcopter and explain what each one does.',
@@ -11,24 +11,8 @@ const OUTCOMES = [
   'Check motor direction safely with the propellers off, and correct a reversed motor.',
   'Match CW (clockwise) and CCW (counter-clockwise) propellers to their motors.',
   'Explain how changes in the four motor speeds produce heave, pitch, roll and yaw.',
-  'Inspect a finished drone step by step, find faults by looking and testing, and explain what each fault would do in flight.',
 ];
 
-/* the answer key for the Fault finding activity: [fault, models, how students find it, what it would do] */
-const FAULTS = [
-  ['Motor spins the wrong way (one motor)', 'All', 'Bench test with the propellers off. Compare with the layout.', 'No lift at that corner: flips at take-off'],
-  ['Wrong propeller, CW / CCW (one motor)', 'All', 'Compare the blade shape (or the labels) with the layout.', 'Propeller pushes air up: flips at take-off'],
-  ['Propeller not tightened down (one motor)', 'All', 'Look at the propellers from the side. One sits high and tilted.', 'Wobbles, shakes the drone, can fly off'],
-  ['Flight controller arrow not to the front', 'All', 'Exploded view or Top view. On model 3, lift the top shell.', 'Corrects tilt the wrong way: flips'],
-  ['Motor screws missing (one motor)', '1, 2', 'Orbit under the arms. Count four screws per motor.', 'Motor loosens and can come off'],
-  ['Battery strap missing', '1, 2', 'Count the battery straps: one per pair of slots.', 'Battery swings loose and can rip out the power cable'],
-  ['Capacitor wired backwards', '1, 2', 'Wiring diagram: + leg on the − pad.', 'Capacitor overheats and can burst'],
-  ['GPS TX and RX not crossed', '1, 2', 'Wiring diagram: TX on T3 instead of R3.', 'No position, so no position hold or return-to-home'],
-  ['Radio receiver TX and RX not crossed', '1, 2', 'Wiring diagram: TX on T1 instead of R1.', 'No stick commands, so it will not arm or respond'],
-  ['A 5 V part on the 9 V pad', '1, 2', 'Wiring diagram: FPV camera (model 1) or LED strip (model 2) on 9V.', 'Overheats and can burn out'],
-  ['Smart battery not locked in', '3', 'Look at the battery bay from the side.', 'No backup battery, and vibration can unplug it'],
-  ['Gimbal camera not locked on', '3', 'Look under the nose.', 'Can drop off, and loses power and video'],
-];
 
 const SCORING = [
   ['1 · Frame assembly', 15, 'Part in the wrong place (−2), wrong screw (−2)'],
@@ -87,7 +71,6 @@ export default function Guide() {
               <li><b>Explore (10 min).</b> Open the finished drone. Use exploded view and the part labels. Read three or four info cards.</li>
               <li><b>Practice (30–40 min).</b> Full build with hints. Ask students to read the explanation for each mistake, not just try again.</li>
               <li><b>Assessment (20–30 min).</b> Fresh start, no hints, timed. Students copy the result from the report and paste it into their work.</li>
-              <li><b>Fault finding (10–15 min, or as an extension).</b> Students check a finished drone for hidden faults. Then they read why each fault matters for safety or flight. Give the class one drone code, so everyone gets the same faults and you can discuss them together.</li>
             </ol>
             <p>The flight stage is not scored. Use it to discuss Newton’s laws, torque and the six degrees of freedom.</p>
           </div>
@@ -159,20 +142,6 @@ export default function Guide() {
           </div>
         </section>
 
-        <section className="band" id="faults">
-          <div className="wrap">
-            <div className="sec-head"><h2>Fault finding</h2><p>Works with all three models and both motor directions. The finished drone has one to four hidden faults (three by default), never two on the same motor. Students inspect it and bench-test the motors with the propellers off. On models 1 and 2 they also check the wiring diagram. Then they mark each fault they found, and the motor where it applies. After they submit, each fault is explained. Students can repair it on the model and fly the repaired drone.</p></div>
-            <div className="table-wrap"><table>
-              <thead><tr><th>Fault</th><th>Models</th><th>How students find it</th><th>What it would do</th></tr></thead>
-              <tbody>
-                {FAULTS.map(([fault, models, find, effect]) => <tr key={fault}><td>{fault}</td><td>{models}</td><td>{find}</td><td>{effect}</td></tr>)}
-              </tbody>
-            </table></div>
-            <p style={{ marginTop: 18 }}><b>Score.</b> Out of 100: each fault found is worth an equal share, each false alarm costs 15 and each hint costs 10 (never below 0). This activity is separate from the build assessment.</p>
-            <p><b>Drone codes.</b> Each drone has a code such as <code>3-K7QX</code> (number of faults, then the drone). Under <i>Drone code and difficulty</i>, students can enter a code you give them. The same code on the same model gives the same faults, so check that everyone has chosen the same model. With props out the faults are the same, but the correct spin of each motor changes.</p>
-            <p><b>Results.</b> <i>Copy result for my teacher</i> copies every drone the student did in the session: code, score, faults found and missed, false alarms, hints and time.</p>
-          </div>
-        </section>
 
         <section id="run">
           <div className="wrap prose">

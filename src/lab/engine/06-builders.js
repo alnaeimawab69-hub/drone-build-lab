@@ -1,7 +1,6 @@
 /* Drone Build Lab · Builders for every part, made from code (no imported models) */
 import * as THREE from 'three';
 import { ARM, CINE, MODEL, TAU, V, armPos } from './01-config.js';
-import { propBlurTex } from './03-textures.js';
 import { M, std, wireMat } from './04-materials.js';
 import { PHASE_COLS, addPad, boardMesh, box, circHole, cyl, flatExtrude, mesh, rod, roundBox, rrShape, slotHole, smd, strands, tube } from './05-geometry.js';
 
@@ -36,7 +35,7 @@ export function buildNylSt(){ const g=new THREE.Group(); g.add(cyl(.13,.13,2.05,
 export function buildCamPlate(){
   const g=new THREE.Group();
   if(CINE){ g.add(mesh(roundBox(.22,2.95,1.6,.05,3),M.alu)); for(const z of [-.4,.4]){ const c=cyl(.12,.12,.24,M.darkMetal,12); c.rotation.z=Math.PI/2; c.position.z=z; g.add(c); } }
-  else g.add(box(.16,2.95,1.5,M.carbon));
+  else g.add(box(.16,2.3,1.5,M.carbon));                    // model 1: a short cage on top of the top plate
   return g;
 }
 /* battery straps: each one passes down through a pair of slots, one slot on each side of the battery */
@@ -50,6 +49,7 @@ export function buildTopPlate(){
   if(CINE) return buildTopPlateC();
   const g=new THREE.Group(), ts=rrShape(5.2,9.2,.6);
   strapSlots(ts,z=>-z);
+  ts.holes.push(slotHole(-.5,1.2,2.3,.17));                // the camera wires pass down through this slot to the FC
   for(const x of [-2.35,2.35]) for(const z of [-4,0,4.2]) ts.holes.push(circHole(x,-z,.15));
   g.add(flatExtrude(ts,PLATE_T,M.carbonTop));
   batteryPad(g);
@@ -112,10 +112,11 @@ export function buildGpsMount(){
 export function buildCamMount(){
   const g=new THREE.Group();
   for(const s of [-1,1]){
-    const ch=mesh(roundBox(.3,2.5,2.8,.12,4),M.tpu); ch.position.set(s*1.38,0,-.55); g.add(ch);
+    /* model 2: the cheeks fill the gap between the plates. Model 1: a shorter pod standing on the top plate */
+    const ch=mesh(roundBox(.3,CINE?2.9:2.3,2.8,.12,4),M.tpu); ch.position.set(s*1.38,0,-.55); g.add(ch);
     for(const a of [0,10,20,30,40]){ const t=box(.04,.05,.42,M.black); const r=a*Math.PI/180; t.position.set(s*1.545,Math.sin(r)*.85,-Math.cos(r)*.85+.1); t.rotation.x=r; g.add(t); }
   }
-  const chin=mesh(roundBox(3.06,.34,.5,.12,4),M.tpu); chin.position.set(0,-1.08,-1.75); g.add(chin);
+  const chin=mesh(roundBox(3.06,.34,.5,.12,4),M.tpu); chin.position.set(0,CINE?-1.08:-.98,-1.75); g.add(chin);
   return g;
 }
 /* a flat arc with an arrow head, lying in the x-z plane. As built it points counter-clockwise seen from above;
@@ -156,33 +157,27 @@ export function bladeShape(s){
   sh.quadraticCurveTo(...P(6.48,.12),...P(6.05,.3)); sh.bezierCurveTo(...P(4.2,.56),...P(1.8,.56),...P(.3,.3)); sh.lineTo(...P(.3,-.32));
   return sh;
 }
-/* the blur a spinning prop leaves: a see-through disc, darker towards the tips, with a bright line where the tips pass.
-   The render loop fades it in with the motor speed */
-export function propDisc(R){
-  const disc=new THREE.Mesh(new THREE.CircleGeometry(R,72),new THREE.MeshBasicMaterial({map:propBlurTex,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
-  disc.rotation.x=-Math.PI/2; disc.renderOrder=2; disc.userData.noStyle=true; return disc;
-}
 export function buildProp(dir){
   const s=dir==='CW'?1:-1, g=new THREE.Group(), sp=new THREE.Group(); g.add(sp); g.userData.spinner=sp; g.userData.dir=dir;
   const hub=cyl(.42,.46,.38,M.propHub,24); hub.position.y=.19; sp.add(hub);
   const nut=cyl(.3,.3,.3,M.steel,6); nut.position.y=.53; sp.add(nut);
   const geo=new THREE.ExtrudeGeometry(bladeShape(s),{depth:.07,bevelEnabled:false,curveSegments:10}); geo.rotateX(-Math.PI/2); geo.translate(0,-.035,0);
-  for(let k=0;k<3;k++){ const pv=new THREE.Group(); pv.rotation.y=k*TAU/3; const bl=mesh(geo,M.prop); bl.rotation.x=-.28*s; bl.position.y=.2; pv.add(bl); sp.add(pv); }
-  const disc=propDisc(MODEL.propR); disc.position.y=.22; g.add(disc); g.userData.disc=disc;
+  for(let k=0;k<3;k++){ const pv=new THREE.Group(); pv.rotation.y=k*TAU/3; const bl=mesh(geo,dir==='CW'?M.propCW:M.propCCW); bl.rotation.x=-.28*s; bl.position.y=.2; pv.add(bl); sp.add(pv); }
   return g;
 }
 export function buildESC(){
   const g=new THREE.Group(); g.add(boardMesh(4,.18,4,M.pcbG,M.escTop));
   for(const sx of [-1,1]) for(const sz of [-1,1]) for(let i=0;i<3;i++) g.add(box(.42,.12,.3,M.black,sx*1.15,.24,sz*(.35+i*.38)));
-  g.add(box(.5,.08,.5,M.black,.6,.22,-1.35));
+  g.add(box(.5,.08,.5,M.black,0,.22,-1.35));
   addPad(g,{key:'m1',label:'M1',net:'M1',pos:V(1.85,.2,.85),out:V(1,0,0),shape:'triple'});
   addPad(g,{key:'m2',label:'M2',net:'M2',pos:V(1.85,.2,-.85),out:V(1,0,0),shape:'triple'});
   addPad(g,{key:'m3',label:'M3',net:'M3',pos:V(-1.85,.2,.85),out:V(-1,0,0),shape:'triple'});
   addPad(g,{key:'m4',label:'M4',net:'M4',pos:V(-1.85,.2,-.85),out:V(-1,0,0),shape:'triple'});
   addPad(g,{key:'bp',label:'+',net:'VBAT+',pos:V(1.0,.2,1.75),out:V(0,0,1),shape:'big'});
   addPad(g,{key:'bn',label:'−',net:'VBAT-',pos:V(.35,.2,1.75),out:V(0,0,1),shape:'big'});
-  addPad(g,{key:'fc',label:'HARNESS',need:'ESC',pos:V(-.35,.3,-1.55),out:V(0,1,0),shape:'plug'});
-  smd(g,{w:4,d:4,y:.18,n:34,seed:7,avoid:[[.9,-1.35,1.4,1.35],[-1.4,-1.35,-.9,1.35],[.3,-1.65,.9,-1.05],[-.75,-1.8,.05,-1.3],[-.85,-.2,.85,.55]]});
+  /* harness plug in the front-right corner, under the FC socket, so the harness stays clear of the receiver wires */
+  addPad(g,{key:'fc',label:'HARNESS',need:'ESC',pos:V(.95,.3,-1.62),out:V(0,1,0),shape:'plug'});
+  smd(g,{w:4,d:4,y:.18,n:34,seed:7,avoid:[[.9,-1.35,1.4,1.35],[-1.4,-1.35,-.9,1.35],[-.3,-1.65,.3,-1.05],[.55,-1.85,1.35,-1.35],[-.85,-.2,.85,.55]]});
   return g;
 }
 export function buildFC(){
@@ -202,8 +197,8 @@ export function buildFC(){
   }
   P('u15','5V','5V',-1.2,1.6,B); P('u1g','G','GND',-.65,1.6,B); P('t1','T1','T1',-.1,1.6,B); P('r1','R1','R1',.45,1.6,B);
   P('u35','5V','5V',-1.6,-.45,Lf); P('u3g','G','GND',-1.6,0,Lf); P('t3','T3','T3',-1.6,.45,Lf); P('r3','R3','R3',-1.6,.9,Lf);
-  addPad(g,{key:'esc',label:'ESC',net:'ESC',pos:V(-.35,.28,-.95),out:V(0,1,0),shape:'socket'});
-  smd(g,{w:3.6,d:3.6,y:.16,n:30,seed:13,avoid:[[-.55,-1.4,.55,.45],[.1,.25,1.15,1.3],[-.9,.55,-.35,1.1],[1.4,.55,1.8,1.45],[-.8,-1.2,.1,-.7]]});
+  addPad(g,{key:'esc',label:'ESC',net:'ESC',pos:V(.95,.28,-.95),out:V(0,1,0),shape:'socket'});
+  smd(g,{w:3.6,d:3.6,y:.16,n:30,seed:13,avoid:[[-.55,-1.4,.55,.45],[.1,.25,1.15,1.3],[-.9,.55,-.35,1.1],[1.4,.55,1.8,1.45],[.45,-1.25,1.45,-.65]]});
   return g;
 }
 export function buildCamera(){
@@ -238,7 +233,8 @@ export function buildVTX(){
 export function buildRX(){
   const g=new THREE.Group(); g.add(boardMesh(1.3,.12,1.6,M.pcbG,M.rxTop));
   g.add(box(.5,.1,.5,M.black,0,.17,.05));
-  for(const s of [-1,1]){ const a=V(s*.3,.14,.75), d=V(s*.7,.25,1).normalize(); const b=a.clone().addScaledVector(d,1.9), c=a.clone().addScaledVector(d,2.6); g.add(rod(a,b,.04,M.antenna)); g.add(rod(b,c,.03,M.white)); }
+  /* model 1: one antenna upright, one out to the back left (90° apart). Model 2: out the back in a V */
+  for(const s of [-1,1]){ const a=CINE?V(s*.3,.14,.75):V(-.5+s*.08,.14,.5), d=(CINE?V(s*.7,.25,1):s<0?V(-.7,.1,.7):V(0,1,0)).normalize(); const b=a.clone().addScaledVector(d,1.9), c=a.clone().addScaledVector(d,2.6); g.add(rod(a,b,.04,M.antenna)); g.add(rod(b,c,.03,M.white)); }
   const F=V(0,0,-1);
   addPad(g,{key:'5v',label:'5V',need:'5V',pos:V(-.45,.14,-.68),out:F});
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.15,.14,-.68),out:F});
@@ -260,6 +256,7 @@ export function buildGPS(){
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.15,.12,-1.2),out:F});
   addPad(g,{key:'tx',label:'TX',need:'R3',pos:V(.15,.12,-1.2),out:F});
   addPad(g,{key:'rx',label:'RX',need:'T3',pos:V(.45,.12,-1.2),out:F});
+  if(!CINE) g.scale.setScalar(.9);   // model 1: a 19 mm module, small enough to share the rear bay with the receiver
   return g;
 }
 export function buildCap(){
@@ -274,6 +271,7 @@ export function buildCap(){
   return g;
 }
 export function buildLead(){
+  if(!CINE) return buildLeadTop();
   const g=new THREE.Group();
   g.add(box(.9,.55,1.0,M.connector,0,0,.6));
   g.add(box(.94,.12,.3,M.connector,0,.3,.25));
@@ -281,6 +279,21 @@ export function buildLead(){
   g.add(tube([V(-.22,0,.1),V(-.25,-.05,-1.2),V(-.25,.25,-2.65)],.11,wireMat(0x2b2f35)));
   addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.25,.25,-2.72),out:V(0,1,0)});
   addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.25,.25,-2.72),out:V(0,1,0)});
+  const sock=new THREE.Object3D(); sock.position.set(0,0,1.12); g.add(sock); g.userData.socket=sock;
+  return g;
+}
+/* model 1: the XT60 plug sits just behind the top plate, in a TPU holder screwed under the plate's rear edge, socket facing back to meet the battery cable.
+   The two wires leave the plug, drop behind the plate edge and run forward between the plates to the ESC battery pads */
+function buildLeadTop(){
+  const g=new THREE.Group();
+  g.add(box(.9,.55,1.0,M.connector,0,0,.6));
+  g.add(box(.94,.12,.3,M.connector,0,.3,.25));
+  g.add(box(1.15,.4,.75,M.tpu,0,-.3,-.08));                // holder: screwed under the rear edge of the top plate, cradles the plug
+  g.add(box(1.2,.05,.1,M.black,0,-.52,.12));               // zip tie round the holder and the plug
+  for(const [x,c,ex] of [[.22,0xd8453b,.2],[-.22,0x2b2f35,-.35]])
+    g.add(tube([V(x,-.28,.55),V(x,-.8,.62),V(x,-1.6,.55),V(x,-2.05,-.2),V(ex,-2.05,-1.4),V(ex,-2.05,-2.4)],.11,wireMat(c)));
+  addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.2,-2.05,-2.47),out:V(0,1,0)});
+  addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.35,-2.05,-2.47),out:V(0,1,0)});
   const sock=new THREE.Object3D(); sock.position.set(0,0,1.12); g.add(sock); g.userData.socket=sock;
   return g;
 }

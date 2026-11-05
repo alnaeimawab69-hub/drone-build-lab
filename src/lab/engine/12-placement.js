@@ -85,16 +85,29 @@ export function wireCurve(a,b){ const d=a.distanceTo(b); const m=a.clone().lerp(
 export function buildWireMesh(w){
   if(w.mesh){ w.mesh.traverse(o=>o.geometry&&o.geometry.dispose()); droneRoot.remove(w.mesh); }
   const s=PADS[w.src], a=padLocal(w.src), b=padLocal(w.tgt), c=wireCurve(a,b), g=new THREE.Group();
-  if(s.need[0]==='M') strands(c,3,.055,.068,5,PHASE_COLS).forEach(m=>g.add(m));
-  else if(s.need==='ESC') strands(c,6,.026,0,0,HARNESS_COLS,true).forEach(m=>g.add(m));
+  const t=PADS[w.tgt], fan=s.need[0]==='M'&&s.def.shape==='bundle'&&t.def.shape==='triple';
+  if(fan){
+    /* three phase wires, each from its tinned end to its own pad (paired in order, so they run side by side without crossing) */
+    const L=o=>droneRoot.worldToLocal(o.getWorldPosition(V())), pins=t.vis.children.map(L), ax=pins[2].clone().sub(pins[0]);
+    const ends=s.vis.children.map(L).sort((p,q)=>p.dot(ax)-q.dot(ax));
+    ends.forEach((e,k)=>{ g.add(mesh(new THREE.TubeGeometry(wireCurve(e,pins[k]),40,.05,8,false),wireMat(PHASE_COLS[k])));
+      const bl=mesh(new THREE.SphereGeometry(.1,12,8),M.solder); bl.scale.y=.5; bl.position.copy(pins[k]); g.add(bl); });
+  }
+  else if(s.need[0]==='M') strands(c,3,.055,.068,5,PHASE_COLS).forEach(m=>g.add(m));
+  else if(s.need==='ESC') strands(c,HARNESS_COLS.length,.026,0,0,HARNESS_COLS,true).forEach(m=>g.add(m));
   else {
     const r=s.need.startsWith('VBAT')?.085:.042;
     g.add(mesh(new THREE.TubeGeometry(c,48,r,10,false),wireMat(wireColor(s.need,s.label))));
     const tan=c.getTangentAt(1); g.add(rod(b.clone().addScaledVector(tan,-.16),b.clone(),r*.7,M.tin));
   }
-  if(s.need!=='ESC'){ const bl=mesh(new THREE.SphereGeometry(s.need[0]==='M'?.17:s.need.startsWith('VBAT')?.16:.1,14,10),M.solder); bl.scale.y=.5; bl.position.copy(b); g.add(bl); }
+  if(s.need!=='ESC'&&!fan){ const bl=mesh(new THREE.SphereGeometry(s.need[0]==='M'?.17:s.need.startsWith('VBAT')?.16:.1,14,10),M.solder); bl.scale.y=.5; bl.position.copy(b); g.add(bl); }
   g.traverse(o=>{ if(o.isMesh) o.userData.noEdges=true; });
   w.mesh=g; droneRoot.add(g);
+}
+export function removeWire(src){
+  const i=WIRES.findIndex(w=>w.src===src); if(i<0) return false;
+  const w=WIRES[i]; if(w.mesh){ w.mesh.traverse(o=>o.geometry&&o.geometry.dispose()); droneRoot.remove(w.mesh); }
+  WIRES.splice(i,1); if(PADS[src]) PADS[src].wired=false; updatePadSprites(); return true;
 }
 export function addWire(src,tgt){ droneRoot.updateMatrixWorld(true); const w={src,tgt,mesh:null}; WIRES.push(w); PADS[src].wired=true; if(PADS[src].sprite) PADS[src].sprite.visible=false; buildWireMesh(w); }
 export let batCable=null;
@@ -103,9 +116,11 @@ export function updateBatCable(){
   if(!parts.bat||!parts.lead) return;
   droneRoot.updateMatrixWorld(true);
   const a=droneRoot.worldToLocal(parts.bat.group.userData.plug.getWorldPosition(V()));
-  const b=droneRoot.worldToLocal(parts.lead.group.userData.socket.getWorldPosition(V()));
-  /* the battery's own plug mates with the connector on the battery lead, so the cable ends in a second connector body */
-  const c=new THREE.CatmullRomCurve3([a.clone(),a.clone().add(V(0,.2,.9)),V((a.x+b.x)/2,(a.y+b.y)/2,Math.max(a.z,b.z)+1.6),b.clone().add(V(0,0,1.5)),b.clone().add(V(0,0,.8))]);
+  const sock=droneRoot.worldToLocal(parts.lead.group.userData.socket.getWorldPosition(V()));
+  const b=S.unplugged?sock.clone().add(V(0,0,.2)):sock;   // unplugged: the plug sits in line, 2 mm out of the socket, ready to push in
+  /* the battery's own plug mates with the connector on the battery lead, so the cable ends in a second connector body.
+     A short, tight bend from the battery down to the back of that plug, like a real battery pigtail */
+  const c=new THREE.CatmullRomCurve3([a.clone(),a.clone().add(V(0,-.05,.45)),V((a.x+b.x)/2,(a.y+b.y)/2+.2,b.z+1.45),b.clone().add(V(0,0,1.2)),b.clone().add(V(0,0,.8))]);
   batCable=strands(c,2,.1,.11,2.5,[0xd8453b,0x2b2f35]);
   const plug=mesh(new THREE.BoxGeometry(.86,.52,.8),M.connector); plug.position.copy(b).add(V(0,0,.4)); batCable.push(plug);
   batCable.forEach(m=>droneRoot.add(m));
