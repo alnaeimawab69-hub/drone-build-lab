@@ -1,6 +1,6 @@
 /* Drone Build Lab · Screws, nuts and fastening */
 import * as THREE from 'three';
-import { CINE, MODEL, TAU, V, easeOut, lc } from './01-config.js';
+import { ALU_Z, CINE, MODEL, TAU, V, easeOut, lc } from './01-config.js';
 import { ringTex } from './03-textures.js';
 import { M, std } from './04-materials.js';
 import { PROXY_GEO, PROXY_MAT, cyl } from './05-geometry.js';
@@ -34,7 +34,7 @@ Object.keys(SCREWT).forEach(k=>SCREWT[k].build=()=>buildScrew(k));
 /* model 3 is built from sealed modules with quick-release connectors, so it has no screws to drive */
 export const SCREW_SPEC=MODEL.sealed?{}:{
   arm:[[1.2,MODEL.armT,0],[3.2,MODEL.armT,0]].map(p=>({p,out:[0,1,0],kind:'M3x10'})),
-  tplate:[-4,0,4.2].flatMap(z=>[-MODEL.alu,MODEL.alu].map(x=>({p:[x,CINE?.25:.22,z],out:[0,1,0],kind:'M3x6'}))),
+  tplate:ALU_Z.flatMap(z=>[-MODEL.alu,MODEL.alu].map(x=>({p:[x,CINE?.25:.22,z],out:[0,1,0],kind:'M3x6'}))),
   motor:[[.57,.57],[.57,-.57],[-.57,.57],[-.57,-.57]].map(([x,z])=>({p:[x,-MODEL.armT,z],out:[0,-1,0],kind:'M3x6'})),
   fc:NYL_POS.map(([x,z])=>({p:[x,.16,z],out:[0,1,0],kind:'nut'})),
   camera:[-1,1].map(s=>({p:[s*(CINE?1.27:1.21),0,0],out:[s,0,0],kind:'M2x5'})),

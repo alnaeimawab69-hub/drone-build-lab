@@ -7,7 +7,7 @@ import { droneRoot, spinRings, styleObj } from './09-scene-content.js';
 import { stepTweens } from './11-tweens-camera.js';
 import { SCR } from './13-screws.js';
 import { stepFlight } from './19-flight.js';
-import { stepMoves } from './28-movements.js';
+import { padFly, stepMoves } from './28-movements.js';
 import { stageKey } from './20-stages.js';
 import { renderPanel } from './21-panel.js';
 import { updateLabels } from './22-info-labels.js';
@@ -24,7 +24,7 @@ export function loop(now){
   const dt=Math.min(.05,(now-last)/1000); last=now; clockT+=dt;
   stepTweens(dt);
   const k=stageKey();
-  if(k==='fly') stepFlight(dt);
+  if(k==='fly'){ padFly(); stepFlight(dt); }
   if(k==='moves') stepMoves(dt);
   for(let n=1;n<=4;n++){ const w=S.spin[n]; const m=parts['mot'+n]; if(m&&w) m.group.userData.rot.rotation.y+=spinStep(w*dt,.45); const p=parts['prop'+n]; if(p){ if(w) p.group.userData.spinner.rotation.y+=spinStep(w*1.6*dt,.8); }
     /* the spin arrow turns the same way as its prop, slowly enough to follow by eye */

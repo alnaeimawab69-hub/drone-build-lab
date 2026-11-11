@@ -14,7 +14,7 @@ canvas.addEventListener('webglcontextlost',e=>{ e.preventDefault(); const t=$('#
 canvas.addEventListener('webglcontextrestored',()=>location.reload());
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.05;
+renderer.toneMappingExposure=.8;                        // lights below are kept low so black parts stay black, like the real drones
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
@@ -46,13 +46,13 @@ export let envTex=null;
   scene.environment=envTex;
 })();
 
-scene.add(new THREE.HemisphereLight(0xcfe3ff,0x2a221a,.55));
-export const key=new THREE.DirectionalLight(0xfff1e0,1.5);
+scene.add(new THREE.HemisphereLight(0xcfe3ff,0x2a221a,.3));
+export const key=new THREE.DirectionalLight(0xfff1e0,.95);
 key.position.set(14,28,12); key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);
 const SH=18*(MODEL.view||1);
 Object.assign(key.shadow.camera,{left:-SH,right:SH,top:SH,bottom:-SH,near:1,far:80});
 key.shadow.bias=-.0004;
 scene.add(key);
-export const fill=new THREE.DirectionalLight(0x9fc4ff,.45); fill.position.set(-16,10,-12); scene.add(fill);
-export const rim=new THREE.DirectionalLight(0xffe2c4,.55); rim.position.set(-6,9,20); scene.add(rim);
+export const fill=new THREE.DirectionalLight(0x9fc4ff,.25); fill.position.set(-16,10,-12); scene.add(fill);
+export const rim=new THREE.DirectionalLight(0xffe2c4,.3); rim.position.set(-6,9,20); scene.add(rim);

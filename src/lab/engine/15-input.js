@@ -1,6 +1,6 @@
 /* Drone Build Lab · Mouse/touch input: dragging parts, wires and screws */
 import * as THREE from 'three';
-import { $, CORNER, EXP, V, lc } from './01-config.js';
+import { $, CORNER, EX, EXP, V, lc } from './01-config.js';
 import { canvas, canvasHooks, controls } from './02-scene.js';
 import { M } from './04-materials.js';
 import { PROXY_MAT } from './05-geometry.js';
@@ -122,7 +122,7 @@ export function moveWireDrag(e){
   droneRoot.updateMatrixWorld(true);
   const a=padLocal(d.from); const b=d.hover?padLocal(d.hover):droneRoot.worldToLocal(planePoint(PADS[d.from].vis.getWorldPosition(V())));
   if(rubber){ rubber.geometry.dispose(); droneRoot.remove(rubber); }
-  rubber=new THREE.Mesh(new THREE.TubeGeometry(wireCurve(a,b),24,.045,5,false),M.rubber); rubber.renderOrder=6; droneRoot.add(rubber);
+  rubber=new THREE.Mesh(new THREE.TubeGeometry(wireCurve(a,b),24,EX?.3:.045,5,false),M.rubber); rubber.renderOrder=6; droneRoot.add(rubber);
   showTip(d.hover?padName(PADS[d.hover]):padName(PADS[d.from]),e.clientX,e.clientY);
 }
 export function endWireDrag(e,cancel){

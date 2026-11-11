@@ -27,7 +27,7 @@ export const M={
   connector:std({color:0xd8a93a,roughness:.5}),
   strap:std({color:0xa5582a,roughness:.75}),
   batSide:new THREE.MeshPhysicalMaterial({map:batTex,roughness:.55,clearcoat:.6,clearcoatRoughness:.25}),
-  batEnd:std({color:0x24282d,roughness:.6}),
+  batEnd:std({color:CINE?0xa9aeb4:0x24282d,roughness:.6}),
   prop:new THREE.MeshPhysicalMaterial({color:0x24495c,roughness:.35,transparent:true,opacity:.92,side:THREE.DoubleSide,clearcoat:.25,clearcoatRoughness:.3,envMapIntensity:.35}),
   propHub:std({color:0x3d6c80,roughness:.4}),
   /* teaching colours, so the two kinds are easy to tell apart: CW red, CCW blue */
@@ -45,9 +45,12 @@ export const M={
   rubber:new THREE.MeshBasicMaterial({color:0xe0894a,transparent:true,opacity:.85}),
   solder:std({color:0xdfe3e6,roughness:.12,metalness:1}),
   /* model 2 (cinematic) parts */
-  panel:new THREE.MeshPhysicalMaterial({color:0xcfe3ea,roughness:.08,metalness:0,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide,clearcoat:1,clearcoatRoughness:.05}),
-  ledStrip:std({color:0xe9ecee,roughness:.5}),
-  led:std({color:0x9fe6ff,emissive:0x3bb8ff,emissiveIntensity:1.6,roughness:.3}),
+  bellC:std({color:0x62676e,roughness:.28,metalness:.85}),   // model 2: gunmetal motor bells (the purple is the band and base)
+  sidePanel:new THREE.MeshPhysicalMaterial({color:0x3f1590,roughness:.15,transparent:true,opacity:.72,envMapIntensity:.5,clearcoat:1,clearcoatRoughness:.08}),   // model 2: see-through purple side panels
+  panelGlow:std({color:0xe9dcff,emissive:0xa57bff,emissiveIntensity:1.6,roughness:.3}),                                          // model 2: light bar inside each side panel
+  cage:std({color:0x101113,roughness:.4,metalness:.7}),                                                                           // model 2: black anodised camera cage
+  guard:std({color:0x1c1d20,roughness:.85}),                  // model 2: black TPU motor guards
+  accent:std({color:0x6b3fa8,roughness:.32,metalness:.7}),     // model 2: purple anodised aluminium trim
   tpu:std({color:0xf0b81c,roughness:.82}),            // printed TPU mounts, yellow like most modern FPV builds
   heatsink:std({color:0x8f979e,roughness:.35,metalness:.85}),
   camShell:std({color:0x0c0d0f,roughness:.75}),
@@ -57,9 +60,9 @@ export const M={
   batPad:std({color:0x24272b,roughness:.98}),
   ceramic:std({color:0xd8cdb0,roughness:.55}),
   /* model 3 (enterprise) parts */
-  shell:new THREE.MeshPhysicalMaterial({color:0x3a3f45,roughness:.5,metalness:.1,clearcoat:.4,clearcoatRoughness:.35}),
-  shellLight:new THREE.MeshPhysicalMaterial({color:0xb9bec3,roughness:.45,metalness:.1,clearcoat:.4,clearcoatRoughness:.3}),
-  shellDark:std({color:0x1c1f23,roughness:.6}),
+  shell:new THREE.MeshPhysicalMaterial({color:0x2b2f34,roughness:.6,metalness:.1,clearcoat:.25,clearcoatRoughness:.35,envMapIntensity:.45}),   // dark graphite, matte
+  shellLight:new THREE.MeshPhysicalMaterial({color:0x9aa0a6,roughness:.45,metalness:.1,clearcoat:.4,clearcoatRoughness:.3,envMapIntensity:.5}),
+  shellDark:std({color:0x14161a,roughness:.6,envMapIntensity:.4}),
   lensBlack:new THREE.MeshPhysicalMaterial({color:0x05070a,roughness:.05,metalness:.2,clearcoat:1,clearcoatRoughness:.03}),
   beaconRed:std({color:0xff4a3d,emissive:0xd8231a,emissiveIntensity:1.3,roughness:.3}),
   ledGreen:std({color:0x7cffa0,emissive:0x21c45a,emissiveIntensity:1.3,roughness:.3}),
@@ -72,7 +75,6 @@ export function wireColor(need,label){
   if(need==='VBAT+'||need==='5V'||need==='9V') return 0xd8453b;
   if(need==='VBAT-'||need==='GND') return 0x2b2f35;
   if(need==='CAM'||need==='VTX') return 0xe8c33c;
-  if(need==='LED') return 0x4fb06d;
   if(need&&need[0]==='M') return 0x8a939c;
   if(need==='ESC') return 0xc9ced3;
   if(label==='TX') return CINE?0x3d9be0:0x34a853;   // model 1: green TX, like a standard 4-wire UART cable

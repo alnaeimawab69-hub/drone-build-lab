@@ -1,25 +1,44 @@
 /* Drone Build Lab · Model 3 (EX-9 enterprise drone): parts, catalogue and mounting points.
    Built at real size in cm like the other models; droneRoot draws it at MODEL.scale so it fits the bench.
-   Its parts are sealed modules that click in, so its build has no screws and no wiring stage. */
+   Its parts are sealed modules that click in, so its build has no screws and no soldering. Each module has a cable with a keyed plug
+   that goes into its own port on the flight controller (the Connect stage). */
 import * as THREE from 'three';
 import { ARM, ARM_ANG, DEG, MODEL, TAU, V, armPos } from './01-config.js';
 import { exBatTex } from './03-textures.js';
 import { M, std } from './04-materials.js';
-import { boardMesh, box, cyl, mesh, rod, roundBox } from './05-geometry.js';
+import { addPad, boardMesh, box, cyl, mesh, rod, roundBox } from './05-geometry.js';
 import { makeRing } from './06-builders.js';
 
 const POD_TOP=31;                                        // top of the motor pods at the arm tips
 export const EX_PROP_Y=POD_TOP+4.9;                      // top of the motor, where the prop sits
 const propMat=new THREE.MeshPhysicalMaterial({color:0x1d2024,roughness:.4,side:THREE.DoubleSide,clearcoat:.4,clearcoatRoughness:.3});
 const exBatTop=std({map:exBatTex,roughness:.5});
+/* a module's cable plug (source) and a port on the flight controller (target), drawn at this model's size */
+const PS=3.3, UP=V(0,1,0);
+const plug=(g,key,label,need,pos,parent=g)=>addPad(g,{key,label,need,pos,out:UP,shape:'plug',s:PS},parent);
 const facing=(g,dir)=>{ g.quaternion.setFromUnitVectors(V(0,0,1),dir.clone().normalize()); return g; };
 
 /* ================= Builders ================= */
 /* fuselage: the lower body shell that carries everything, with a tapered nose */
+/* the fuselage seen from above: the nose tapers to the FPV camera, the tail corners are cut off. d shrinks the outline (for the bevelled edges) */
+function hullShape(d){
+  const sh=new THREE.Shape();
+  [[7,-20.5],[10,-12.5],[10,12.6],[8.4,15],[-8.4,15],[-10,12.6],[-10,-12.5],[-7,-20.5]].forEach(([x,z],i)=>{
+    const X=x-Math.sign(x)*d, Z=z<-15?z+d:z>14?z-d:z; i?sh.lineTo(X,-Z):sh.moveTo(X,-Z); });
+  sh.closePath(); return sh;
+}
+function hull(y,h,b,mat,d=0){
+  const geo=new THREE.ExtrudeGeometry(hullShape(b+d),{depth:h-2*b,bevelEnabled:b>0,bevelThickness:b,bevelSize:b,bevelSegments:3});
+  geo.rotateX(-Math.PI/2); geo.translate(0,y+b,0); return mesh(geo,mat);
+}
 function buildBody(){
   const g=new THREE.Group();
-  const b=mesh(roundBox(20,9,30,2.6,6),M.shell); b.position.set(0,25.5,0); g.add(b);
-  const n=mesh(roundBox(14,7.5,7,2.4,6),M.shell); n.position.set(0,25.4,-17); g.add(n);
+  g.add(hull(21,9,1.4,M.shell));
+  g.add(hull(27.2,.16,0,M.shellDark,-.05));                          // the seam where the upper and lower shells meet
+  for(let i=0;i<3;i++) g.add(box(7,.28,.3,M.shellDark,0,22.7+i*.62,-20.45));   // air intake under the FPV camera
+  /* power button on the tail, with a light ring */
+  const pr=cyl(1.1,1.1,.2,M.ledGreen,24); pr.rotation.x=Math.PI/2; pr.position.set(5.6,23.2,15); pr.castShadow=false; g.add(pr);
+  const pb=cyl(.85,.85,.3,M.shellDark,24); pb.rotation.x=Math.PI/2; pb.position.set(5.6,23.2,15.02); g.add(pb);
   /* battery bay floor and the divider between the two batteries */
   g.add(box(18,.4,15.4,M.shellDark,0,30.1,8.2));
   g.add(box(.6,2.4,15,M.shellDark,0,31.2,8.2));
@@ -42,8 +61,10 @@ function buildArmEX(){
   const j=cyl(2.4,2.4,3.2,M.shellDark,24); j.rotation.z=Math.PI/2; j.position.set(18.6,27,0); g.add(j);
   const lock=cyl(2.5,2.5,.7,M.orange,24); lock.rotation.z=Math.PI/2; lock.position.set(19.6,27,0); g.add(lock);
   g.add(rod(V(20,27,0),V(L-3.4,28.4,0),1.55,M.carbon,20));
+  plug(g,'esc','ESC','M?',V(11,29.4,0));   // the pod's ESC cable, plugs into the motor port with the arm's number
   const pod=cyl(3.8,3.4,5,M.shell,32); pod.position.set(L,28.5,0); g.add(pod);
   const ring=cyl(3.85,3.85,.5,M.shellDark,32); ring.position.set(L,30.7,0); g.add(ring);
+  for(let i=0;i<16;i++){ const a=i/16*TAU, f=box(.5,3.4,.22,M.shellDark,L+Math.cos(a)*3.62,28.4,Math.sin(a)*3.62); f.rotation.y=-a; f.castShadow=false; g.add(f); }   // cooling fins for the ESC inside
   const led=cyl(1.2,1.2,.4,M.beaconRed,16); led.position.set(L,25.8,0); led.castShadow=false; g.add(led);
   return g;
 }
@@ -56,6 +77,7 @@ function buildGear(){
   const knee=mesh(roundBox(3,2.4,4,.8,3),M.shellDark); knee.position.set(16,2.2,0); g.add(knee);
   g.add(rod(V(16,1,-15),V(16,1,15),1,M.shellDark,16));
   for(const z of [-15,15]){ const c=cyl(1.15,1.15,1.2,M.black,16); c.rotation.x=Math.PI/2; c.position.set(16,1,z); g.add(c); }
+  plug(g0,'ant','ANTENNA','ANT',V(7.5,21.9,2.6),g);   // antenna cable from the leg up into the body (registered on the leg's root)
   return g0;
 }
 /* flight controller: redundant IMUs (three motion sensors) and barometers, so one failed sensor cannot bring the drone down */
@@ -64,7 +86,13 @@ function buildFCEX(){
   g.add(box(3,.5,3,M.black,0,.55,0));
   [[-3,-3],[3,-3],[-3,3]].forEach(([x,z],i)=>{ const c=mesh(roundBox(1.8,.9,1.8,.2,2),i===2?M.steel:M.darkMetal); c.position.set(x,.75,z); g.add(c); });
   for(const x of [3,1.6]){ const b=cyl(.5,.5,.6,M.steel,16); b.position.set(x,.6,3); g.add(b); }
-  for(let i=0;i<4;i++) g.add(box(1.6,.6,.7,M.nylon,-3.5+i*2.3,.6,-4.4));
+  /* keyed ports round the edge: motors and antennas on the sides, cameras at the front, the rest at the back */
+  const port=(key,net,x,z,out)=>addPad(g,{key,label:net,net,pos:V(x,.65,z),out,shape:'port',s:1.15});
+  const L=V(-1,0,0), R=V(1,0,0), F=V(0,0,-1), B=V(0,0,1);
+  port('m4','M4',-4.4,-2.8,L); port('antL','ANT',-4.4,0,L); port('m3','M3',-4.4,2.8,L);
+  port('m2','M2',4.4,-2.8,R); port('antR','ANT',4.4,0,R); port('m1','M1',4.4,2.8,R);
+  port('fpv','FPV',-2.5,-4.4,F); port('gmb','GMB',2.5,-4.4,F);
+  port('rtk','RTK',-3,4.4,B); port('vis','VIS',0,4.4,B); port('lgt','LGT',3,4.4,B);
   const arrow=new THREE.Mesh(new THREE.ConeGeometry(.7,1.6,3),M.white); arrow.rotation.x=-Math.PI/2; arrow.position.set(0,.4,-3); g.add(arrow);
   return g;
 }
@@ -74,6 +102,7 @@ function buildFPVEX(){
   g.add(mesh(roundBox(3.4,2.8,1.2,.4,3),M.shellDark));
   const l=cyl(.85,.9,.8,M.black,24); l.rotation.x=Math.PI/2; l.position.z=-.9; g.add(l);
   const gl=cyl(.6,.6,.05,M.lensBlack,24); gl.rotation.x=Math.PI/2; gl.position.z=-1.32; g.add(gl);
+  plug(g,'vid','FPV','FPV',V(0,1.75,.4));
   return g;
 }
 /* three-axis gimbal with a zoom camera, a wide camera, a thermal camera and a laser rangefinder, on a quick-release mount */
@@ -89,6 +118,7 @@ function buildGimbal(){
   const lens=(x,y,r,m)=>{ const c=cyl(r+.25,r+.25,.5,M.black,32); c.rotation.x=Math.PI/2; c.position.set(x,y,-3.55); g.add(c); const gl=cyl(r,r,.06,m,32); gl.rotation.x=Math.PI/2; gl.position.set(x,y,-3.82); g.add(gl); };
   lens(-1.9,-8.1,1.6,M.lensBlack); lens(1.8,-7.6,.85,M.lensBlack); lens(1.8,-10.2,1.15,std({color:0x3b3326,roughness:.15,metalness:.6}));
   g.add(box(1.6,1,.3,M.lensBlack,-1.9,-10.9,-3.5));
+  plug(g,'gmb','GIMBAL','GMB',V(0,.35,2.4));
   return g;
 }
 /* RTK module: two satellite antennas on folding masts. Two antennas 16 cm apart also measure the heading, without a compass */
@@ -101,6 +131,7 @@ function buildRTK(){
     const ant=cyl(3.2,3.2,1.4,M.shellLight,32); ant.position.set(x,11.6,0); g.add(ant);
     const dome=mesh(new THREE.SphereGeometry(3.2,32,12,0,TAU,0,Math.PI/2),M.shellLight); dome.scale.y=.3; dome.position.set(x,12.3,0); g.add(dome);
   }
+  plug(g,'rtk','RTK','RTK',V(0,1.5,1.9));
   return g;
 }
 /* obstacle sensing: a pair of vision cameras on every side (they see depth like two eyes), plus a time-of-flight sensor next to each pair */
@@ -114,6 +145,7 @@ function buildVision(){
   pair(V(0,26.6,-20.45),V(0,0,-1),7.5); pair(V(0,25.5,15.05),V(0,0,1));
   for(const s of [-1,1]) pair(V(s*10.05,25.5,-5),V(s,0,0),6);
   pair(V(0,33.45,-12.6),V(0,1,0)); pair(V(0,20.95,5),V(0,-1,0));
+  plug(g,'vis','SENSORS','VIS',V(0,30.4,-13));
   return g;
 }
 /* lights: a red anti-collision beacon on top and underneath, and a white auxiliary light that helps the downward sensors in the dark */
@@ -123,6 +155,7 @@ function buildLights(){
   const d=mesh(new THREE.SphereGeometry(1,20,10,0,TAU,0,Math.PI/2),M.beaconRed); d.position.set(0,34,-1.6); d.castShadow=false; g.add(d);
   const bb=mesh(new THREE.SphereGeometry(.9,20,10,0,TAU,Math.PI/2,Math.PI/2),M.beaconRed); bb.position.set(0,21,-3); bb.castShadow=false; g.add(bb);
   const aux=cyl(1.5,1.5,.3,M.lampWhite,24); aux.position.set(0,20.9,11); aux.castShadow=false; g.add(aux);
+  plug(g,'lgt','LIGHTS','LGT',V(0,33.7,-.1));
   return g;
 }
 function buildMotorEX(){

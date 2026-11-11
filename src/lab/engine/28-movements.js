@@ -1,11 +1,11 @@
-/* Drone Build Lab · Drone movements activity: fly with a remote (on-screen sticks, the keyboard, or a USB radio or gamepad) */
+/* Drone Build Lab · Drone movements activity: fly with a remote (on-screen sticks, the keyboard, a PS4 / PS5 controller, or a USB radio or gamepad) */
 import * as THREE from 'three';
 import { $, DEG, EXP, MODEL, SCALE, V, YAW_MIX, clamp, esc, motorsTurning } from './01-config.js';
 import { camera, controls } from './02-scene.js';
 import { S } from './08-state.js';
 import { droneRoot, showSpinRings } from './09-scene-content.js';
 import { screenOf } from './14-markers-picking.js';
-import { G, drawForces } from './19-flight.js';
+import { FL, G, airborne, doMan, drawForces } from './19-flight.js';
 import { stageKey } from './20-stages.js';
 import { forceKey, renderPanel } from './21-panel.js';
 import { toast } from './23-toast.js';
@@ -48,7 +48,16 @@ export const MV={in:{thr:0,yaw:0,pitch:0,roll:0},drag:null,dragV:{L:{x:0,y:0},R:
 const PAD_PRESETS={
   gamepad:{name:'Gamepad, Mode 2',map:{thr:[1,true],yaw:[0,false],pitch:[3,true],roll:[2,false]}},
   radio:{name:'RC transmitter (AETR)',map:{roll:[0,false],pitch:[1,false],thr:[2,false],yaw:[3,false]}},
+  /* a PS4 or PS5 pad the browser does not map (raw axes): the right stick's up/down is axis 5, axes 3 and 4 are the triggers */
+  ps:{name:'PS4 / PS5 controller, raw axes',map:{thr:[1,true],yaw:[0,false],pitch:[5,true],roll:[2,false]}},
 };
+/* PS4 (DualShock 4) and PS5 (DualSense) controllers, over Bluetooth or USB. 054c is Sony's USB vendor id */
+const isPS=id=>/054c|dualsense|dualshock|wireless controller|playstation/i.test(id);
+export function padName(id){
+  if(/dualsense|0ce6|0df2/i.test(id)) return 'PS5 controller';
+  if(isPS(id)) return 'PS4 controller';
+  return id.replace(/\s*\(.*$/,'').slice(0,40)||'Controller';
+}
 const presetCfg=k=>({preset:k,map:JSON.parse(JSON.stringify(PAD_PRESETS[k].map))});
 let padSaved=false;
 MV.padCfg=(()=>{ try{ const p=JSON.parse(localStorage.getItem('dbl-pad')); if(p&&p.map&&AXES.every(a=>Array.isArray(p.map[a]))){ padSaved=true; return p; } }catch(e){} return presetCfg('gamepad'); })();
@@ -58,13 +67,28 @@ function readPad(){
   if(!gp){ MV.pad=null; return; }
   const val={};
   for(const a of AXES){ const [i,inv]=MV.padCfg.map[a]; let v=gp.axes[i]||0; if(inv) v=-v; if(Math.abs(v)<.06) v=0; val[a]=clamp(v,-1,1); }
-  MV.pad={id:gp.id,axes:gp.axes.length,val};
+  MV.pad={id:gp.id,axes:gp.axes.length,val,std:gp.mapping==='standard',btn:gp.buttons.map(b=>b.pressed)};
+}
+/* Fly it stage: the controller's buttons and sticks start the same movements as the panel buttons.
+   Standard layout: 0 Cross, 1 Circle, 2 Square, 3 Triangle, 9 Options. A raw PlayStation pad: 0 Square, 1 Cross, 2 Circle, 3 Triangle */
+const FLY_BTN={std:{0:'takeoff',1:'land',3:'climb',2:'descend',9:'tour'},raw:{1:'takeoff',2:'land',3:'climb',0:'descend',9:'tour'}};
+let flyPrev=null;
+export function padFly(){
+  readPad(); const p=MV.pad; if(!p){ flyPrev=null; return; }
+  const v=p.val, now={pitchF:v.pitch>.7,pitchB:v.pitch<-.7,rollR:v.roll>.7,rollL:v.roll<-.7,yawR:v.yaw>.7,yawL:v.yaw<-.7};
+  const map=p.std||!isPS(p.id)?FLY_BTN.std:FLY_BTN.raw;
+  for(const i in map) now[map[i]]=!!p.btn[i];
+  if(flyPrev) for(const m in now) if(now[m]&&!flyPrev[m]){   // act once per press, not every frame
+    if(m==='tour'){ if(!airborne()) doMan('takeoff'); FL.tour={i:0,t:0}; }
+    else { FL.tour=null; doMan(m); }
+  }
+  flyPrev=now;
 }
 window.addEventListener('gamepadconnected',e=>{
-  if(!padSaved){ MV.padCfg=presetCfg(e.gamepad.mapping==='standard'?'gamepad':'radio'); }
-  if(stageKey()==='moves'){ toast(`Controller connected: ${e.gamepad.id.slice(0,48)}`,'ok'); readPad(); renderPanel(); }
+  if(!padSaved){ MV.padCfg=presetCfg(e.gamepad.mapping==='standard'?'gamepad':isPS(e.gamepad.id)?'ps':'radio'); }
+  const k=stageKey(); if(k==='moves'||k==='fly'){ toast(`${padName(e.gamepad.id)} connected`,'ok'); readPad(); renderPanel(); }
 });
-window.addEventListener('gamepaddisconnected',()=>{ if(stageKey()==='moves'){ toast('Controller disconnected. The keyboard and on-screen sticks still work.'); MV.pad=null; renderPanel(); } });
+window.addEventListener('gamepaddisconnected',()=>{ const k=stageKey(); if(k==='moves'||k==='fly'){ toast('Controller disconnected. The keyboard and on-screen sticks still work.'); MV.pad=null; renderPanel(); } });
 document.addEventListener('change',e=>{
   const t=e.target; if(!t.closest||!t.closest('.padset')) return;
   if(t.id==='padPreset'){ MV.padCfg=presetCfg(t.value); savePad(); renderPanel(); return; }
@@ -273,7 +297,8 @@ function padSetup(){
   const p=MV.pad, cfg=MV.padCfg, n=Math.max(4,p?p.axes:4);
   const rows=AXES.map(a=>`<label><span>${MOVES[a].name}</span><select data-ax="${a}">${Array.from({length:n},(_,i)=>`<option value="${i}" ${cfg.map[a][0]===i?'selected':''}>Axis ${i}</option>`).join('')}</select><span class="inv"><input type="checkbox" data-inv="${a}" ${cfg.map[a][1]?'checked':''}> invert</span></label>`).join('');
   return `<details class="padset" ${p&&!padSaved?'open':''}><summary>Controller setup</summary>
-    <p>Plug a radio transmitter in by USB (set the radio to <b>Joystick</b> or <b>USB HID</b>), or connect a gamepad. Move each stick. Check that its channel on the remote’s screen moves the same way. If not, change the axis or tick invert.</p>
+    <p><b>PS4 or PS5 controller by Bluetooth:</b> hold <b>Share + PS</b> (PS4) or <b>Create + PS</b> (PS5) until the light flashes. Pair it in your computer’s Bluetooth settings (it shows as <i>Wireless Controller</i> or <i>DualSense</i>). Then press any button on it with this page open. Chrome or Edge work best.</p>
+    <p>Or plug a radio transmitter in by USB (set the radio to <b>Joystick</b> or <b>USB HID</b>), or connect another gamepad. Move each stick. Check that its channel on the remote’s screen moves the same way. If not, change the axis or tick invert.</p>
     <label><span>Layout</span><select id="padPreset">${Object.entries(PAD_PRESETS).map(([k,v])=>`<option value="${k}" ${cfg.preset===k?'selected':''}>${v.name}</option>`).join('')}${cfg.preset==='custom'?'<option selected>Custom</option>':''}</select></label>
     ${rows}</details>`;
 }
@@ -283,7 +308,7 @@ export function renderMoves(){
       <span class="st-l t">▲</span><span class="st-l b">▼</span><span class="st-l l">◀</span><span class="st-l r">▶</span><div class="knob" id="mvK${s}"></div></div>
       <small><b>${v} · ${h}</b>${s==='L'?'<kbd>W</kbd><kbd>S</kbd> <kbd>A</kbd><kbd>D</kbd>':'<kbd>↑</kbd><kbd>↓</kbd> <kbd>←</kbd><kbd>→</kbd>'}</small></div>`;
   const lcd=CH.map(([a,l])=>`<div class="ch"><span>${l}</span><div class="chb"><i id="mvC_${a}"></i></div><b id="mvU_${a}">1500</b></div>`).join('');
-  const src=MV.pad?`<span class="rm-dot on"></span>USB controller: ${esc(MV.pad.id.slice(0,40))}`:'<span class="rm-dot"></span>On-screen sticks and keyboard';
+  const src=MV.pad?`<span class="rm-dot on"></span>${esc(padName(MV.pad.id))}`:'<span class="rm-dot"></span>On-screen sticks and keyboard';
   let quiz='';
   if(q){
     const done=q.i>=q.list.length, cur=done?null:q.list[q.i];
@@ -304,7 +329,7 @@ export function renderMoves(){
         <div class="sticks">${stick('L','Throttle','Yaw')}${stick('R','Pitch','Roll')}</div>
         <div class="rm-src">${src}</div>
       </div>
-      <p class="note">Mode 2 transmitter, the most common layout. <b>Drag a stick</b>, use the keys, or plug in a <b>USB radio or gamepad</b>. The sticks spring back to the centre. In this trainer, a centred throttle stick holds a hover.</p>
+      <p class="note">Mode 2 transmitter, the most common layout. <b>Drag a stick</b>, use the keys, or connect a <b>PS4 / PS5 controller by Bluetooth</b>, a gamepad or a USB radio. The sticks spring back to the centre. In this trainer, a centred throttle stick holds a hover.</p>
       ${padSetup()}
       ${quiz}
       <div class="hud"><div><small>Roll</small><span id="mvR">0°</span></div><div><small>Pitch</small><span id="mvP">0°</span></div><div><small>Heading</small><span id="mvY">0°</span></div><div><small>Height</small><span id="mvH">0 mm</span></div></div>
@@ -316,3 +341,84 @@ export function renderMoves(){
     foot:`<button class="btn ghost" data-act="exploreBack">← Parts</button><button class="btn" data-act="mvQuiz">${q?'Restart quiz':'Quiz me'}</button><button class="btn primary" data-act="mvAll" ${q?'disabled':''}>▶ Play all</button>`,
   };
 }
+
+/* ---------- Controller settings window (header button): connect a PS4 / PS5 controller by Bluetooth ---------- */
+const PS_GLYPH={std:[[0,'✕'],[1,'○'],[2,'□'],[3,'△']],raw:[[1,'✕'],[2,'○'],[0,'□'],[3,'△']]};
+function firstPad(){ try{ return [...(navigator.getGamepads?navigator.getGamepads():[])].find(g=>g&&g.connected)||null; }catch(e){ return null; } }
+function markPadBtn(){ const b=$('#btnPad'); if(b) b.classList.toggle('on',!!firstPad()); }
+window.addEventListener('gamepadconnected',markPadBtn); window.addEventListener('gamepaddisconnected',markPadBtn);
+const padSince={};   // when each controller slot connected, for the details table
+window.addEventListener('gamepadconnected',e=>{ padSince[e.gamepad.index]=Date.now(); });
+/* the browser's id holds the USB vendor and product ids: "… Vendor: 054c Product: 0ce6)" (Chrome) or "054c-0ce6-…" (Firefox) */
+function padIds(id){ const m=id.match(/Vendor:\s*(\w{4})\s*Product:\s*(\w{4})/i)||id.match(/^(\w{4})-(\w{4})-/); return m?[m[1].toLowerCase(),m[2].toLowerCase()]:null; }
+function padModel(id){
+  const p=(padIds(id)||[])[1];
+  if(p==='0df2') return 'PS5 DualSense Edge';
+  if(/dualsense/i.test(id)||p==='0ce6') return 'PS5 DualSense';
+  if(/dualshock/i.test(id)||p==='05c4'||p==='09cc') return 'PS4 DualShock 4';
+  return isPS(id)?'PlayStation controller':'Other gamepad';
+}
+const ago=t=>{ const s=Math.floor((Date.now()-t)/1000); return s<60?`${s} s ago`:`${Math.floor(s/60)} min ${s%60} s ago`; };
+function padInfoHTML(gp){
+  if(!gp) return '<tr><td>Controller</td><td>None connected</td></tr>';
+  const ids=padIds(gp.id), all=[...(navigator.getGamepads?navigator.getGamepads():[])].filter(g=>g&&g.connected).length, vib=!!gp.vibrationActuator;
+  const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
+  return row('Controller',`<b>${esc(padName(gp.id))}</b>`)+row('Model',padModel(gp.id))
+    +row('Maker',ids&&ids[0]==='054c'?'Sony (vendor 054c)':ids?`Vendor ${ids[0]}`:'Not reported')
+    +row('Product id',ids?ids[1]:'Not reported')
+    +row('Browser name',`<span style="font-family:var(--font-mono);font-size:var(--text-xs)">${esc(gp.id)}</span>`)
+    +row('Button layout',gp.mapping==='standard'?'Standard (the browser maps the buttons)':'Raw (this lab maps the buttons)')
+    +row('Sticks and buttons',`${gp.axes.length} axes · ${gp.buttons.length} buttons`)
+    +row('Vibration',vib?'Supported <button class="btn sm ghost" data-rumble>Test vibration</button>':'Not available in this browser')
+    +row('Slot',`${gp.index+1}${all>1?` (${all} controllers connected, using the first)`:''}`)
+    +row('Connected',padSince[gp.index]?ago(padSince[gp.index]):'Before this page opened');
+}
+let padInfoLast='';
+function openPadDlg(){
+  const d=$('#padDlg'); if(!d) return;
+  d.innerHTML=`<h2 id="padDlgT">Controller</h2><button class="x" aria-label="Close" data-close>×</button>
+    <div class="pd-stat" id="pdStat" role="status"><i></i><span></span></div>
+    <div class="pd-live" aria-hidden="true"><div class="pd-stick"><i id="pdL"></i></div><div class="pd-stick"><i id="pdR"></i></div><div class="pd-btns" id="pdB"></div></div>
+    <h3>Connected controller</h3>
+    <table><tbody id="pdInfo"></tbody></table>
+    <p class="note">The browser does not report whether the controller uses Bluetooth or a USB cable, or its battery level.</p>
+    <h3>Connect a PS4 or PS5 controller by Bluetooth</h3>
+    <ol>
+      <li>Put the controller in pairing mode: hold <b>Share + PS</b> (PS4) or <b>Create + PS</b> (PS5) for 3 seconds, until the light flashes fast.</li>
+      <li>Open the computer’s Bluetooth settings. Windows: <b>Settings › Bluetooth &amp; devices › Add device › Bluetooth</b>. Mac: <b>System Settings › Bluetooth</b>.</li>
+      <li>Choose <b>Wireless Controller</b> (PS4) or <b>DualSense Wireless Controller</b> (PS5). The light stays on when it is paired.</li>
+      <li>Come back to this page and <b>press any button</b> on the controller. The box above turns green.</li>
+    </ol>
+    <p class="note">Use Chrome or Edge. A USB cable works too. The browser only shows a controller after you press a button on it.</p>
+    <h3>Stick layout</h3>
+    <label>Layout <select id="pdPreset">${Object.entries(PAD_PRESETS).map(([k,v])=>`<option value="${k}" ${MV.padCfg.preset===k?'selected':''}>${v.name}</option>`).join('')}${MV.padCfg.preset==='custom'?'<option value="custom" selected>Custom</option>':''}</select></label>
+    <p class="note">If a stick moves the wrong way, fine-tune each axis under <b>Controller setup</b> in the Movements activity.</p>
+    <h3>Buttons</h3>
+    <table><tbody>
+      <tr><td>Left stick</td><td>Throttle (up/down) and yaw (left/right)</td></tr>
+      <tr><td>Right stick</td><td>Pitch (up/down) and roll (left/right)</td></tr>
+      <tr><td>✕ · ○</td><td>Fly it: take off · land</td></tr>
+      <tr><td>△ · □</td><td>Fly it: climb · descend</td></tr>
+      <tr><td>Options</td><td>Fly it: demo flight</td></tr>
+    </tbody></table>`;
+  padInfoLast=''; d.showModal(); padLive();
+}
+function padLive(){
+  const d=$('#padDlg'); if(!d||!d.open) return;
+  const gp=firstPad(), st=$('#pdStat');
+  st.classList.toggle('on',!!gp);
+  st.querySelector('span').textContent=gp?`${padName(gp.id)} connected. Move the sticks to test it.`:'No controller found. Pair it (steps below), then press a button on it.';
+  const ax=i=>gp&&gp.axes[i]||0, std=!gp||gp.mapping==='standard', ry=std?3:5;
+  $('#pdL').style.transform=`translate(${ax(0)*24}px,${ax(1)*24}px)`;
+  $('#pdR').style.transform=`translate(${ax(2)*24}px,${ax(ry)*24}px)`;
+  $('#pdB').innerHTML=PS_GLYPH[std?'std':'raw'].map(([i,g])=>`<span class="${gp&&gp.buttons[i]&&gp.buttons[i].pressed?'on':''}">${g}</span>`).join('');
+  const info=padInfoHTML(gp); if(info!==padInfoLast){ padInfoLast=info; $('#pdInfo').innerHTML=info; }   // rebuild only when something changed, so the test button stays clickable
+  markPadBtn(); requestAnimationFrame(padLive);
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest&&e.target.closest('[data-rumble]')){ const gp=firstPad(); try{ gp&&gp.vibrationActuator&&gp.vibrationActuator.playEffect('dual-rumble',{duration:400,strongMagnitude:.8,weakMagnitude:.5}); }catch(err){} return; }
+  if(e.target.closest&&e.target.closest('#btnPad')) openPadDlg();
+  else if(e.target.closest&&e.target.closest('#padDlg [data-close]')) $('#padDlg').close();
+});
+document.addEventListener('change',e=>{ if(e.target.id==='pdPreset'){ MV.padCfg=presetCfg(e.target.value); savePad(); renderPanel(); } });
+markPadBtn();

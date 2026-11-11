@@ -1,6 +1,6 @@
 /* Drone Build Lab · Placing parts, pads and 3D wires */
 import * as THREE from 'three';
-import { SCALE, TAU, V, ZERO, armPos, ease, easeOut } from './01-config.js';
+import { EX, SCALE, TAU, V, ZERO, armPos, ease, easeOut } from './01-config.js';
 import { M, hex, wireColor, wireMat } from './04-materials.js';
 import { HARNESS_COLS, PHASE_COLS, mesh, rod, strands } from './05-geometry.js';
 import { HOT, HOTMAP, TYPES } from './07-catalogue.js';
@@ -72,7 +72,8 @@ export function updatePadSprites(){
   const show=stageKey()==='wire';
   Object.values(PADS).forEach(p=>{
     if(show&&!p.sprite){
-      p.sprite=p.need?textSprite(p.label,'#f2b98e',hex(wireColor(p.need,p.label)),.2):textSprite(p.label,'#e9eef2','rgba(255,255,255,.18)',.2);
+      const H=EX?1.1:.2;   // model 3 is built in centimetres and drawn small, so its labels are bigger
+      p.sprite=p.need?textSprite(p.label,'#f2b98e',hex(wireColor(p.need,p.label)),H):textSprite(p.label,'#e9eef2','rgba(255,255,255,.18)',H);
       const o=(p.def.out||V(0,1,0)).clone().multiplyScalar(p.def.shape==='triple'?.5:.36);
       p.sprite.position.copy(p.def.pos).add(o).add(V(0,.2,0)); p.vis.parent.add(p.sprite);
     }
@@ -82,15 +83,51 @@ export function updatePadSprites(){
 
 /* wires */
 export function wireCurve(a,b){ const d=a.distanceTo(b); const m=a.clone().lerp(b,.5); m.y+=Math.min(.2+d*.1,.9); return new THREE.CatmullRomCurve3([a,a.clone().add(V(0,.22,0)),m,b.clone().add(V(0,.22,0)),b]); }
+/* tidy wiring, like a hand-built drone: each wire leaves its pad along the pad's edge direction, drops to the board,
+   runs low along it and comes up into the other pad. Wires off a pad facing up run high first, then drop beside the other end */
+export function padDir(id){ const p=PADS[id], par=p.vis.parent, o=p.def.out||V(0,1,0);
+  const a=droneRoot.worldToLocal(par.localToWorld(p.def.pos.clone())), b=droneRoot.worldToLocal(par.localToWorld(p.def.pos.clone().add(o)));
+  return b.sub(a).normalize(); }
+export function routeCurve(a,b,da,db){
+  const up=d=>d.y>.7, flat=(d,k)=>V(d.x,0,d.z).normalize().multiplyScalar(k);
+  const [hi,lo,dh,dl]=a.y>=b.y?[a,b,da,db]:[b,a,db,da], H=lo.y+.2;   // run just above the lower end
+  const near=up(dl)?lo.clone():lo.clone().add(flat(dl,.45)), pts=[hi.clone()];
+  if(up(dh)){ const top=hi.y+.22; pts.push(hi.clone().setY(top), V(near.x,top,near.z), V(near.x,H,near.z)); }
+  else { const o=hi.clone().add(flat(dh,.5)); pts.push(o.clone().setY(hi.y+.05), o.clone().setY(H), V(near.x,H,near.z)); }
+  pts.push(up(dl)?lo.clone().setY(lo.y+.18):lo.clone().add(flat(dl,.15)).setY(lo.y+.06), lo.clone());
+  const out=pts.filter((p,i)=>i===0||p.distanceTo(pts[i-1])>.04);   // drop repeats so the spline stays smooth
+  if(hi!==a) out.reverse();
+  return new THREE.CatmullRomCurve3(out,false,'centripetal');
+}
+/* a part's wires can share a planned path (via points on its hotspot): they leave the part together, run side by side as a flat bundle
+   clear of the other parts, and fan out to their pads at the end. lane is the sideways step between neighbouring wires */
+export function viaCurve(a,b,db,h,k){
+  const up=db.y>.7, f=V(db.x,0,db.z).normalize(), off=V(...h.lane).multiplyScalar(k);
+  const pts=[a, a.clone().add(V(0,.2,0)), ...h.via.map(p=>V(...p).add(off))];
+  if(up) pts.push(b.clone().setY(b.y+.3)); else pts.push(b.clone().addScaledVector(f,.45).setY(b.y+.2), b.clone().addScaledVector(f,.15).setY(b.y+.06));
+  pts.push(b);
+  return new THREE.CatmullRomCurve3(pts,false,'centripetal');
+}
 export function buildWireMesh(w){
   if(w.mesh){ w.mesh.traverse(o=>o.geometry&&o.geometry.dispose()); droneRoot.remove(w.mesh); }
-  const s=PADS[w.src], a=padLocal(w.src), b=padLocal(w.tgt), c=wireCurve(a,b), g=new THREE.Group();
+  const s=PADS[w.src], a=padLocal(w.src), b=padLocal(w.tgt), g=new THREE.Group();
+  const h=HOTMAP[s.hotId], mine=h.via?srcPads().filter(p=>p.hotId===s.hotId):[];
+  const c=s.need==='ESC'?wireCurve(a,b)                       // the harness keeps its short loop over the board edge
+    :h.via?viaCurve(a,b,padDir(w.tgt),h,mine.indexOf(s)-(mine.length-1)/2)
+    :routeCurve(a,b,padDir(w.src),padDir(w.tgt));
   const t=PADS[w.tgt], fan=s.need[0]==='M'&&s.def.shape==='bundle'&&t.def.shape==='triple';
-  if(fan){
+  if(EX){
+    /* model 3: one round cable with a moulded plug at the port */
+    const d=a.distanceTo(b), m=a.clone().lerp(b,.5); m.y+=Math.min(2+d*.12,7);
+    const c2=new THREE.CatmullRomCurve3([a,a.clone().add(V(0,1.5,0)),m,b.clone().add(V(0,1.5,0)),b]);
+    g.add(mesh(new THREE.TubeGeometry(c2,48,.3,10,false),wireMat(0x2b2f35)));
+    const pl=mesh(new THREE.BoxGeometry(1.4,.9,1.1),M.nylon); pl.position.copy(b).add(V(0,.45,0)); g.add(pl);
+  }
+  else if(fan){
     /* three phase wires, each from its tinned end to its own pad (paired in order, so they run side by side without crossing) */
     const L=o=>droneRoot.worldToLocal(o.getWorldPosition(V())), pins=t.vis.children.map(L), ax=pins[2].clone().sub(pins[0]);
     const ends=s.vis.children.map(L).sort((p,q)=>p.dot(ax)-q.dot(ax));
-    ends.forEach((e,k)=>{ g.add(mesh(new THREE.TubeGeometry(wireCurve(e,pins[k]),40,.05,8,false),wireMat(PHASE_COLS[k])));
+    ends.forEach((e,k)=>{ g.add(mesh(new THREE.TubeGeometry(routeCurve(e,pins[k],V(0,1,0),padDir(w.tgt)),40,.05,8,false),wireMat(PHASE_COLS[k])));
       const bl=mesh(new THREE.SphereGeometry(.1,12,8),M.solder); bl.scale.y=.5; bl.position.copy(pins[k]); g.add(bl); });
   }
   else if(s.need[0]==='M') strands(c,3,.055,.068,5,PHASE_COLS).forEach(m=>g.add(m));
@@ -100,7 +137,7 @@ export function buildWireMesh(w){
     g.add(mesh(new THREE.TubeGeometry(c,48,r,10,false),wireMat(wireColor(s.need,s.label))));
     const tan=c.getTangentAt(1); g.add(rod(b.clone().addScaledVector(tan,-.16),b.clone(),r*.7,M.tin));
   }
-  if(s.need!=='ESC'&&!fan){ const bl=mesh(new THREE.SphereGeometry(s.need[0]==='M'?.17:s.need.startsWith('VBAT')?.16:.1,14,10),M.solder); bl.scale.y=.5; bl.position.copy(b); g.add(bl); }
+  if(!EX&&s.need!=='ESC'&&!fan){ const bl=mesh(new THREE.SphereGeometry(s.need[0]==='M'?.17:s.need.startsWith('VBAT')?.16:.1,14,10),M.solder); bl.scale.y=.5; bl.position.copy(b); g.add(bl); }
   g.traverse(o=>{ if(o.isMesh) o.userData.noEdges=true; });
   w.mesh=g; droneRoot.add(g);
 }
@@ -117,7 +154,8 @@ export function updateBatCable(){
   droneRoot.updateMatrixWorld(true);
   const a=droneRoot.worldToLocal(parts.bat.group.userData.plug.getWorldPosition(V()));
   const sock=droneRoot.worldToLocal(parts.lead.group.userData.socket.getWorldPosition(V()));
-  const b=S.unplugged?sock.clone().add(V(0,0,.2)):sock;   // unplugged: the plug sits in line, 2 mm out of the socket, ready to push in
+  /* plugged: pushed fully home, the two bodies touch with no seam. Unplugged: the plug hangs loose, clearly apart, below and behind the lead */
+  const b=S.unplugged?sock.clone().add(V(0,-.9,.9)):sock.clone().add(V(0,0,-.04));
   /* the battery's own plug mates with the connector on the battery lead, so the cable ends in a second connector body.
      A short, tight bend from the battery down to the back of that plug, like a real battery pigtail */
   const c=new THREE.CatmullRomCurve3([a.clone(),a.clone().add(V(0,-.05,.45)),V((a.x+b.x)/2,(a.y+b.y)/2+.2,b.z+1.45),b.clone().add(V(0,0,1.2)),b.clone().add(V(0,0,.8))]);

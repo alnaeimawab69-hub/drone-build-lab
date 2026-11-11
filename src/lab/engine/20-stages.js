@@ -39,7 +39,7 @@ export function setTopFade(on){ [M.carbonTop,CAD_MATS.get(M.carbonTop)].filter(B
 export function enterStage(k){
   const c=CAM[k]; if(c) camTo(c[0],c[1]);
   controls.maxPolarAngle=(k==='frame'||k==='mount')?Math.PI*.92:Math.PI*.49;
-  if(k==='wire'){ setFCLift(.95); setTopFade(true); }
+  if(k==='wire'){ if(EX){ setFCLift(10); if(parts.cover) parts.cover.group.visible=false; camTo(V(11,25,19),V(0,10.5,-1)); } else { setFCLift(.95); setTopFade(true); } }   // model 3: the FC rises out of the open body
   if(k==='fly'){ resetFlight(); }
   if(k==='moves') enterMoves();
   /* the battery is only plugged in for the motor test and for flight: never while hands are on the propellers */
@@ -50,7 +50,7 @@ export function enterStage(k){
   updatePadSprites(); updateMarkers(); renderAll();
 }
 export function exitStage(k){
-  if(k==='wire'){ setFCLift(0); setTopFade(false); }
+  if(k==='wire'){ setFCLift(0); setTopFade(false); if(parts.cover) parts.cover.group.visible=true; }
   if(k==='power') stopAllSpin();
   if(k==='fly'){ resetFlight(); thrustArrows.forEach(a=>a.visible=false); totalArrow.visible=weightArrow.visible=netArrow.visible=false; particles.visible=false; showSpinRings(false); }
   if(k==='quiz') controls.autoRotate=false;

@@ -19,6 +19,7 @@ export default function Lab() {
           </a>
           <ol className="steps" id="steps" aria-label="Build stages"></ol>
           <div className="meta" id="meta"></div>
+          <button className="btn sm ghost padbtn" id="btnPad" aria-haspopup="dialog"><span className="pdot" aria-hidden="true"></span>Controller</button>
         </header>
         <main>
           <aside id="panel" aria-live="polite"></aside>
@@ -49,6 +50,7 @@ export default function Lab() {
           </section>
         </main>
       </div>
+      <dialog id="padDlg" className="paddlg" aria-labelledby="padDlgT"></dialog>
       <div id="tip"></div>
       <div id="overlay"><div className="loading" role="status">Loading the lab…</div></div>
     </>

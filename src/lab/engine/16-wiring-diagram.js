@@ -1,5 +1,5 @@
 /* Drone Build Lab · 2D wiring diagram and wire validation */
-import { $, CINE, CORNER, EXP, MODEL, V, clamp, esc, lc } from './01-config.js';
+import { $, CINE, CORNER, EX, EXP, MODEL, V, clamp, esc, lc } from './01-config.js';
 import { hex, wireColor } from './04-materials.js';
 import { HARNESS_COLS, HARNESS_PINS, PHASE_COLS } from './05-geometry.js';
 import { HOTMAP, TYPES } from './07-catalogue.js';
@@ -22,11 +22,23 @@ export const DG_SRC={
   mot4:{circ:[300,545,44],tips:[[410,563]]}, mot2:{circ:[900,545,44],tips:[[790,563]]},
   mot3:{circ:[300,770,44],tips:[[410,657]]}, mot1:{circ:[900,770,44],tips:[[790,657]]},
 };
-/* model 2: no analog camera or VTX. The LED strip uses the front pads and the digital VTX uses UART 2 */
+/* model 2: no analog camera or VTX. The digital VTX uses UART 2; the HD camera feeds it over its own coax */
 if(CINE){
   delete DG_SRC.cam;
-  DG_SRC.led={box:[565,24,130,60,'LED STRIP','5V · G · DATA'],tips:[[600,112],[637,112],[673,112]]};
   DG_SRC.vtx={box:[870,175,150,130,'DIGITAL VTX','HD video · 9 V in'],tips:[[805,200],[805,230],[805,260],[805,290]]};
+}
+/* model 3: the flight controller in the middle with its keyed ports, each module around it on the side its port faces */
+if(EX){
+  DG.fc={cx:550,cy:420,s:28};
+  for(const k in DG_SRC) delete DG_SRC[k];
+  Object.assign(DG_SRC,{
+    arm4:{circ:[230,250,44],tips:[[340,342]]}, arm3:{circ:[230,590,44],tips:[[340,498]]},
+    arm2:{circ:[870,250,44],tips:[[760,342]]}, arm1:{circ:[870,590,44],tips:[[760,498]]},
+    gear2:{box:[110,390,170,60,'LEFT LEG','2 radio antennas'],tips:[[340,420]]}, gear1:{box:[820,390,170,60,'RIGHT LEG','2 radio antennas'],tips:[[760,420]]},
+    cam:{box:[320,110,175,64,'FPV CAMERA','nose · pilot view'],tips:[[480,214]]}, gimbal:{box:[605,110,175,64,'GIMBAL CAMERA','zoom · wide · thermal'],tips:[[620,214]]},
+    rtk:{box:[386,650,150,60,'RTK MODULE','2 satellite antennas'],tips:[[466,620]]}, lights:{box:[564,650,150,60,'BEACONS · LIGHTS','top and bottom'],tips:[[634,620]]},
+    vision:{box:[475,740,150,60,'OBSTACLE SENSORS','6 directions'],tips:[[550,620]]},
+  });
 }
 S.diagram=true;
 export const srcOf=h=>Object.values(PADS).filter(q=>q.hotId===h&&q.need);
@@ -59,6 +71,7 @@ export function dgStroke(d,src){
 const pins8=(x,y)=>HARNESS_COLS.map((c,i)=>`<rect x="${x-25.5+i*6.5}" y="${y-3}" width="5" height="6" rx="1" fill="${hex(c)}" stroke="#0d0f11" stroke-width=".6"/>`).join('');
 export function renderDiagram(){
   const k=stageKey(), el=$('#diagram'), on=k==='wire'&&S.diagram; el.hidden=!on; $('#viewport').classList.toggle('dg',on); updateViewbar(); if(!on) return;
+  if(EX) return renderDiagramEX(el);
   const learn=S.mode==='learn', pads=Object.values(PADS);
   const tgtSvg=pads.filter(p=>!p.need).map(p=>{
     const [x,y]=dgXY(p), o=p.def.out||V(0,1,0), lx=x-o.x*24, ly=y-o.z*24+4;
@@ -96,9 +109,9 @@ export function renderDiagram(){
     <g transform="translate(40,84)"><text class="t-h" y="0">Stack specifications</text>
       ${[['Mounting','30.5 × 30.5 mm'],['Input','3–6S LiPo'],['BEC','5 V 2 A · 9 V 2 A'],['Receiver','UART 1'],['GPS','UART 3'],CINE?['Video','UART 2 · digital']:['Video','CAM in · VTX out']].map(([k,v],i)=>`<text class="t-s" y="${20+i*17}">${k}</text><text y="${20+i*17}" x="92" style="font-size:11px">${v}</text>`).join('')}</g>
     <g transform="translate(870,40)"><text class="t-h">Wire colours</text>
-      ${[['#d8453b','Power (+, 5V, 9V)'],['#3a3f46','Ground (G, −)'],CINE?['#4fb06d','LED data']:['#e8c33c','Video'],[hex(wireColor('R1','TX')),'TX (transmit)'],['#eeeeee','RX (receive)'],['#8a939c','Motor phases']].map(([c,l],i)=>`<rect x="0" y="${12+i*18}" width="22" height="7" rx="2" fill="${c}" stroke="#0d0f11"/><text class="t-s" x="30" y="${19+i*18}">${l}</text>`).join('')}</g>
+      ${[['#d8453b','Power (+, 5V, 9V)'],['#3a3f46','Ground (G, −)'],['#e8c33c',CINE?'Video (HD camera coax, pre-fitted)':'Video'],[hex(wireColor('R1','TX')),'TX (transmit)'],['#eeeeee','RX (receive)'],['#8a939c','Motor phases']].map(([c,l],i)=>`<rect x="0" y="${12+i*18}" width="22" height="7" rx="2" fill="${c}" stroke="#0d0f11"/><text class="t-s" x="30" y="${19+i*18}">${l}</text>`).join('')}</g>
     <g transform="translate(40,700)"><text class="t-h" style="fill:#b2382b">Default ports</text>
-      ${(CINE?[['UART 1','Receiver'],['UART 2','Digital VTX'],['UART 3','GPS'],['LED','LED strip data']]:[['UART 1','Receiver'],['UART 3','GPS'],['CAM','Camera video in'],['VTX','Video out to VTX']]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
+      ${(CINE?[['UART 1','Receiver'],['UART 2','Digital VTX'],['UART 3','GPS']]:[['UART 1','Receiver'],['UART 3','GPS'],['CAM','Camera video in'],['VTX','Video out to VTX']]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
     ${HARNESS_PINS?`<g transform="translate(40,496)"><text class="t-h">ESC harness · 8 wires</text>
       ${HARNESS_PINS.map((k,i)=>`<rect x="0" y="${10+i*16}" width="22" height="7" rx="2" fill="${hex(HARNESS_COLS[i])}" stroke="#0d0f11"/><text y="${17+i*16}" x="30" style="font-size:10px;font-weight:600">${k}</text><text class="t-s" y="${17+i*16}" x="70">${['Motor 1 signal','Motor 2 signal','Motor 3 signal','Motor 4 signal','Ground','Battery voltage','Current sensor','Telemetry'][i]}</text>`).join('')}</g>`:''}
     <g transform="translate(40,800)"><text style="font:700 12px var(--f-mono);fill:#b2382b">⚠ Capacitor required</text><text class="t-s" y="16">absorbs voltage spikes</text></g>
@@ -111,6 +124,35 @@ export function renderDiagram(){
     <text x="600" y="318" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">FLIGHT CONTROLLER</text>
     ${comp}${wired}${tgtSvg}${tips}
     <text x="1060" y="870" text-anchor="end" class="t-s">${done} of ${total} wires soldered</text>
+    <path id="dgTemp" d="" fill="none" stroke="#e0894a" stroke-width="4" stroke-dasharray="8 6" stroke-linecap="round" pointer-events="none"/>
+    <g id="dgFlash"></g>
+  </svg>`;
+}
+/* model 3: plug-in connections, one cable per module */
+function renderDiagramEX(el){
+  const pads=Object.values(PADS), CAB='#3a3f46';
+  const tgtSvg=pads.filter(p=>!p.need).map(p=>{ const [x,y]=dgXY(p);
+    return `<g class="tgt" data-tgt="${p.id}" data-net="${p.net}"><rect class="pad" x="${x-22}" y="${y-11}" width="44" height="22" rx="4" fill="#e9e6dc" stroke="#0d0f11" stroke-width="1.5"/><text x="${x}" y="${y+4}" text-anchor="middle" style="font:700 10px var(--f-mono);fill:#1b1f23">${esc(p.label)}</text><rect x="${x-24}" y="${y-18}" width="48" height="36" fill="transparent"/></g>`; }).join('');
+  const line=(d,w=6)=>`<path d="${d}" fill="none" stroke="#0d0f11" stroke-width="${w+2.5}" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${CAB}" stroke-width="${w}" stroke-linejoin="round"/>`;
+  const wired=WIRES.map(w=>{ const src=PADS[w.src], tgt=PADS[w.tgt]; if(!src||!tgt) return ''; const tip=dgXY(src), a=dgAnchor(src.hotId,tip), b=dgXY(tgt);
+    return line(`M${a[0]},${a[1]} L${tip[0]},${tip[1]} `+dgRoute(tip,b,tgt).replace(/^M[^ ]+ /,'')); }).join('');
+  const tips=pads.filter(p=>p.need&&!p.wired).map(p=>{ const tip=dgXY(p), a=dgAnchor(p.hotId,tip);
+    return `<g class="tip" data-src="${p.id}">${line(`M${a[0]},${a[1]} L${tip[0]},${tip[1]}`)}<rect class="knob" x="${tip[0]-27}" y="${tip[1]-10}" width="54" height="20" rx="4" fill="#cfd3d6" stroke="#111" stroke-width="1.5"/><text class="t-tip" x="${tip[0]}" y="${tip[1]+3.5}" text-anchor="middle" style="font:700 8px var(--f-mono);fill:#1b1f23">${esc(p.label.replace('MOTOR ','ESC '))}</text></g>`; }).join('');
+  const comp=Object.entries(DG_SRC).filter(([h])=>parts[h]).map(([h,c])=>{
+    if(c.circ){ const [x,y,r]=c.circ, n=+h.slice(3); return `<circle cx="${x}" cy="${y}" r="${r}" fill="#2a2f35" stroke="#0d0f11" stroke-width="2"/><circle cx="${x}" cy="${y}" r="${r*.55}" fill="#3b444d"/><circle cx="${x}" cy="${y}" r="5" fill="#b9c0c7"/><text x="${x}" y="${y-r-12}" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#1b1f23">ARM ${n}</text><text class="t-s" x="${x}" y="${y+r+18}" text-anchor="middle">${CORNER[n]} · ESC in pod</text>`; }
+    const [x,y,w,hh,t,sub]=c.box; return `<rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="8" fill="#2a2f35" stroke="#0d0f11" stroke-width="2"/><text x="${x+w/2}" y="${y+hh/2-2}" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">${t}</text><text x="${x+w/2}" y="${y+hh/2+14}" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">${sub}</text>`;
+  }).join('');
+  const done=srcPads().filter(p=>p.wired).length, total=srcPads().length, F=DG.fc;
+  el.innerHTML=`<svg viewBox="0 0 1100 880" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Connection diagram. Drag each module plug onto its port.">
+    <text class="t-title" x="40" y="44">CONNECTION DIAGRAM</text><text class="t-s" x="40" y="64">${MODEL.name} · flight controller, top view, front at the top</text>
+    <g transform="translate(40,690)"><text class="t-h">Ports</text>
+      ${[['M1–M4','Arm ESCs, by arm number'],['ANT','Antennas, one per leg'],['FPV','Nose camera'],['GMB','Gimbal camera'],['RTK','RTK positioning'],['VIS','Obstacle sensors'],['LGT','Beacons and lights']].map(([k,v],i)=>`<text y="${22+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${22+i*17}">${v}</text>`).join('')}</g>
+    <g transform="translate(860,700)"><text class="t-h">No soldering</text><text class="t-s" y="18">Each plug is keyed: it fits</text><text class="t-s" y="34">one way and clicks in.</text></g>
+    <rect x="${F.cx-150}" y="${F.cy-150}" width="300" height="300" rx="18" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
+    <path d="M${F.cx},${F.cy-70} l18,26 h-10 v26 h-16 v-26 h-10 z" fill="#f2f2ee"/><text x="${F.cx}" y="${F.cy+6}" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">FRONT</text>
+    <text x="${F.cx}" y="${F.cy+28}" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">FLIGHT CONTROLLER</text>
+    ${comp}${wired}${tgtSvg}${tips}
+    <text x="1060" y="870" text-anchor="end" class="t-s">${done} of ${total} cables plugged in</text>
     <path id="dgTemp" d="" fill="none" stroke="#e0894a" stroke-width="4" stroke-dasharray="8 6" stroke-linecap="round" pointer-events="none"/>
     <g id="dgFlash"></g>
   </svg>`;
@@ -150,7 +192,7 @@ export function dgEnd(e,cancel){
 $('#diagram').addEventListener('pointerup',e=>dgEnd(e,false));
 $('#diagram').addEventListener('pointercancel',e=>dgEnd(e,true));
 
-export const NETNAME={'VBAT+':'battery + pad','VBAT-':'battery − pad','5V':'5 V supply','9V':'9 V supply','GND':'ground (G)','T1':'UART 1 transmit (T1)','R1':'UART 1 receive (R1)','T2':'UART 2 transmit (T2)','R2':'UART 2 receive (R2)','T3':'UART 3 transmit (T3)','R3':'UART 3 receive (R3)','LED':'LED data pad (LED)','CAM':'camera input (CAM)','VTX':'video output (VTX)','ESC':'ESC socket',M1:'motor output M1',M2:'motor output M2',M3:'motor output M3',M4:'motor output M4'};
+export const NETNAME={'VBAT+':'battery + pad','VBAT-':'battery − pad','5V':'5 V supply','9V':'9 V supply','GND':'ground (G)','T1':'UART 1 transmit (T1)','R1':'UART 1 receive (R1)','T2':'UART 2 transmit (T2)','R2':'UART 2 receive (R2)','T3':'UART 3 transmit (T3)','R3':'UART 3 receive (R3)','CAM':'camera input (CAM)','VTX':'video output (VTX)','ESC':'ESC socket',M1:'motor output M1',M2:'motor output M2',M3:'motor output M3',M4:'motor output M4'};
 export function explainWire(src,tgt){
   const need=src.need, got=tgt.net, owner=lc(TYPES[HOTMAP[src.hotId].type].name);
   const pol=s=>s==='VBAT+'||s==='VBAT-';
@@ -163,8 +205,6 @@ export function explainWire(src,tgt){
   }
   if(need==='5V'&&got==='9V') return `Too much voltage. The ${owner} runs on 5 V. The 9 V pad can burn it out.`;
   if(need==='9V'&&got==='5V') return `The ${owner} needs the 9 V pad. 5 V is too low for it to work properly.`;
-  if(need==='LED') return 'The LED strip’s data wire (DIN) goes to the LED pad. That pad sends the colour signal. The other pads carry power or other signals.';
-  if(got==='LED') return 'The LED pad only sends the LED strip’s data signal. It is not a power, ground or serial pad.';
   if((need==='5V'||need==='9V')&&got==='GND') return 'Short circuit. A power wire on a ground pad connects + straight to −. This can burn the board.';
   if(need==='GND'&&(got==='5V'||got==='9V')) return 'Short circuit. The ground wire must go to a G pad, not a power pad.';
   if(need==='GND') return 'Ground wires go to a G (ground) pad.';
@@ -173,4 +213,7 @@ export function explainWire(src,tgt){
   if(need==='ESC') return HARNESS_PINS?'The 8-wire ESC harness (S1 to S4, GND, VBAT, CUR, TLM) plugs into the 8-pin ESC socket on the flight controller.':'The ESC harness plugs into the ESC socket on the flight controller.';
   return `This wire needs the ${NETNAME[need]}, but that is the ${NETNAME[got]||'wrong pad'}.`;
 }
-export const NETSHORT={'VBAT+':'ESC +','VBAT-':'ESC −','5V':'FC 5V','9V':'FC 9V','GND':'a G pad','T1':'FC T1','R1':'FC R1','T2':'FC T2','R2':'FC R2','T3':'FC T3','R3':'FC R3','LED':'FC LED','CAM':'FC CAM','VTX':'FC VTX','ESC':'FC ESC socket',M1:'ESC M1',M2:'ESC M2',M3:'ESC M3',M4:'ESC M4'};
+export const NETSHORT={'VBAT+':'ESC +','VBAT-':'ESC −','5V':'FC 5V','9V':'FC 9V','GND':'a G pad','T1':'FC T1','R1':'FC R1','T2':'FC T2','R2':'FC R2','T3':'FC T3','R3':'FC R3','CAM':'FC CAM','VTX':'FC VTX','ESC':'FC ESC socket',M1:'ESC M1',M2:'ESC M2',M3:'ESC M3',M4:'ESC M4'};
+/* model 3 port names */
+if(EX){ Object.assign(NETNAME,{ANT:'antenna port (ANT)',FPV:'FPV camera port (FPV)',GMB:'gimbal port (GMB)',RTK:'RTK port (RTK)',VIS:'obstacle sensor port (VIS)',LGT:'lights port (LGT)',M1:'motor port M1',M2:'motor port M2',M3:'motor port M3',M4:'motor port M4'});
+  Object.assign(NETSHORT,{ANT:'FC ANT',FPV:'FC FPV',GMB:'FC GMB',RTK:'FC RTK',VIS:'FC VIS',LGT:'FC LGT',M1:'FC M1',M2:'FC M2',M3:'FC M3',M4:'FC M4'}); }
