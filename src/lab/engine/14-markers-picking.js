@@ -13,7 +13,10 @@ import { stageKey } from './20-stages.js';
 export function updateMarkers(){
   const k=stageKey(), hold=S.drag&&S.drag.kind==='part'?S.drag.typeKey:null;
   HOT.forEach(h=>{
-    const show=!S.explore&&h.stage===k&&!parts[h.id]&&reqOk(h); h.marker.visible=show; if(!show) return;
+    const show=!S.explore&&h.stage===k&&!parts[h.id]&&reqOk(h); h.marker.visible=show;
+    /* the arrow tells where the held part goes; practice also tells which motor a propeller belongs on */
+    h.arrow.visible=show&&!!hold&&accepts(h,hold)&&(S.mode!=='learn'||h.type!=='prop'||propDir(hold)===EXP[h.motor]);
+    if(!show) return;
     let c=S.cad?0x2c3a42:0xe3eaed,o=.8;
     if(hold&&S.mode==='learn'){ const ok=accepts(h,hold)&&(h.type!=='prop'||propDir(hold)===EXP[h.motor]); c=ok?0x5bc489:0x65777e; o=ok?1:.35; }
     if(S.drag&&S.drag.snap===h){ c=0xe0894a; o=1; }
@@ -32,7 +35,8 @@ export function pickPad(){ const list=Object.values(PADS).map(p=>p.proxy); const
 export function hotOf(o){ while(o&&o!==droneRoot){ if(o.userData.hotId) return o.userData.hotId; o=o.parent; } return null; }
 export function pickPart(stage){ const list=Object.values(parts).filter(p=>p.hot.stage===stage).map(p=>p.group); const hit=ray.intersectObjects(list,true)[0]; return hit?hotOf(hit.object):null; }
 /* a spot that takes the held part wins over a nearer one that does not (an arm dragged over the plate's edge holes) */
-export function computeSnap(x,y,t){ let best=null,bd=64,fit=false; const k=stageKey();
+export function computeSnap(x,y,t){ let best=null,bd=150,fit=false; const k=stageKey();
   for(const h of HOT){ if(h.stage!==k||parts[h.id]||!reqOk(h)) continue; const s=screenOf(h.marker.getWorldPosition(V())); const d=Math.hypot(s.x-x,s.y-y), ok=!!t&&accepts(h,t);
-    if(d<64&&(ok&&!fit||ok===fit&&d<bd)){bd=d;best=h;fit=ok;} }
+    const R=ok&&h.type==='arm'?150:64;
+    if(d<R&&(ok&&!fit||ok===fit&&d<bd)){bd=d;best=h;fit=ok;} }
   return best; }

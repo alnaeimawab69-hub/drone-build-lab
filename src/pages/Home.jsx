@@ -11,15 +11,14 @@ const STAGES = [
   ['Power-up and motor test', 'Fit and strap the LiPo battery. Confirm the propellers are off. Spin each motor and fix the reversed one by swapping two of its wires.'],
   ['Fit the propellers', 'CW (clockwise) propellers on CW motors, CCW on CCW. A mismatch would flip the drone, so it is caught before take-off.'],
   ['Flight physics', 'Take off, pitch, roll and yaw. Thrust arrows, motor bars and airflow show how four motor speeds create all six degrees of freedom.'],
-  ['Knowledge check', 'Eight questions (eleven for the cinematic drone) on what was just built. Then a scored report that explains every mistake.'],
+  ['Knowledge check', 'Eight questions (eleven for the HD freestyle drone) on what was just built. Then a scored report that explains every mistake.'],
 ];
 
 const MODES = [
   ['learn', 'Guided', 'Practice', 'Green rings and pads show where each part, screw and wire goes. Every mistake comes with an explanation. “Show me” completes any stage as a demonstration.'],
   ['assess', 'Scored', 'Assessment', 'No hints, and a running timer. Wrong parts, screws and wires cost points. The report shows the score for each stage and lists what to review.'],
   ['explore', 'Free', 'Explore', 'Start with the finished drone. Pull it apart in exploded view, read what each part does and how it connects, then fly it.'],
-  ['moves', '3D animation', 'Movements', 'Learn throttle, yaw, pitch and roll with a remote: on-screen sticks, the keyboard (WASD and arrow keys) or a USB radio or gamepad. Rotation axes, spin arrows, force arrows and motor bars show what each stick does. Ends with a short quiz.'],
-  ['fault', 'Diagnose', 'Fault finding', 'A finished drone fails its pre-flight check. Students inspect it, test the motors with the propellers off and check the wiring. Then they report each hidden fault, such as a reversed motor, a wrong or loose propeller, a turned flight controller or crossed TX and RX wires. Each fault is then explained and repaired. A drone code gives the whole class the same drone, and the result can be copied for the teacher.'],
+  ['moves', '3D animation', 'Movements', 'Learn throttle, yaw, pitch and roll with a remote: on-screen sticks, the keyboard (WASD and arrow keys), a PS4 / PS5 controller by Bluetooth, or a USB radio or gamepad. Rotation axes, spin arrows, force arrows and motor bars show what each stick does. Ends with a short quiz.'],
 ];
 
 function Feature({ eyebrow, title, img, alt, flip, children }) {
@@ -45,7 +44,7 @@ export default function Home() {
             <div>
               <div className="eyebrow">Digital lab · Drone fundamentals</div>
               <h1>From bare carbon to first flight.</h1>
-              <p className="lede">Students build a quadcopter in the browser: a 250 mm trainer quad or a 5-inch cinematic FPV (first-person view) drone. They screw the frame together, fasten every part with the right screw and solder 23–24 wires. They test motor direction, fit the propellers, then fly it to see how thrust creates each movement.</p>
+              <p className="lede">Students build a quadcopter in the browser: a 250 mm trainer quad or a 5-inch HD freestyle FPV (first-person view) drone. They screw the frame together, fasten every part with the right screw and solder 23–24 wires. They test motor direction, fit the propellers, then fly it to see how thrust creates each movement.</p>
               <div className="ctas"><a className="btn primary" href="lab.html">Open the lab <Icon name="arrow" /></a><a className="btn" href="guide.html">Teacher guide</a></div>
               <ul className="facts" aria-label="At a glance"><li><b>7</b> stages</li><li><b>36</b> fasteners</li><li><b>23–24</b> wires</li><li><b>3</b> drone models</li><li><b>5</b> activities</li><li>runs in any modern browser</li></ul>
             </div>

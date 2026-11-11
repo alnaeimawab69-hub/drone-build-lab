@@ -73,10 +73,10 @@ section{padding-block:var(--space-16)}
 .stages span{color:var(--color-text-muted);font-size:15px;line-height:var(--leading-normal)}
 
 /* modes */
-.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-4)}
+.modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-4)}
 .mode{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-6);border-radius:var(--radius-lg);border:1px solid var(--color-border);border-top:3px solid var(--tone,var(--color-accent));background:var(--color-surface-2)}
 .mode em{font-style:normal;font-size:var(--text-xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--tone)}
-.mode.learn{--tone:var(--color-success)} .mode.assess{--tone:var(--color-accent)} .mode.explore{--tone:var(--color-info)} .mode.moves{--tone:var(--color-warning)} .mode.fault{--tone:var(--color-danger)}
+.mode.learn{--tone:var(--color-success)} .mode.assess{--tone:var(--color-accent)} .mode.explore{--tone:var(--color-info)} .mode.moves{--tone:var(--color-warning)}
 .mode p{margin:0;color:var(--color-text-muted);font-size:15px;line-height:var(--leading-normal)}
 
 /* feature rows */

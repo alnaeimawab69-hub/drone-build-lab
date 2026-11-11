@@ -17,8 +17,30 @@ function modelIcon(m){
     <rect x="${c-6}" y="${c-9}" width="12" height="18" rx="3" style="fill:var(--accent)"/>${pts.map(([x,y])=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9" style="fill:var(--panel-3);stroke:var(--muted);stroke-width:1.5"/>`).join('')}
     <path d="M${c},4 l4,6 h-8 z" style="fill:var(--muted)"/></svg>`;
 }
+/* ================= Portal: send the result to the page that embeds this lab =================
+   A portal opens the lab in an iframe, optionally with ?student=Name and ?portal=https://portal.example (its origin).
+   When the report opens, the lab posts one message to the portal:
+   {type:'sim-result', sim:'drone-build-lab', version:1, student, mode:'assessment'|'practice', model, props,
+    score, max:100, passed, grade, timeSec, sections:[{id,name,score,max}], mistakes:[{section,text}], finishedAt (ISO 8601)}
+   It is only sent to the portal's origin (from ?portal=, else the page that opened the lab), never to '*'. */
+const QS=(()=>{ try{ return new URLSearchParams(location.search); }catch(e){ return new URLSearchParams(); } })();
+function portalOrigin(){
+  for(const u of [QS.get('portal'),document.referrer]){ try{ if(u){ const o=new URL(u).origin; if(/^https?:/.test(o)) return o; } }catch(e){} }
+  return null;
+}
+export function resultData(sc){
+  return {type:'sim-result',sim:'drone-build-lab',version:1,student:S.name||'',mode:S.mode==='assess'?'assessment':'practice',model:MODEL.key,props:PROPS,
+    score:sc.total,max:100,passed:sc.total>=50,grade:grade(sc.total),timeSec:Math.round((S.endT-S.startT)/1000),
+    sections:Object.keys(SEC).map(k=>({id:k,name:SECNAME[k],score:sc[k],max:SEC[k]})),
+    mistakes:S.mistakes.map(m=>({section:m.sec,text:m.msg})),finishedAt:new Date().toISOString()};
+}
+function sendResult(sc){
+  if(S.resultSent||window.parent===window) return;   // only when embedded, once per run
+  const o=portalOrigin(); if(!o) return;
+  try{ window.parent.postMessage(resultData(sc),o); S.resultSent=true; }catch(e){}
+}
 export function showStart(){
-  let name=''; try{ name=localStorage.getItem('dbl-name')||''; }catch(e){}
+  let name=QS.get('student')||''; if(!name){ try{ name=localStorage.getItem('dbl-name')||''; }catch(e){} }
   const models=Object.values(MODELS).map(m=>`<button class="model ${m.key===MODEL.key?'on':''}" data-model="${m.key}" aria-pressed="${m.key===MODEL.key}">${modelIcon(m)}<span><em>Model ${m.no}${m.key===MODEL.key?' · selected':''}</em><b>${esc(m.title)}</b><small>${esc(m.blurb)}</small></span></button>`).join('');
   const sealed=!!MODEL.sealed;
   const props=[['in','Props in','Front propellers sweep in, toward the camera. The usual choice.'],['out','Props out','Every motor reversed. Front propellers sweep out, away from the camera.']]
@@ -38,10 +60,9 @@ export function showStart(){
       <button class="mode learn" data-mode="learn"><em>Guided</em><b>Practice</b><span>Hints show where parts and wires go. “Show me” finishes any stage for you.</span></button>
       <button class="mode assess" data-mode="assess"><em>Scored</em><b>Assessment</b><span>No hints, and a timer. Mistakes cost points. You get a report to copy at the end.</span></button>
       <button class="mode explore" data-mode="explore"><em>Free</em><b>Explore</b><span>Start with the finished drone. Take it apart, read about each part and fly it.</span></button>
-      <button class="mode moves" data-mode="moves"><em>Flight trainer</em><b>Movements</b><span>Learn the remote: on-screen sticks, the keyboard, or a USB radio or gamepad.</span></button>
-      <button class="mode fault" data-mode="fault"><em>Diagnose</em><b>Fault finding</b><span>A finished drone has hidden faults. Inspect it and test the motors. Then report what is wrong.</span></button>
+      <button class="mode moves" data-mode="moves"><em>Flight trainer</em><b>Movements</b><span>Learn the remote: on-screen sticks, the keyboard, a PS4 / PS5 controller by Bluetooth, or a USB radio.</span></button>
     </div>
-    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so its build has no screws and no soldering. Assemble the airframe, fit the modules, test the motors, fit the props and fly.</p>`:''}
+    ${sealed?`<p class="small">${esc(MODEL.title)} is built from sealed modules that click together, so its build has no screws and no soldering. Assemble the airframe, fit the modules, plug each module’s cable into the flight controller, test the motors, fit the props and fly.</p>`:''}
     <p class="small">Drag parts with a mouse or finger. Drag empty space to orbit. Scroll or pinch to zoom.</p></div>`;
   $('#overlay').querySelectorAll('.mode').forEach(b=>b.onclick=()=>start(b.dataset.mode));
   /* every module reads the model and the motor direction while it loads, so changing either reloads the page */
@@ -58,10 +79,9 @@ function buildFinished(){ autoFrame(false); autoMount(false); setFCRot(0,.01); d
 export function start(mode){
   S.name=($('#studentName').value||'').trim(); try{ localStorage.setItem('dbl-name',S.name); }catch(e){}
   $('#overlay').hidden=true; $('#overlay').innerHTML='';
-  S.mode=mode==='assess'?'assess':'learn'; S.explore=mode==='explore'||mode==='moves'||mode==='fault'; S.startT=performance.now();
+  S.mode=mode==='assess'?'assess':'learn'; S.explore=mode==='explore'||mode==='moves'; S.startT=performance.now();
   if(mode==='explore'){ buildFinished(); S.labels=true; S.view='parts'; enterStage('explore'); }
   else if(mode==='moves'){ buildFinished(); S.labels=false; S.view='moves'; enterStage('moves'); }
-  else if(mode==='fault'){ buildFinished(); S.mode='fault'; S.labels=false; S.view='fault'; enterStage('fault'); }   // see 31-fault-finding.js
   else { S.stage=0; enterStage('frame'); }
   if(S.mode==='assess') setInterval(()=>{ const t=$('#timer'); if(t) t.textContent=fmtTime((S.endT||performance.now())-S.startT); },1000);
 }
@@ -75,7 +95,7 @@ export function resultText(sc){
     `Mistakes (${S.mistakes.length}):`,...S.mistakes.map(m=>`  - [${SECNAME[m.sec]}] ${m.msg}`)].join('\n');
 }
 export function showReport(){
-  S.endT=S.endT||performance.now(); const sc=scores(); renderMeta();
+  S.endT=S.endT||performance.now(); const sc=scores(); renderMeta(); sendResult(sc);
   const bars=Object.keys(SEC).map(k=>{ const p=sc[k]/SEC[k]; return `<div class="rbar"><span>${SECNAME[k]}</span><div class="tr"><div class="fl ${p<.5?'low':p<.8?'mid':''}" style="width:${p*100}%"></div></div><span class="v">${sc[k]}/${SEC[k]}</span></div>`; }).join('');
   const ml=S.mistakes.length?`<h3 class="sec">What to review</h3><ul class="mlist">${S.mistakes.map(m=>`<li><small>${SECNAME[m.sec]}</small>${esc(m.msg)}</li>`).join('')}</ul>`:'<p class="note" style="margin-bottom:20px">No mistakes recorded. A clean build.</p>';
   $('#overlay').hidden=false;

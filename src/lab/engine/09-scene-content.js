@@ -1,7 +1,7 @@
 /* Drone Build Lab · Workbench, CAD view, drone root, markers, flight visuals */
 import * as THREE from 'three';
 import { $, EX, MODEL, SCALE, TAU, V, armPos, clamp } from './01-config.js';
-import { scene } from './02-scene.js';
+import { renderer, scene } from './02-scene.js';
 import { frontTex, ringTex } from './03-textures.js';
 import { M } from './04-materials.js';
 import { PROXY_MAT } from './05-geometry.js';
@@ -58,7 +58,7 @@ export function dimension(a,b,off,note){
 }
 export const DIMS=new THREE.Group(); DIMS.visible=false;
 export function buildDims(){ if(!DIMS.parent) droneRoot.add(DIMS); if(DIMS.children.length) return;
-const hw=MODEL.plate[0]/2, hl=MODEL.plate[1]/2;
+const hw=MODEL.plate[0]/2, hl=MODEL.plate[1]/2, pz=MODEL.plateZ??.25;
 if(EX){ [[armPos(4).setY(PROP_Y+4),armPos(1).setY(PROP_Y+4),V(0,0,0),'wheelbase'],
   [armPos(2).add(V(-MODEL.propR,PROP_Y+2,0)),armPos(2).add(V(MODEL.propR,PROP_Y+2,0)),V(0,5,0),MODEL.prop+' prop'],
   [V(-hw,20,-20.5),V(-hw,20,15),V(-14,0,0),'body'],
@@ -68,10 +68,10 @@ if(EX){ [[armPos(4).setY(PROP_Y+4),armPos(1).setY(PROP_Y+4),V(0,0,0),'wheelbase'
  [armPos(2).add(V(-6.35,2.2,0)),armPos(2).add(V(6.35,2.2,0)),V(0,1.6,0),MODEL.prop+' prop'],
  [V(1.525,2.3,-1.525),V(1.525,2.3,1.525),V(3.4,0,0),'stack'],
  [V(hw-.1,0,-4.6),V(hw-.1,3.62,-4.6),V(1.8,0,0),'frame height'],
- [V(-hw,.35,.25-hl),V(-hw,.35,.25+hl),V(-2.4,0,0),'bottom plate']].forEach(d=>DIMS.add(dimension(...d))); }
+ [V(-hw,.35,pz-hl),V(-hw,.35,pz+hl),V(-2.4,0,0),'bottom plate']].forEach(d=>DIMS.add(dimension(...d))); }
 export function setStyle(cad){
   S.cad=cad; const bg=cad?0xe6eaed:0x141c20;
-  scene.background.setHex(bg); scene.fog.color.setHex(bg); ground.visible=!cad; grid.visible=cad;
+  scene.background.setHex(bg); scene.fog.color.setHex(bg); renderer.toneMappingExposure=cad?1.65:.8; ground.visible=!cad; grid.visible=cad;
   buildDims(); DIMS.visible=cad; $('#tblock').hidden=!cad; $('#tbName').textContent=S.name||'Student';
   styleObj(droneRoot); $('#btnCad').setAttribute('aria-pressed',cad); $('#viewport').classList.toggle('cad',cad); updateMarkers();
 }
@@ -82,6 +82,13 @@ HOT.forEach(h=>{
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:ringTex,depthTest:false,transparent:true}));
   s.scale.setScalar(1.4/SCALE); s.renderOrder=8; s.position.copy(h.pos).add(h.mk||V(0,.3,0)); s.visible=false;
   droneRoot.add(s); h.marker=s;
+  /* a bobbing arrow over the spot, shown while a part that fits it is being dragged (practice and assessment) */
+  const a=new THREE.Group(), am=new THREE.MeshBasicMaterial({color:0xe0894a,depthTest:false,transparent:true,opacity:.95});
+  const head=new THREE.Mesh(new THREE.ConeGeometry(.32,.6,16),am); head.rotation.x=Math.PI; head.position.y=.3; a.add(head);
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.9,10),am); shaft.position.y=1.05; a.add(shaft);
+  a.traverse(o=>{ o.renderOrder=9; o.userData.noStyle=true; o.raycast=()=>{}; });
+  a.scale.setScalar(1/SCALE); a.position.copy(s.position).add(V(0,.35/SCALE,0)); a.visible=false; a.userData.y0=a.position.y;
+  droneRoot.add(a); h.arrow=a;
 });
 
 /* flight visuals. Every force arrow is drawn to one scale: the weight is FORCE_LEN long, so four motors at hover

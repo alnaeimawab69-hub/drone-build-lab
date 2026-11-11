@@ -49,7 +49,6 @@ export const TEX_MAKE={
     g.font='600 30px "IBM Plex Mono", monospace'; g.fillText('FRONT',P(0),P(.3));
     g.font='500 20px "IBM Plex Mono", monospace'; g.fillStyle='rgba(238,242,240,.6)';
     g.fillText('UART1',P(-.4),P(1.25)); g.fillText('UART3',P(-1.15),P(.4)); g.fillText(CINE?'UART2':'VIDEO',P(1.15),P(-.25));
-    if(CINE) g.fillText('LED',P(.55),P(-1.25));
   }),
   vtx:()=>smallPcb(CINE?'HD':'VTX','#1b1730'),
   rx:()=>smallPcb('RX','#16262a'),
@@ -65,19 +64,14 @@ export const TEX_MAKE={
     g.font='500 30px "IBM Plex Mono", monospace'; g.fillStyle='#4b535a'; g.fillText('12S · 52.8 V · 5935 mAh',30,118);
     g.fillStyle='#e0894a'; g.fillRect(0,h*.82,w,h*.06); }),
   bat:()=>ctex(768,288,(g,w,h)=>{
-    g.fillStyle='#22262b'; g.fillRect(0,0,w,h);
-    g.fillStyle=CINE?'#3d8fb8':'#c4632d'; g.fillRect(0,h*.72,w,h*.08);
-    g.fillStyle='#e9edef'; g.font='700 96px "Barlow Semi Condensed", sans-serif'; g.textBaseline='alphabetic'; g.fillText(CINE?'6S LiPo':'4S LiPo',40,h*.42);
-    g.font='500 44px "IBM Plex Mono", monospace'; g.fillStyle='#aab6bb'; g.fillText(CINE?'22.2 V · 1100 mAh':'14.8 V · 1300 mAh',42,h*.62);
+    g.fillStyle=CINE?'#b4b9bf':'#22262b'; g.fillRect(0,0,w,h);   // model 2: silver pack
+    g.fillStyle=CINE?'#e8b21a':'#c4632d'; g.fillRect(0,h*.72,w,h*.08);
+    g.fillStyle=CINE?'#1d2024':'#e9edef'; g.font='700 96px "Barlow Semi Condensed", sans-serif'; g.textBaseline='alphabetic'; g.fillText(CINE?'6S LiPo':'4S LiPo',40,h*.42);
+    g.font='500 44px "IBM Plex Mono", monospace'; g.fillStyle=CINE?'#3a4046':'#aab6bb'; g.fillText(CINE?'22.2 V · 1100 mAh':'14.8 V · 1300 mAh',42,h*.62);
   }),
   front:()=>ctex(512,192,(g,w,h)=>{ g.fillStyle='rgba(224,137,74,.85)'; g.beginPath(); g.moveTo(w/2,8); g.lineTo(w/2+46,74); g.lineTo(w/2+16,74); g.lineTo(w/2+16,110); g.lineTo(w/2-16,110); g.lineTo(w/2-16,74); g.lineTo(w/2-46,74); g.closePath(); g.fill(); g.font='700 56px "Barlow Semi Condensed", sans-serif'; g.textAlign='center'; g.fillText('FRONT',w/2,170); }),
 };
 export const smallPcb=(label,col)=>ctex(256,256,(g,w)=>{ g.fillStyle=col; g.fillRect(0,0,w,w); g.strokeStyle='rgba(150,220,190,.1)'; g.lineWidth=3; for(let i=0;i<10;i++){g.beginPath();g.moveTo(Math.random()*w,Math.random()*w);g.lineTo(Math.random()*w,Math.random()*w);g.stroke();} g.fillStyle='rgba(238,242,240,.85)'; g.font='600 30px "IBM Plex Mono", monospace'; g.textAlign='center'; g.fillText(label,w/2,w*.86); });
 export const escTex=TEX_MAKE.esc(), fcTex=TEX_MAKE.fc(), vtxTex=TEX_MAKE.vtx(), rxTex=TEX_MAKE.rx(), gpsTex=TEX_MAKE.gps(), batTex=TEX_MAKE.bat(), frontTex=TEX_MAKE.front(), exBatTex=TEX_MAKE.exbat();
-/* spinning-prop blur seen from above: faint near the hub, stronger towards the tips, a bright ring where the tips pass */
-export const propBlurTex=ctex(256,256,(g,w)=>{ const c=w/2, rg=g.createRadialGradient(c,c,c*.08,c,c,c);
-  rg.addColorStop(0,'rgba(40,46,52,0)'); rg.addColorStop(.2,'rgba(40,46,52,.18)'); rg.addColorStop(.86,'rgba(28,32,37,.42)'); rg.addColorStop(.93,'rgba(28,32,37,.5)'); rg.addColorStop(1,'rgba(28,32,37,0)');
-  g.fillStyle=rg; g.fillRect(0,0,w,w);
-  g.strokeStyle='rgba(235,246,250,.95)'; g.lineWidth=5; g.beginPath(); g.arc(c,c,c*.94,0,TAU); g.stroke();
-  g.strokeStyle='rgba(235,246,250,.35)'; g.lineWidth=2; for(const r of [.55,.75]){ g.beginPath(); g.arc(c,c,c*r,0,TAU); g.stroke(); } });
+export const strapTex=ctex(256,96,(g,w,h)=>{ g.fillStyle='#17191c'; g.fillRect(0,0,w,h); g.fillStyle='#f0b81c'; g.font='700 58px "Barlow Semi Condensed", sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('CX-5 · 6S',w/2,h/2+4); });   // model 2: yellow lettering on the battery straps
 export const ringTex=ctex(128,128,(g,w)=>{ g.strokeStyle='#fff'; g.lineWidth=9; g.beginPath(); g.arc(w/2,w/2,w*.38,0,TAU); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.arc(w/2,w/2,w*.1,0,TAU); g.fill(); });

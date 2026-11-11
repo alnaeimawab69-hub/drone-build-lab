@@ -1,6 +1,6 @@
 /* Drone Build Lab · Geometry helpers, rounded boxes, twisted cables, solder pads */
 import * as THREE from 'three';
-import { TAU, V, clamp } from './01-config.js';
+import { CINE, TAU, V, clamp } from './01-config.js';
 import { M, std, wireColor, wireMat } from './04-materials.js';
 
 /* ================= Geometry helpers ================= */
@@ -34,7 +34,9 @@ export function boardMesh(w,h,d,side,top){ const m=new THREE.Mesh(new THREE.BoxG
 
 /* realistic cables: twisted strands and flat ribbons following a curve */
 export const PHASE_COLS=[0x3a6fb0,0xd9b23a,0x232528];
-export const HARNESS_COLS=[0x232528,0xd8453b,0xeeeeee,0xe8c33c,0x3d9be0,0x4fb06d];
+/* model 1: the 8-wire ESC-to-FC harness, in pin order (colours of a common 4-in-1 ESC cable) */
+export const HARNESS_PINS=CINE?null:['S1','S2','S3','S4','GND','VBAT','CUR','TLM'];
+export const HARNESS_COLS=CINE?[0x232528,0xd8453b,0xeeeeee,0xe8c33c,0x3d9be0,0x4fb06d]:[0x3d6fd8,0x3fae55,0xe8c33c,0xe8812c,0x232528,0xd8453b,0x8e55c8,0x3bb3b0];
 export function strands(curve,n,r,spread,twist,cols,ribbon){
   const N=60, fr=curve.computeFrenetFrames(N,false), out=[];
   for(let k=0;k<n;k++){
@@ -70,11 +72,13 @@ export function addPad(g,def,parent=g){
   else if(def.shape==='big') vis=box(.5,.05,.42,M.copper);
   else if(def.shape==='socket') vis=box(.8,.24,.34,M.nylon);
   else if(def.shape==='plug') vis=box(.7,.2,.3,M.nylon);
+  else if(def.shape==='port'){ const side=def.out&&Math.abs(def.out.x)>.5; vis=box(side?.9:1.5,.7,side?1.5:.9,M.nylon); }   // model 3: keyed socket on the flight controller
   else if(def.shape==='bundle'){ vis=new THREE.Group(); [-.12,0,.12].forEach(z=>{const c=cyl(.06,.06,.36,M.tin,8); c.rotation.z=Math.PI/2; c.position.z=z; vis.add(c);}); }
   else if(def.need) vis=mesh(new THREE.SphereGeometry(.1,14,10),wireMat(wireColor(def.need,def.label)));
   else vis=box(.24,.04,.24,M.copper);
   vis.position.copy(def.pos); parent.add(vis);
+  if(def.s) vis.scale.multiplyScalar(def.s);   // model 3 is built in real centimetres, so its plugs are drawn bigger
   vis.traverse(o=>{ if(o.isMesh) o.userData.m0=o.material; });
-  const proxy=new THREE.Mesh(PROXY_GEO,PROXY_MAT); proxy.position.copy(def.pos); parent.add(proxy);
+  const proxy=new THREE.Mesh(PROXY_GEO,PROXY_MAT); proxy.position.copy(def.pos); if(def.s) proxy.scale.setScalar(def.s); parent.add(proxy);
   (g.userData.pads||(g.userData.pads=[])).push({def,vis,proxy});
 }

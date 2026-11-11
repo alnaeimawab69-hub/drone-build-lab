@@ -1,12 +1,24 @@
 /* Drone Build Lab · Builders for every part, made from code (no imported models) */
 import * as THREE from 'three';
-import { ARM, CINE, MODEL, TAU, V, armPos } from './01-config.js';
-import { propBlurTex } from './03-textures.js';
+import { ALU_Z, ARM, CINE, MODEL, TAU, V, armPos } from './01-config.js';
+import { strapTex } from './03-textures.js';
 import { M, std, wireMat } from './04-materials.js';
 import { PHASE_COLS, addPad, boardMesh, box, circHole, cyl, flatExtrude, mesh, rod, roundBox, rrShape, slotHole, smd, strands, tube } from './05-geometry.js';
 
 /* ================= Builders (all geometry made here, no imported models) ================= */
+/* model 2: long slim arm that widens into a square motor pad */
+function armShapeC(){
+  const L=ARM, R=1.35, sh=new THREE.Shape();
+  sh.moveTo(.5,-.8); sh.lineTo(L-2.4,-.55); sh.quadraticCurveTo(L-1.8,-.55,L-1.5,-R); sh.lineTo(L+.9,-R); sh.quadraticCurveTo(L+R,-R,L+R,-.9);
+  sh.lineTo(L+R,.9); sh.quadraticCurveTo(L+R,R,L+.9,R); sh.lineTo(L-1.5,R); sh.quadraticCurveTo(L-1.8,.55,L-2.4,.55); sh.lineTo(.5,.8); sh.lineTo(.5,-.8);
+  sh.holes.push(circHole(L,0,.45));
+  for(const [dx,dy] of [[.57,.57],[.57,-.57],[-.57,.57],[-.57,-.57]]) sh.holes.push(circHole(L+dx,dy,.12));
+  for(const x of [1.2,3.2]) sh.holes.push(circHole(x,0,.13));
+  sh.holes.push(slotHole(4.6,L-3,0,.16));
+  return sh;
+}
 export function armShape(){
+  if(CINE) return armShapeC();
   const L=ARM, root=.9, sh=new THREE.Shape(), a=Math.asin(.62/1.5);
   sh.moveTo(root,-.85); sh.lineTo(L-1.36,-.62); sh.absarc(L,0,1.5,Math.PI+a,3*Math.PI-a,false); sh.lineTo(root,.85); sh.lineTo(root,-.85);
   sh.holes.push(circHole(L,0,.45));
@@ -20,22 +32,26 @@ export function buildArm(){
   /* TPU arm guard: a soft bumper around the arm tip takes the hit in a crash instead of the motor bell */
   const L=ARM, a0=-1.15, a1=1.15, sh=new THREE.Shape();
   sh.absarc(L,0,1.82,a0,a1,false); sh.absarc(L,0,1.52,a1,a0,true);
+  if(CINE){ const sole=mesh(roundBox(3.1,.55,3.1,.4,4),M.guard); sole.position.set(L,-.24,0); g.add(sole); return g; }   // model 2: chunky black TPU guard under the motor pad takes landings
   const gd=flatExtrude(sh,MODEL.armT+.3,M.tpu); gd.position.y=-.15; g.add(gd);
   return g;
 }
+/* an outline that is the same left and right: R lists the right-hand corners [x, z] from nose to tail, f turns z into the shape's y */
+const mirrored=(R,f)=>{ const sh=new THREE.Shape(); [...R,...R.slice().reverse().map(([x,z])=>[-x,z])].forEach(([x,z],i)=>i?sh.lineTo(x,f(z)):sh.moveTo(x,f(z))); sh.closePath(); return sh; };
 export function buildPlateB(){
   const [W,L]=MODEL.plate, A=MODEL.alu;
-  const sh=rrShape(W,L,.7), H=(x,z)=>sh.holes.push(circHole(x,.25-z,.15));
+  /* model 2: a long slim plate. The nose reaches past the camera, and two shoulders carry the wide front arms */
+  const sh=CINE?mirrored([[1.5,-7.4],[1.5,-6.1],[3.5,-5.95],[3.65,-4.9],[2.7,-3.8],[2.7,6.5],[2.2,7.05]],z=>.25-z):rrShape(W,L,.7), H=(x,z)=>sh.holes.push(circHole(x,.25-z,.15));
   for(const a of [-1.525,1.525]) for(const b of [-1.525,1.525]) H(a,b);
-  for(const x of [-A,A]) for(const z of [-4,0,4.2]) H(x,z);
+  for(const x of [-A,A]) for(const z of ALU_Z) H(x,z);
   for(const n of [1,2,3,4]) for(const r of [1.2,3.2]){ const q=armPos(n,r); H(q.x,q.z); }
   const g=new THREE.Group(); g.add(flatExtrude(sh,.3,M.carbon)); return g;
 }
-export function buildAluSt(){ const g=new THREE.Group(); g.add(cyl(.2,.2,2.95,M.alu,6)); return g; }
+export function buildAluSt(){ const g=new THREE.Group(); g.add(cyl(.2,.2,2.95,CINE?M.accent:M.alu,6)); return g; }   // model 2: purple anodised, model 1: plain aluminium
 export function buildNylSt(){ const g=new THREE.Group(); g.add(cyl(.13,.13,2.05,M.nylon,12)); return g; }
 export function buildCamPlate(){
   const g=new THREE.Group();
-  if(CINE){ g.add(mesh(roundBox(.22,2.95,1.6,.05,3),M.alu)); for(const z of [-.4,.4]){ const c=cyl(.12,.12,.24,M.darkMetal,12); c.rotation.z=Math.PI/2; c.position.z=z; g.add(c); } }
+  if(CINE){ g.add(mesh(roundBox(.22,2.95,1.6,.05,3),M.cage)); const bd=cyl(.42,.42,.3,M.tpu,24); bd.rotation.z=Math.PI/2; bd.position.set(0,.2,-.15); g.add(bd); const bp=mesh(roundBox(.36,1.0,1.5,.12,4),M.tpu); bp.position.set(0,-.95,-.85); g.add(bp); for(const z of [-.4,.4]){ const c=cyl(.12,.12,.24,M.darkMetal,12); c.rotation.z=Math.PI/2; c.position.z=z; g.add(c); } }
   else g.add(box(.16,2.95,1.5,M.carbon));
   return g;
 }
@@ -55,17 +71,20 @@ export function buildTopPlate(){
   batteryPad(g);
   return g;
 }
-/* model 2: longer, wider top plate with a TPU mount for the action camera at the front */
+/* model 2: longer, wider top plate with purple trim */
 function buildTopPlateC(){
-  const g=new THREE.Group(), cz=.5, ts=rrShape(6.2,12,.6), A=MODEL.alu, Y=z=>-(z-cz);
+  const g=new THREE.Group(), cz=.5, A=MODEL.alu, Y=z=>-(z-cz), W=A+.4, N=W-.35;   // W: half width · N: half width at the waists
+  /* slim outline: a long narrow nose over the camera cage, full width at each pair of standoffs, waists between them, a chamfered tail */
+  const ts=mirrored([[1.45,-7],[1.45,-5.3],[W,-4.3],[W,-2.4],[N,-2],[N,-1],[W,-.6],[W,.6],[N,1],[N,3.2],[W,3.6],[W,5.5],[1.9,6.5]],Y);
   strapSlots(ts,Y);
-  for(const x of [-A,A]) for(const z of [-4,0,4.2]) ts.holes.push(circHole(x,Y(z),.15));
-  for(const [x,z] of [[-1.6,-1.2],[1.6,-1.2]]) ts.holes.push(circHole(x,Y(z),.45));
+  for(const x of [-A,A]) for(const z of ALU_Z) ts.holes.push(circHole(x,Y(z),.15));
+  for(const [x,z] of [[-1.3,-1.2],[1.3,-1.2]]) ts.holes.push(circHole(x,Y(z),.45));
   const pl=flatExtrude(ts,PLATE_T,M.carbonTop); pl.position.z=cz; g.add(pl);
+  for(const s of [-1,1]) for(const z of ALU_Z) g.add(box(.5,.1,.9,M.accent,s*(A-.05),PLATE_T+.05,z));   // purple anodised pads over each standoff
   batteryPad(g);
-  /* action-camera mount: soft TPU base with three prongs */
-  const base=mesh(roundBox(3.4,.3,2.4,.1,4),M.tpu); base.position.set(0,.4,-3.7); g.add(base);
-  for(const x of [-.32,0,.32]) g.add(box(.16,.75,.9,M.tpu,x,.9,-3.7));
+  /* see-through purple side panels close the body between the arms; a light bar glows inside each one */
+  for(const s of [-1,1]){ const sp=mesh(roundBox(.75,2.6,4,.3,4),M.sidePanel,false); sp.position.set(s*(W+.1),-1.4,0); g.add(sp);
+    for(const [y,l,z] of [[-1.5,2.4,.3],[-1.1,1.1,1.2],[-1.9,1.1,-.6]]){ const lb=box(.08,.1,l,M.panelGlow,s*(W+.1),y-.1,z-.3); lb.castShadow=false; g.add(lb); } }
   return g;
 }
 /* a flat band that follows a closed loop drawn in the x-y plane: outer face, inner face and two edges.
@@ -85,6 +104,7 @@ export function bandLoop(pts,width,thick,mats){
 }
 /* battery strap, origin on the top surface of the top plate: under the plate, up through the slots, over the battery.
    The inner face is red anti-slip rubber; the buckle and the loose tail sit on top. */
+const STRAP_LABEL=std({map:strapTex,roughness:.9});
 export function buildStrap(){
   const g=new THREE.Group(), [W,H]=MODEL.bat, X=STRAP_X, top=H+.06+.05, bot=-PLATE_T-.05, w=W/2+.04;
   const pts=[[-X,bot],[0,bot-.02],[X,bot],[X,.6],[X-.05,top-.55],[w,top-.08],[w-.35,top],[0,top+.02],[-w+.35,top],[-w,top-.08],[-X+.05,top-.55],[-X,.6]];
@@ -92,27 +112,20 @@ export function buildStrap(){
   const bk=box(.95,.16,.74,M.darkMetal,.55,top+.08,0); g.add(bk);
   g.add(box(.6,.06,.5,M.black,.55,top+.17,0));
   const tail=box(1.5,.06,.6,M.strapBand,1.45,top+.13,0); tail.rotation.z=-.12; g.add(tail);
-  return g;
-}
-/* TPU GPS mount: a printed tower at the rear that lifts the GPS above the battery, where the sky view is clear.
-   GPS_TOP is where the GPS sits, from the mount's origin. */
-export const GPS_TOP=CINE?V(0,3.3,.8):V(0,2.9,1.0);       // on both models the GPS sits above the top of the battery
-export function buildGpsMount(){
-  const g=new THREE.Group(), T=GPS_TOP;
-  const base=mesh(roundBox(2.2,.3,1.1,.1,4),M.tpu); base.position.y=.15; g.add(base);
-  for(const x of [-.65,.65]) g.add(rod(V(x,.2,0),V(x*.9,T.y-.2,T.z-.15),.2,M.tpu,10));
-  g.add(rod(V(0,.25,.35),V(0,T.y-.25,T.z+.5),.16,M.tpu,10));
-  const pl=mesh(roundBox(2.5,.25,2.5,.1,4),M.tpu); pl.position.set(0,T.y-.13,T.z); g.add(pl);
-  for(const s of [-1,1]) g.add(box(2.5,.25,.12,M.tpu,0,T.y+.05,T.z+s*1.2));
-  for(const x of [-.65,.65]){ const sc=cyl(.17,.17,.08,M.darkMetal,12); sc.position.set(x,.33,0); g.add(sc); }
+  if(CINE){ const lb=new THREE.Mesh(new THREE.BoxGeometry(1.25,.03,.5),[M.strapBand,M.strapBand,STRAP_LABEL,M.strapBand,M.strapBand,M.strapBand]); lb.position.set(-.78,top+.07,0); g.add(lb); }   // model 2: yellow lettering on top
   return g;
 }
 /* TPU camera mount: side cheeks outside the camera plates reach past the lens to protect it,
    a chin bar joins them under the lens, and tick marks show the uptilt angle */
 export function buildCamMount(){
   const g=new THREE.Group();
+  if(CINE){ /* model 2: yellow TPU action-camera mount screwed to the front of the top plate: a base and three prongs */
+    const mb=mesh(roundBox(2.6,.3,1.5,.1,4),M.tpu); mb.position.y=.15; g.add(mb);
+    for(const x of [-.32,0,.32]) g.add(box(.16,.72,.85,M.tpu,x,.65,0));
+    return g; }
   for(const s of [-1,1]){
-    const ch=mesh(roundBox(.3,2.5,2.8,.12,4),M.tpu); ch.position.set(s*1.38,0,-.55); g.add(ch);
+    /* the cheeks fill the gap from the bottom plate to the top plate, so the mount is clamped between them */
+    const ch=mesh(roundBox(.3,2.9,2.8,.12,4),M.tpu); ch.position.set(s*1.38,0,-.55); g.add(ch);
     for(const a of [0,10,20,30,40]){ const t=box(.04,.05,.42,M.black); const r=a*Math.PI/180; t.position.set(s*1.545,Math.sin(r)*.85,-Math.cos(r)*.85+.1); t.rotation.x=r; g.add(t); }
   }
   const chin=mesh(roundBox(3.06,.34,.5,.12,4),M.tpu); chin.position.set(0,-1.08,-1.75); g.add(chin);
@@ -133,14 +146,20 @@ export function makeRing(R2=1.9,k=1){
 export function buildMotor(){
   /* model 2 uses a bigger 2306 motor: wider bell (k) and a taller stator (hk) */
   const g=new THREE.Group(), k=CINE?1.2:1, hk=CINE?1.1:1;
-  const base=cyl(1.06*k,1.12*k,.3,M.darkMetal,40); base.position.y=.15; g.add(base);
+  const base=cyl(1.06*k,1.12*k,.3,CINE?M.accent:M.darkMetal,40); base.position.y=.15; g.add(base);
+  /* stator: copper windings on 12 teeth. It stays still; you see it through the gap under the bell and the windows in the bell's top */
+  const st=cyl(.98*k,.98*k,.9*hk,M.copper,36); st.position.y=.3+.45*hk; g.add(st);
+  for(let i=0;i<12;i++){ const a=i/12*TAU, sl=cyl(.05,.05,.9*hk,M.black,6); sl.position.set(Math.cos(a)*.97*k,.3+.45*hk,Math.sin(a)*.97*k); sl.castShadow=false; g.add(sl); }
   const rot=new THREE.Group(); g.add(rot); g.userData.rot=rot;
-  const bell=cyl(1.12*k,1.12*k,1.0*hk,M.bell,48); bell.position.y=.36+.5*hk; rot.add(bell);
-  const band=cyl(1.135*k,1.135*k,.18,M.alu,48); band.position.y=.36+.76*hk; rot.add(band);
-  const cap=cyl(.98*k,1.1*k,.1,M.bell,48); cap.position.y=.36+1.05*hk; rot.add(cap);
-  for(let i=0;i<6;i++){ const v=box(.16,.03,.42,M.copper); const a=i/6*TAU; v.position.set(Math.cos(a)*.62*k,.36+1.105*hk,Math.sin(a)*.62*k); v.rotation.y=Math.PI/2-a; rot.add(v); }
-  rot.add(box(.08,.5,.3,M.white,1.13*k,.8,0));
-  for(const y of [.5,.68]){ const gr=cyl(1.126*k,1.126*k,.025,M.black,48); gr.position.y=y; rot.add(gr); }
+  /* bell: a steel ring that carries the magnets, and a top with six windows for cooling */
+  const bm=CINE?M.bellC:M.bell, y0=.36+.24*hk, ringS=new THREE.Shape(), capS=new THREE.Shape();
+  ringS.absarc(0,0,1.12*k,0,TAU,false); ringS.holes.push(circHole(0,0,1.02*k));
+  const bell=flatExtrude(ringS,.78*hk,bm); bell.position.y=y0; rot.add(bell);
+  capS.absarc(0,0,1.12*k,0,TAU,false);
+  for(let i=0;i<6;i++){ const a=i/6*TAU, w=new THREE.Path(); w.absarc(0,0,.9*k,a-.36,a+.36,false); w.absarc(0,0,.45*k,a+.3,a-.3,true); w.closePath(); capS.holes.push(w); }
+  const cap=flatExtrude(capS,.1,bm); cap.position.y=y0+.78*hk; rot.add(cap);
+  const band=cyl(1.135*k,1.135*k,.18,CINE?M.accent:M.alu,48); band.position.y=.36+.76*hk; rot.add(band);
+  rot.add(box(.08,.3*hk,.3,M.white,1.13*k,.36+.46*hk,0));
   const shaft=cyl(.14,.14,.8,M.steel,16); shaft.position.y=.36+1.44*hk; rot.add(shaft);
   const lead=new THREE.Group(); g.add(lead); g.userData.lead=lead;
   strands(new THREE.CatmullRomCurve3([V(-.95*k,.2,0),V(-3.5,.21,0),V(-7.35,.19,0)]),3,.06,.07,7,PHASE_COLS).forEach(m=>lead.add(m));
@@ -156,33 +175,27 @@ export function bladeShape(s){
   sh.quadraticCurveTo(...P(6.48,.12),...P(6.05,.3)); sh.bezierCurveTo(...P(4.2,.56),...P(1.8,.56),...P(.3,.3)); sh.lineTo(...P(.3,-.32));
   return sh;
 }
-/* the blur a spinning prop leaves: a see-through disc, darker towards the tips, with a bright line where the tips pass.
-   The render loop fades it in with the motor speed */
-export function propDisc(R){
-  const disc=new THREE.Mesh(new THREE.CircleGeometry(R,72),new THREE.MeshBasicMaterial({map:propBlurTex,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
-  disc.rotation.x=-Math.PI/2; disc.renderOrder=2; disc.userData.noStyle=true; return disc;
-}
 export function buildProp(dir){
   const s=dir==='CW'?1:-1, g=new THREE.Group(), sp=new THREE.Group(); g.add(sp); g.userData.spinner=sp; g.userData.dir=dir;
   const hub=cyl(.42,.46,.38,M.propHub,24); hub.position.y=.19; sp.add(hub);
   const nut=cyl(.3,.3,.3,M.steel,6); nut.position.y=.53; sp.add(nut);
   const geo=new THREE.ExtrudeGeometry(bladeShape(s),{depth:.07,bevelEnabled:false,curveSegments:10}); geo.rotateX(-Math.PI/2); geo.translate(0,-.035,0);
-  for(let k=0;k<3;k++){ const pv=new THREE.Group(); pv.rotation.y=k*TAU/3; const bl=mesh(geo,M.prop); bl.rotation.x=-.28*s; bl.position.y=.2; pv.add(bl); sp.add(pv); }
-  const disc=propDisc(MODEL.propR); disc.position.y=.22; g.add(disc); g.userData.disc=disc;
+  for(let k=0;k<3;k++){ const pv=new THREE.Group(); pv.rotation.y=k*TAU/3; const bl=mesh(geo,dir==='CW'?M.propCW:M.propCCW); bl.rotation.x=-.28*s; bl.position.y=.2; pv.add(bl); sp.add(pv); }
   return g;
 }
 export function buildESC(){
   const g=new THREE.Group(); g.add(boardMesh(4,.18,4,M.pcbG,M.escTop));
   for(const sx of [-1,1]) for(const sz of [-1,1]) for(let i=0;i<3;i++) g.add(box(.42,.12,.3,M.black,sx*1.15,.24,sz*(.35+i*.38)));
-  g.add(box(.5,.08,.5,M.black,.6,.22,-1.35));
+  g.add(box(.5,.08,.5,M.black,0,.22,-1.35));
   addPad(g,{key:'m1',label:'M1',net:'M1',pos:V(1.85,.2,.85),out:V(1,0,0),shape:'triple'});
   addPad(g,{key:'m2',label:'M2',net:'M2',pos:V(1.85,.2,-.85),out:V(1,0,0),shape:'triple'});
   addPad(g,{key:'m3',label:'M3',net:'M3',pos:V(-1.85,.2,.85),out:V(-1,0,0),shape:'triple'});
   addPad(g,{key:'m4',label:'M4',net:'M4',pos:V(-1.85,.2,-.85),out:V(-1,0,0),shape:'triple'});
   addPad(g,{key:'bp',label:'+',net:'VBAT+',pos:V(1.0,.2,1.75),out:V(0,0,1),shape:'big'});
   addPad(g,{key:'bn',label:'−',net:'VBAT-',pos:V(.35,.2,1.75),out:V(0,0,1),shape:'big'});
-  addPad(g,{key:'fc',label:'HARNESS',need:'ESC',pos:V(-.35,.3,-1.55),out:V(0,1,0),shape:'plug'});
-  smd(g,{w:4,d:4,y:.18,n:34,seed:7,avoid:[[.9,-1.35,1.4,1.35],[-1.4,-1.35,-.9,1.35],[.3,-1.65,.9,-1.05],[-.75,-1.8,.05,-1.3],[-.85,-.2,.85,.55]]});
+  /* harness plug in the front-right corner, under the FC socket, so the harness stays clear of the receiver wires */
+  addPad(g,{key:'fc',label:'HARNESS',need:'ESC',pos:V(.95,.3,-1.62),out:V(0,1,0),shape:'plug'});
+  smd(g,{w:4,d:4,y:.18,n:34,seed:7,avoid:[[.9,-1.35,1.4,1.35],[-1.4,-1.35,-.9,1.35],[-.3,-1.65,.3,-1.05],[.55,-1.85,1.35,-1.35],[-.85,-.2,.85,.55]]});
   return g;
 }
 export function buildFC(){
@@ -193,8 +206,8 @@ export function buildFC(){
   g.add(box(.12,.06,.12,std({color:0x4fd18b,emissive:0x2a8a55}),1.1,.19,.6));
   const P=(k,l,net,x,z,o)=>addPad(g,{key:k,label:l,net,pos:V(x,.17,z),out:o});
   const F=V(0,0,-1),B=V(0,0,1),Rt=V(1,0,0),Lf=V(-1,0,0);
-  if(CINE){ /* model 2: LED strip on the front pads, digital VTX on UART 2 */
-    P('c5','5V','5V',0,-1.6,F); P('cg','G','GND',.55,-1.6,F); P('led','LED','LED',1.1,-1.6,F);
+  if(CINE){ /* model 2: digital VTX on UART 2, spare 5V and G at the front */
+    P('c5','5V','5V',0,-1.6,F); P('cg','G','GND',.55,-1.6,F);
     P('v9','9V','9V',1.6,-.9,Rt); P('vg','G','GND',1.6,-.45,Rt); P('t2','T2','T2',1.6,0,Rt); P('r2','R2','R2',1.6,.45,Rt);
   } else {
     P('c5','5V','5V',0,-1.6,F); P('cg','G','GND',.55,-1.6,F); P('cam','CAM','CAM',1.1,-1.6,F);
@@ -202,8 +215,8 @@ export function buildFC(){
   }
   P('u15','5V','5V',-1.2,1.6,B); P('u1g','G','GND',-.65,1.6,B); P('t1','T1','T1',-.1,1.6,B); P('r1','R1','R1',.45,1.6,B);
   P('u35','5V','5V',-1.6,-.45,Lf); P('u3g','G','GND',-1.6,0,Lf); P('t3','T3','T3',-1.6,.45,Lf); P('r3','R3','R3',-1.6,.9,Lf);
-  addPad(g,{key:'esc',label:'ESC',net:'ESC',pos:V(-.35,.28,-.95),out:V(0,1,0),shape:'socket'});
-  smd(g,{w:3.6,d:3.6,y:.16,n:30,seed:13,avoid:[[-.55,-1.4,.55,.45],[.1,.25,1.15,1.3],[-.9,.55,-.35,1.1],[1.4,.55,1.8,1.45],[-.8,-1.2,.1,-.7]]});
+  addPad(g,{key:'esc',label:'ESC',net:'ESC',pos:V(.95,.28,-.95),out:V(0,1,0),shape:'socket'});
+  smd(g,{w:3.6,d:3.6,y:.16,n:30,seed:13,avoid:[[-.55,-1.4,.55,.45],[.1,.25,1.15,1.3],[-.9,.55,-.35,1.1],[1.4,.55,1.8,1.45],[.45,-1.25,1.45,-.65]]});
   return g;
 }
 export function buildCamera(){
@@ -226,19 +239,23 @@ export function buildVTX(){
   const g=new THREE.Group(); g.add(boardMesh(2,.14,2,M.pcbG,M.vtxTop));
   g.add(box(1.4,.3,1.15,M.steel,0,.29,.1));
   const cn=cyl(.13,.13,.3,M.gold,12); cn.position.set(.65,.3,.86); g.add(cn);
-  const ant=new THREE.Group(); ant.position.set(.65,.4,.9); ant.rotation.x=.75;
-  const st=cyl(.06,.06,3,M.antenna,8); st.position.y=1.5; ant.add(st);
-  const tp=mesh(new THREE.SphereGeometry(.34,16,10),M.antenna); tp.scale.y=.65; tp.position.y=3.05; ant.add(tp); g.add(ant);
-  const F=V(0,0,-1);
-  addPad(g,{key:'vin',label:'VIN',need:'9V',pos:V(-.5,.16,-.85),out:F});
-  addPad(g,{key:'g',label:'G',need:'GND',pos:V(0,.16,-.85),out:F});
-  addPad(g,{key:'vid',label:'VID',need:'VTX',pos:V(.5,.16,-.85),out:F});
+  /* the antenna stands almost upright out the back, above the top plate, where the carbon does not block it */
+  const ant=new THREE.Group(); ant.position.set(.65,.4,.9); ant.rotation.x=1.2;
+  const st=cyl(.06,.06,3.6,M.antenna,8); st.position.y=1.8; ant.add(st);
+  const tp=mesh(new THREE.SphereGeometry(.34,16,10),M.antenna); tp.scale.y=.65; tp.position.y=3.65; ant.add(tp); g.add(ant);
+  /* the wire pads are on the underside of the board: the VTX stands upright with that side facing the flight controller,
+     so the wires come straight off it, toward the flight controller, instead of passing through the board */
+  const D=V(0,-1,0);
+  addPad(g,{key:'vin',label:'VIN',need:'9V',pos:V(-.5,-.08,-.85),out:D});
+  addPad(g,{key:'g',label:'G',need:'GND',pos:V(0,-.08,-.85),out:D});
+  addPad(g,{key:'vid',label:'VID',need:'VTX',pos:V(.5,-.08,-.85),out:D});
   return g;
 }
 export function buildRX(){
   const g=new THREE.Group(); g.add(boardMesh(1.3,.12,1.6,M.pcbG,M.rxTop));
   g.add(box(.5,.1,.5,M.black,0,.17,.05));
-  for(const s of [-1,1]){ const a=V(s*.3,.14,.75), d=V(s*.7,.25,1).normalize(); const b=a.clone().addScaledVector(d,1.9), c=a.clone().addScaledVector(d,2.6); g.add(rod(a,b,.04,M.antenna)); g.add(rod(b,c,.03,M.white)); }
+  /* model 1: one antenna upright, one out to the back left (90° apart). Model 2: one out to the back left, one straight back, both clear of the tail mount */
+  for(const s of [-1,1]){ const a=CINE?V(s*.3,.14,.75):V(-.5+s*.08,.14,.5), d=(CINE?(s<0?V(-.7,.25,1):V(0,.25,1)):s<0?V(-.7,.1,.7):V(0,1,0)).normalize(); const b=a.clone().addScaledVector(d,1.9), c=a.clone().addScaledVector(d,2.6); g.add(rod(a,b,.04,M.antenna)); g.add(rod(b,c,.03,M.white)); }
   const F=V(0,0,-1);
   addPad(g,{key:'5v',label:'5V',need:'5V',pos:V(-.45,.14,-.68),out:F});
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.15,.14,-.68),out:F});
@@ -248,6 +265,7 @@ export function buildRX(){
 }
 /* compact GPS: a thin black case with a ceramic patch antenna on top (the arrow points to the front),
    a built-in compass, a status LED and a 4-wire plug at the front */
+export const GPS_TILT=.4;
 export function buildGPS(){
   const g=new THREE.Group();
   const gs=mesh(roundBox(2.1,.36,2.1,.14,4),M.gpsShell); gs.position.y=.18; g.add(gs);
@@ -260,6 +278,13 @@ export function buildGPS(){
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.15,.12,-1.2),out:F});
   addPad(g,{key:'tx',label:'TX',need:'R3',pos:V(.15,.12,-1.2),out:F});
   addPad(g,{key:'rx',label:'RX',need:'T3',pos:V(.45,.12,-1.2),out:F});
+  g.scale.setScalar(CINE?.85:.75);   // compact modules, sized for the rear bay on the bottom plate
+  if(CINE){ /* model 2: the GPS rides on a yellow TPU tail mount behind the plates, tilted back so it sees the sky past the battery.
+     The mount is narrow enough to stay clear of the rear props; it is an arch, and the VTX antenna runs out the back through it */
+    const deck=mesh(roundBox(2.1,.5,2.3,.15,4),M.tpu); deck.position.y=-.25; g.add(deck);
+    const mg=new THREE.Group(); mg.rotation.x=-GPS_TILT; mg.scale.setScalar(1/.85); g.add(mg);   // stands upright whatever the tilt
+    const top=mesh(roundBox(1.8,.85,1.5,.25,4),M.tpu); top.position.set(0,-.575,.1); mg.add(top);
+    for(const s of [-1,1]){ const leg=mesh(roundBox(.4,1.2,1.5,.15,4),M.tpu); leg.position.set(s*.7,-1.6,.1); mg.add(leg); } }   // two legs down to the bottom plate; the antenna runs between them
   return g;
 }
 export function buildCap(){
@@ -273,14 +298,19 @@ export function buildCap(){
   addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.2,0,-1.55),out:V(0,1,0)});
   return g;
 }
+/* model 1: the XT60 plug sits just behind the top plate, in a TPU holder screwed under the plate's rear edge, socket facing back to meet the battery cable.
+   The two wires leave the plug, drop behind the plate edge and run forward between the plates to the ESC battery pads.
+   Model 2: the wires drop less and run forward above the VTX */
 export function buildLead(){
-  const g=new THREE.Group();
+  const g=new THREE.Group(), k=CINE?.5:1;
   g.add(box(.9,.55,1.0,M.connector,0,0,.6));
   g.add(box(.94,.12,.3,M.connector,0,.3,.25));
-  g.add(tube([V(.22,0,.1),V(.25,-.05,-1.2),V(.25,.25,-2.65)],.11,wireMat(0xd8453b)));
-  g.add(tube([V(-.22,0,.1),V(-.25,-.05,-1.2),V(-.25,.25,-2.65)],.11,wireMat(0x2b2f35)));
-  addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.25,.25,-2.72),out:V(0,1,0)});
-  addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.25,.25,-2.72),out:V(0,1,0)});
+  g.add(box(1.15,.4,.75,CINE?M.guard:M.tpu,0,-.3,-.08));                // holder: screwed under the rear edge of the top plate, cradles the plug
+  g.add(box(1.2,.05,.1,M.black,0,-.52,.12));               // zip tie round the holder and the plug
+  for(const [x,c,ex] of [[.22,0xd8453b,.2],[-.22,0x2b2f35,-.35]])
+    g.add(tube([V(x,-.28,.55),V(x,-.8*k,.62),V(x,-1.6*k,.55),V(x,-2.05*k,-.2),V(ex,-2.05*k,-1.4),V(ex,-2.05*k,-2.4)],.11,wireMat(c)));
+  addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.2,-2.05*k,-2.47),out:V(0,1,0)});
+  addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.35,-2.05*k,-2.47),out:V(0,1,0)});
   const sock=new THREE.Object3D(); sock.position.set(0,0,1.12); g.add(sock); g.userData.socket=sock;
   return g;
 }
@@ -290,11 +320,11 @@ export function buildBattery(){
   const by=CINE?H*.83:2.15, bz=L/2+.12, cells=CINE?7:5, gap=CINE?.1:.12;
   g.add(box(.7,.3,.22,M.white,-1.0,by,bz));
   for(let i=0;i<cells;i++){ const x=-1.25+i*gap; g.add(tube([V(x,by,bz-.12),V(x,by+.3,bz-.32),V(x,by+.47,bz-.62)],.025,wireMat(i?0xd8453b:0x232528))); }
-  const plug=new THREE.Object3D(); plug.position.set(1.0,CINE?H*.62:1.6,L/2+.05); g.add(plug); g.userData.plug=plug;
+  const plug=new THREE.Object3D(); plug.position.set(CINE?1.45:1.0,CINE?H*.62:1.6,L/2+.05); g.add(plug); g.userData.plug=plug;   // model 2: further right, so the cable clears the GPS on the tail
   return g;
 }
 
-/* ================= Model 2 (cinematic) parts ================= */
+/* ================= Model 2 (HD freestyle) parts ================= */
 /* HD camera: digital sensor and a bigger lens. Its picture runs over the coax cable that comes with the VTX, so it has no wires of its own */
 function buildHDCamera(){
   const g=new THREE.Group();
@@ -306,52 +336,21 @@ function buildHDCamera(){
   g.add(box(.5,.3,.2,M.gold,0,-.4,.86));
   return g;
 }
-/* digital VTX: heatsink body, two antennas, and the coax cable forward to the HD camera */
+/* digital VTX: heatsink body, one antenna, and the coax cable forward to the HD camera */
 function buildHDVTX(){
   const g=new THREE.Group();
   g.add(boardMesh(2.8,.14,2.8,M.pcbG,M.vtxTop));
   const body=mesh(roundBox(2.6,.6,2.4,.1,4),M.heatsink); body.position.set(0,.45,.15); g.add(body);
   for(let i=0;i<6;i++) g.add(box(2.4,.22,.1,M.heatsink,0,.85,-.85+i*.4));
-  for(const s of [-1,1]){
-    const ant=new THREE.Group(); ant.position.set(s*.85,.55,1.35); ant.rotation.set(1.05,0,-s*.35);
-    const st=cyl(.05,.05,2.4,M.antenna,8); st.position.y=1.2; ant.add(st);
-    const tp=cyl(.13,.13,.7,M.antenna,10); tp.position.y=2.6; ant.add(tp); g.add(ant);
-  }
+  const ant=new THREE.Group(); ant.position.set(0,.55,1.35); ant.rotation.x=Math.PI/2;   // level and low, so it runs through the arch under the GPS and ends well behind it
+  const st=cyl(.06,.06,5.4,M.antenna,8); st.position.y=2.7; ant.add(st);
+  const tp=cyl(.32,.32,.85,M.antenna,20); tp.position.y=5.75; ant.add(tp); g.add(ant);
   const coax=new THREE.Group(); g.add(coax); g.userData.lead=coax;
-  coax.add(tube([V(0,.2,-1.35),V(0,.12,-2.4),V(0,.15,-4.6),V(0,.45,-6.3),V(0,1.05,-6.9)],.045,M.black));
+  coax.add(tube([V(0,.2,-1.35),V(0,.12,-2.4),V(0,.15,-5.9),V(0,.45,-7.6),V(0,1.05,-8.2)],.045,M.black));   // forward to the camera at the nose
   const F=V(0,0,-1);
   addPad(g,{key:'vin',label:'VIN',need:'9V',pos:V(-.75,.16,-1.3),out:F});
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.3,.16,-1.3),out:F});
   addPad(g,{key:'tx',label:'TX',need:'R2',pos:V(.3,.16,-1.3),out:F});
   addPad(g,{key:'rx',label:'RX',need:'T2',pos:V(.75,.16,-1.3),out:F});
-  return g;
-}
-/* clear side panel between the plates */
-export function buildPanel(){
-  const g=new THREE.Group();
-  const p=box(.1,2.75,9.4,M.panel); p.castShadow=false; p.userData.noEdges=true; g.add(p);
-  for(const y of [-1.33,1.33]) g.add(box(.14,.1,9.4,M.black,0,y,0));
-  return g;
-}
-/* LED strip on the inside of the right panel; its three wires leave from the front end */
-export function buildLED(){
-  const g=new THREE.Group();
-  g.add(box(.06,.34,6.4,M.ledStrip));
-  for(let i=0;i<10;i++){ const l=box(.07,.18,.24,M.led,-.03,0,-2.9+i*.64); l.castShadow=false; g.add(l); }
-  for(const [k,l,need,z] of [['5v','5V','5V',-3.05],['g','G','GND',-2.75],['din','DIN','LED',-2.45]]){
-    g.add(rod(V(-.03,-.1,z),V(-.3,-.1,z),.03,wireMat(need==='5V'?0xd8453b:need==='GND'?0x2b2f35:0x4fb06d)));
-    addPad(g,{key:k,label:l,need,pos:V(-.35,-.1,z),out:V(-1,0,0)});
-  }
-  return g;
-}
-/* action camera for the cinematic footage; sits in the TPU prongs, lens to the front */
-export function buildActionCam(){
-  const g=new THREE.Group();
-  const b=mesh(roundBox(5.8,4,2.6,.35),M.camShell); b.position.y=2; g.add(b);
-  const lens=cyl(.95,1,.5,M.black,32); lens.rotation.x=Math.PI/2; lens.position.set(-1.45,2.4,-1.45); g.add(lens);
-  const gl=cyl(.62,.62,.04,M.glass,32); gl.rotation.x=Math.PI/2; gl.position.set(-1.45,2.4,-1.72); g.add(gl);
-  g.add(box(1.7,1.7,.06,M.black,1.4,2.3,-1.31));
-  g.add(box(.9,.16,.5,M.tpu,1.6,4.05,0));
-  const rec=box(.5,.5,.06,M.led,-2.3,3.4,-1.31); rec.castShadow=false; g.add(rec);
   return g;
 }
