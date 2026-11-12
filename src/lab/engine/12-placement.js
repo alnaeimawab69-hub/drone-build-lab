@@ -11,6 +11,7 @@ import { registerScrews, unregisterScrews } from './13-screws.js';
 import { updateMarkers } from './14-markers-picking.js';
 import { stageKey } from './20-stages.js';
 import { removeLabel } from './22-info-labels.js';
+import { tr } from '../../lang.js';
 
 /* ================= Placement ================= */
 export function createPart(t){ const g=TYPES[t].build(); g.userData.typeKey=t; return g; }
@@ -55,7 +56,7 @@ export function registerPads(hotId,g){
 export function unregisterPads(hotId){ for(const id in PADS) if(PADS[id].hotId===hotId){ const s=PADS[id].sprite; if(s&&s.parent) s.parent.remove(s); delete PADS[id]; } }
 export const srcPads=()=>Object.values(PADS).filter(p=>p.need);
 export function padLocal(id){ const v=PADS[id].vis.getWorldPosition(V()); return droneRoot.worldToLocal(v); }
-export function padName(p){ const t=HOTMAP[p.hotId].type; const nm=TYPES[t].name; return p.need?`${nm} · ${p.label} wire`:`${nm} · ${p.label} pad`; }
+export function padName(p){ const t=HOTMAP[p.hotId].type; const nm=TYPES[t].name; return p.need?tr(`${nm} · ${p.label} wire`,`${nm} · wayar ${p.label}`):tr(`${nm} · ${p.label} pad`,`${nm} · pad ${p.label}`); }
 export function setPadMat(p,mat){ p.vis.traverse(o=>{ if(o.isMesh) o.material=mat||o.userData.m0; }); }
 export function textSprite(text,col='#e9eef2',border='rgba(255,255,255,.18)',H=.26,bg='rgba(12,17,20,.88)'){
   const fs=44,pad=14, c=document.createElement('canvas'), g=c.getContext('2d');
@@ -103,7 +104,8 @@ export function routeCurve(a,b,da,db){
    clear of the other parts, and fan out to their pads at the end. lane is the sideways step between neighbouring wires */
 export function viaCurve(a,b,db,h,k){
   const up=db.y>.7, f=V(db.x,0,db.z).normalize(), off=V(...h.lane).multiplyScalar(k);
-  const pts=[a, a.clone().add(V(0,.2,0)), ...h.via.map(p=>V(...p).add(off))];
+  const last=h.via.length-1, endOff=h.laneEnd?V(...h.laneEnd).multiplyScalar(k):V();   // laneEnd: extra spread at the last via only, so the wires fan out toward their own pads
+  const pts=[a, a.clone().add(V(0,.2,0)), ...h.via.map((p,i)=>V(...p).add(off).add(i===last?endOff:V()))];
   if(up) pts.push(b.clone().setY(b.y+.3)); else pts.push(b.clone().addScaledVector(f,.45).setY(b.y+.2), b.clone().addScaledVector(f,.15).setY(b.y+.06));
   pts.push(b);
   return new THREE.CatmullRomCurve3(pts,false,'centripetal');
@@ -113,7 +115,7 @@ export function buildWireMesh(w){
   const s=PADS[w.src], a=padLocal(w.src), b=padLocal(w.tgt), g=new THREE.Group();
   const h=HOTMAP[s.hotId], mine=h.via?srcPads().filter(p=>p.hotId===s.hotId):[];
   const c=s.need==='ESC'?wireCurve(a,b)                       // the harness keeps its short loop over the board edge
-    :h.via?viaCurve(a,b,padDir(w.tgt),h,mine.indexOf(s)-(mine.length-1)/2)
+    :h.via?viaCurve(a,b,padDir(w.tgt),h,h.order?h.order.indexOf(s.def.key)-(h.order.length-1)/2:mine.indexOf(s)-(mine.length-1)/2)   // order: lane order by pad key, matched to where each wire ends so the fan does not cross
     :routeCurve(a,b,padDir(w.src),padDir(w.tgt));
   const t=PADS[w.tgt], fan=s.need[0]==='M'&&s.def.shape==='bundle'&&t.def.shape==='triple';
   if(EX){

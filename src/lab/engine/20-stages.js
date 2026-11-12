@@ -7,7 +7,7 @@ import { PADS, S, parts } from './08-state.js';
 import { CAD_MATS, droneRoot, netArrow, particles, showSpinRings, thrustArrows, totalArrow, weightArrow } from './09-scene-content.js';
 import { CAM, camTo, tween } from './11-tweens-camera.js';
 import { addWire, createPart, dependents, layout, place, rebuildWires, removeGroup, removeWire, setFCRot, srcPads, unplace, updateBatCable, updatePadSprites } from './12-placement.js';
-import { autoScrews, screwDriven, stageScrews, undrive, updateScrewMarkers } from './13-screws.js';
+import { autoScrews, screwDriven, stageScrews, undrive } from './13-screws.js';
 import { updateMarkers } from './14-markers-picking.js';
 import { beginPartDrag } from './15-input.js';
 import { dgXY } from './16-wiring-diagram.js';
@@ -17,6 +17,7 @@ import { FL, airborne, doMan, resetFlight } from './19-flight.js';
 import { QUIZ, renderAll, renderPanel } from './21-panel.js';
 import { showInfo } from './22-info-labels.js';
 import { toast } from './23-toast.js';
+import { tr } from '../../lang.js';
 import { endQuiz, enterMoves, exitMoves, playAll, playMove, recentre, startQuiz, stopMoves } from './28-movements.js';
 import { showReport } from './24-start-report.js';
 
@@ -44,7 +45,7 @@ export function enterStage(k){
   if(k==='moves') enterMoves();
   /* the battery is only plugged in for the motor test and for flight: never while hands are on the propellers */
   if(!EX&&!S.explore&&(k==='power'||k==='props')&&!(k==='power'&&S.test.confirmed&&!S.unplugged)){ S.unplugged=true; updateBatCable(); }
-  if(!EX&&k==='fly'&&S.unplugged){ S.unplugged=false; updateBatCable(); if(!S.explore) toast('Propellers on. Battery plugged in: the drone is live. Arm it, then take off.','ok'); }
+  if(!EX&&k==='fly'&&S.unplugged){ S.unplugged=false; updateBatCable(); if(!S.explore) toast(tr('Propellers on. Battery plugged in: the drone is live. Arm it, then take off.','Kipas dipasang. Bateri dipalamkan: dron sedang berkuasa. Aktifkan, kemudian berlepas.'),'ok'); }
   if(k==='quiz'){ controls.autoRotate=true; controls.autoRotateSpeed=.6; }
   $('#info').hidden=true;
   updatePadSprites(); updateMarkers(); renderAll();
@@ -89,40 +90,41 @@ function undoable(){ const k=stageKey();
 export const canUndo=()=>!S.explore&&!S.drag&&!!undoable();
 export function undo(){
   const u=undoable(); if(!u) return;
-  if(u.k==='part'){ if(dependents(u.id).length){ toast('Undo the parts fitted to it first.'); return; }
+  if(u.k==='part'){ if(dependents(u.id).length){ toast(tr('Undo the parts fitted to it first.','Batalkan dahulu bahagian yang dipasang padanya.')); return; }
     if(HOTMAP[u.id].stage==='power') stopAllSpin(); removeGroup(unplace(u.id)); }
   if(u.k==='wire') removeWire(u.id);
   if(u.k==='screw') undrive(u.id);
-  S.undo.pop(); updateMarkers(); toast('Last step undone.'); renderPanel();
+  S.undo.pop(); updateMarkers(); toast(tr('Last step undone.','Langkah terakhir dibatalkan.')); renderPanel();
 }
 export function autoProps(anim){ [1,2,3,4].forEach((n,i)=>{ const h=HOTMAP['prop'+n]; if(parts[h.id]) return; const go=()=>{ if(!parts[h.id]) place(h,createPart(EXP[n]==='CW'?'propCW':'propCCW'),{animate:anim}); if(anim) renderPanel(); }; anim?tween(.01,null,go,i*.15):go(); }); }
 
 export const ACT={
   next(){
     const k=stageKey(); if(!ready(k)) return;
-    if(k==='mount'&&S.fcRot!==0){ mistake('mount',4,'The flight controller arrow did not point to the front. The FC would read every tilt in the wrong direction, and the drone would flip at take-off. It has been turned for you.','The flight controller arrow did not point to the front.'); setFCRot(0); }
+    if(k==='mount'&&S.fcRot!==0){ mistake('mount',4,tr('The flight controller arrow did not point to the front. The FC would read every tilt in the wrong direction, and the drone would flip at take-off. It has been turned for you.','Anak panah pengawal penerbangan tidak menghala ke depan. FC akan membaca setiap kecondongan ke arah yang salah, dan dron akan terbalik semasa berlepas. Ia telah dipusingkan untuk anda.'),tr('The flight controller arrow did not point to the front.','Anak panah pengawal penerbangan tidak menghala ke depan.')); setFCRot(0); }
     if(k==='quiz') return showReport();
     gotoStage(S.stage+1);
   },
   back(){ if(S.stage>0) gotoStage(S.stage-1); },
   undo(){ undo(); },
-  plug(){ if(!strapped()){ toast('Strap the battery down before you plug it in.'); return; } S.unplugged=false; updateBatCable(); toast('Battery plugged in. The motors have power now: keep your hands clear.','ok'); renderPanel(); },
-  unplug(){ stopAllSpin(); S.unplugged=true; updateBatCable(); toast('Battery unplugged. It is now safe to fit the propellers.','ok'); renderPanel(); },
+  plug(){ if(!strapped()){ toast(tr('Strap the battery down before you plug it in.','Ikat bateri dahulu sebelum memalamkannya.')); return; } S.unplugged=false; updateBatCable(); toast(tr('Battery plugged in. The motors have power now: keep your hands clear.','Bateri dipalamkan. Motor kini berkuasa: jauhkan tangan anda.'),'ok'); renderPanel(); },
+  unplug(){ stopAllSpin(); S.unplugged=true; updateBatCable(); toast(tr('Battery unplugged. It is now safe to fit the propellers.','Palam bateri dicabut. Kini selamat untuk memasang kipas.'),'ok'); renderPanel(); },
   show(){ const k=stageKey(); if(k==='frame') autoFrame(true); if(k==='mount') autoMount(true); if(k==='wire') autoWire(true); if(k==='power') autoPower(); if(k==='props') autoProps(true); if(k==='fly'){ if(!airborne()) doMan('takeoff'); FL.tour={i:0,t:0}; } renderPanel(); },
   spin(b){ const n=+b.dataset.m; setTestSpin(n,S.spin[n]===0); renderPanel(); },
   spinAll(){ const any=[1,2,3,4].some(n=>S.spin[n]!==0); [1,2,3,4].forEach(n=>setTestSpin(n,!any)); renderPanel(); },
   swap(b){ const n=+b.dataset.m; const wasRight=dirActual(n)===EXP[n]; S.test.swapped[n]=!S.test.swapped[n];
-    if(wasRight) mistake('test',4,EX?`Motor ${n} already spun ${EXP[n]}, which is correct. Reversing it in the ESC settings made it wrong. Only reverse a motor that turns the wrong way.`:`Motor ${n} already spun ${EXP[n]}, which is correct. Swapping two of its wires reversed it. Only swap the wires of a motor that turns the wrong way.`,`Motor ${n} was already correct.`);
-    else toast(EX?`Motor ${n} reversed in the ESC settings. Spin it again to check the direction.`:`Two phase wires swapped on motor ${n}. Spin it again to check the direction.`,'ok');
+    if(wasRight) mistake('test',4,EX?`Motor ${n} already spun ${EXP[n]}, which is correct. Reversing it in the ESC settings made it wrong. Only reverse a motor that turns the wrong way.`:tr(`Motor ${n} already spun ${EXP[n]}, which is correct. Swapping two of its wires reversed it. Only swap the wires of a motor that turns the wrong way.`,`Motor ${n} sudah berputar ${EXP[n]}, iaitu arah yang betul. Menukar dua wayarnya telah menterbalikkannya. Tukar wayar hanya pada motor yang berputar ke arah yang salah.`),tr(`Motor ${n} was already correct.`,`Motor ${n} sudah betul.`));
+    else toast(EX?`Motor ${n} reversed in the ESC settings. Spin it again to check the direction.`:tr(`Two phase wires swapped on motor ${n}. Spin it again to check the direction.`,`Dua wayar fasa ditukar pada motor ${n}. Putarkan semula untuk menyemak arahnya.`),'ok');
     if(S.spin[n]!==0) setTestSpin(n,true); renderPanel(); },
   confirm(){ const bad=[1,2,3,4].filter(n=>dirActual(n)!==EXP[n]);
-    if(bad.length){ mistake('test',4,`${bad.length>1?'Motors':'Motor'} ${bad.join(', ')} still ${bad.length>1?'spin':'spins'} the wrong way. Compare each motor with the layout diagram. Diagonal motors turn the same way.`,'At least one motor still spins the wrong way.'); return; }
-    stopAllSpin(); S.test.confirmed=true; toast(EX?'All four motors spin the right way. You can now fit the propellers.':'All four motors spin the right way. Now unplug the battery before you fit the propellers.','ok'); renderPanel(); },
+    if(bad.length){ mistake('test',4,tr(`${bad.length>1?'Motors':'Motor'} ${bad.join(', ')} still ${bad.length>1?'spin':'spins'} the wrong way. Compare each motor with the layout diagram. Diagonal motors turn the same way.`,`Motor ${bad.join(', ')} masih berputar ke arah yang salah. Bandingkan setiap motor dengan rajah susun atur. Motor yang bertentangan secara pepenjuru berputar ke arah yang sama.`),tr('At least one motor still spins the wrong way.','Sekurang-kurangnya satu motor masih berputar ke arah yang salah.')); return; }
+    stopAllSpin(); S.test.confirmed=true; toast(EX?'All four motors spin the right way. You can now fit the propellers.':tr('All four motors spin the right way. Now unplug the battery before you fit the propellers.','Keempat-empat motor berputar ke arah yang betul. Sekarang cabut palam bateri sebelum memasang kipas.'),'ok'); renderPanel(); },
   man(b){ FL.tour=null; doMan(b.dataset.m); },
   tour(){ if(!airborne()) doMan('takeoff'); FL.tour={i:0,t:0}; },
-  quizSubmit(){ if(Object.keys(S.quizAns).length<QUIZ.length){ toast(`Answer all ${QUIZ.length} questions first.`); return; }
+  quizSubmit(){ if(Object.keys(S.quizAns).length<QUIZ.length){ toast(tr(`Answer all ${QUIZ.length} questions first.`,`Jawab kesemua ${QUIZ.length} soalan dahulu.`)); return; }
     let ok=0; QUIZ.forEach((q,i)=>{ if(S.quizAns[i]===q.a) ok++; else S.mistakes.push({sec:'quiz',msg:`Q${i+1}: ${q.why}`}); });
-    S.quizDone=true; S.quizScore=Math.round(SEC.quiz*ok/QUIZ.length*10)/10; toast(`${ok} of ${QUIZ.length} correct.`,ok===QUIZ.length?'ok':'info'); renderPanel(); },
+    S.quizDone=true; S.quizScore=Math.round(SEC.quiz*ok/QUIZ.length*10)/10; toast(tr(`${ok} of ${QUIZ.length} correct.`,`${ok} daripada ${QUIZ.length} betul.`),
+ok===QUIZ.length?'ok':'info'); renderPanel(); },
   exploreFly(){ setView('fly'); },
   exploreMoves(){ setView('moves'); },
   mvPlay(b){ playMove(b.dataset.a); }, mvAll(){ playAll(); }, mvStop(){ stopMoves(); },
@@ -143,7 +145,7 @@ $('#panel').addEventListener('change',e=>{
 });
 $('#panel').addEventListener('pointerdown',e=>{
   const si=e.target.closest('.sitem');
-  if(si){ e.preventDefault(); S.loaded=si.dataset.screw; document.querySelectorAll('.sitem').forEach(b=>{ const on=b===si; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); S.drag={kind:'screw',screw:S.loaded,hole:null}; updateScrewMarkers(); return; }
+  if(si){ e.preventDefault(); S.loaded=si.dataset.screw; document.querySelectorAll('.sitem').forEach(b=>{ const on=b===si; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); S.drag={kind:'screw',screw:S.loaded,hole:null}; updateMarkers(); return; }
   const it=e.target.closest('.titem'); if(!it||it.disabled) return;
   e.preventDefault(); const c=it.querySelector('.tc'); const left=+it.dataset.left-1; if(c) c.textContent='×'+left; if(left<=0) it.style.opacity=.32;
   beginPartDrag(it.dataset.type,null,e);

@@ -9,6 +9,7 @@ import { FL, G, airborne, doMan, drawForces } from './19-flight.js';
 import { stageKey } from './20-stages.js';
 import { forceKey, renderPanel } from './21-panel.js';
 import { toast } from './23-toast.js';
+import { LANG, tr } from '../../lang.js';
 
 /* ================= Movements =================
    Mode 2 transmitter (the most common): left stick = throttle (up/down) and yaw (left/right),
@@ -35,6 +36,22 @@ export const MOVES={
     pos:{t:'Roll right',d:'The left motors (M3, M4) speed up and the right motors (M1, M2) slow down until the drone has banked right. Then they even out. The tilted thrust slides the drone to the right.'},
     neg:{t:'Roll left',d:'The right motors (M1, M2) speed up and the left motors (M3, M4) slow down until the drone has banked left. It then slides to the left.'}},
 };
+/* Bahasa Malaysia: the stick names stay as the pilot's terms (Throttle, Yaw, Pitch, Roll); everything else is translated */
+if(LANG==='ms'){
+  const T=(k,o)=>{ const m=MOVES[k]; Object.assign(m,{stick:o.stick,short:o.short,what:o.what}); Object.assign(m.pos,o.pos); Object.assign(m.neg,o.neg); };
+  T('thr',{stick:'Kayu kiri, atas dan bawah',short:'Kayu kiri ↕',what:'Mengubah kelajuan keempat-empat motor serentak, jadi dron naik atau turun.',
+    pos:{t:'Throttle naik',d:'Keempat-empat motor dipercepatkan serentak. Jumlah tujahan kini lebih besar daripada berat, jadi daya bersih menghala ke atas dan dron naik.'},
+    neg:{t:'Throttle turun',d:'Keempat-empat motor diperlahankan serentak. Jumlah tujahan kini lebih kecil daripada berat, jadi dron turun.'}});
+  T('yaw',{stick:'Kayu kiri, kiri dan kanan',short:'Kayu kiri ↔',what:'Memusingkan muncung ke kiri atau kanan sementara dron kekal rata, seperti menggeleng kepala “tidak”.',
+    pos:{t:'Yaw ke kanan',d:`Motor lawan arah jam (${CCW}) dipercepatkan dan motor ikut arah jam (${CW}) diperlahankan. Setiap kipas memulas rangka ke arah bertentangan dengan putarannya (perhatikan anak panah putaran). Pulasan tidak lagi seimbang, jadi rangka berpusing ikut arah jam dan muncung berayun ke kanan. Jumlah tujahan kekal sama, jadi ketinggian tidak berubah.`},
+    neg:{t:'Yaw ke kiri',d:`Motor ikut arah jam (${CW}) dipercepatkan dan motor lawan arah jam (${CCW}) diperlahankan, jadi rangka berpusing lawan arah jam dan muncung berayun ke kiri.`}});
+  T('pitch',{stick:'Kayu kanan, atas dan bawah',short:'Kayu kanan ↕',what:'Mencondongkan muncung ke bawah atau ke atas, seperti mengangguk “ya”. Condong ke depan membuat dron terbang ke depan.',
+    pos:{t:'Pitch ke depan',d:'Motor belakang (M1, M3) dipercepatkan dan motor depan (M2, M4) diperlahankan sehingga muncung menunduk. Kemudian keempat-empatnya seimbang semula. Tujahan yang condong kini mempunyai komponen ke hadapan yang menolak dron ke depan. Jumlahnya bertambah sedikit, jadi ketinggian kekal sama.'},
+    neg:{t:'Pitch ke belakang',d:'Motor depan (M2, M4) dipercepatkan dan motor belakang (M1, M3) diperlahankan sehingga muncung terangkat. Tujahan yang condong kemudian menolak dron ke belakang.'}});
+  T('roll',{stick:'Kayu kanan, kiri dan kanan',short:'Kayu kanan ↔',what:'Mencondongkan dron ke satu sisi, seperti menyengetkan kepala ke arah bahu. Dron menggelongsor ke sisi itu.',
+    pos:{t:'Roll ke kanan',d:'Motor kiri (M3, M4) dipercepatkan dan motor kanan (M1, M2) diperlahankan sehingga dron condong ke kanan. Kemudian ia seimbang semula. Tujahan yang condong menggelongsorkan dron ke kanan.'},
+    neg:{t:'Roll ke kiri',d:'Motor kanan (M1, M2) dipercepatkan dan motor kiri (M3, M4) diperlahankan sehingga dron condong ke kiri. Ia kemudian menggelongsor ke kiri.'}});
+}
 const STICK_OF={thr:['L','y'],yaw:['L','x'],pitch:['R','y'],roll:['R','x']};
 const HOVER=6, MAX_TILT=16*DEG, MAX_YAW=60*DEG;
 const PLAY_SEQ=[[1,1.7],[0,.9],[-1,1.7],[0,1]];
@@ -86,9 +103,9 @@ export function padFly(){
 }
 window.addEventListener('gamepadconnected',e=>{
   if(!padSaved){ MV.padCfg=presetCfg(e.gamepad.mapping==='standard'?'gamepad':isPS(e.gamepad.id)?'ps':'radio'); }
-  const k=stageKey(); if(k==='moves'||k==='fly'){ toast(`${padName(e.gamepad.id)} connected`,'ok'); readPad(); renderPanel(); }
+  const k=stageKey(); if(k==='moves'||k==='fly'){ toast(`${padName(e.gamepad.id)} ${tr('connected','disambungkan')}`,'ok'); readPad(); renderPanel(); }
 });
-window.addEventListener('gamepaddisconnected',()=>{ const k=stageKey(); if(k==='moves'||k==='fly'){ toast('Controller disconnected. The keyboard and on-screen sticks still work.'); MV.pad=null; renderPanel(); } });
+window.addEventListener('gamepaddisconnected',()=>{ const k=stageKey(); if(k==='moves'||k==='fly'){ toast(tr('Controller disconnected. The keyboard and on-screen sticks still work.','Alat kawalan terputus. Papan kekunci dan kayu kawalan pada skrin masih berfungsi.')); MV.pad=null; renderPanel(); } });
 document.addEventListener('change',e=>{
   const t=e.target; if(!t.closest||!t.closest('.padset')) return;
   if(t.id==='padPreset'){ MV.padCfg=presetCfg(t.value); savePad(); renderPanel(); return; }
@@ -123,7 +140,7 @@ function buildVis(){
   Object.values(rings).forEach(r=>g.add(r));
   const thr=new THREE.ArrowHelper(V(0,1,0),V(0,0,0),6,COL.thr,1.4,.9); thr.traverse(o=>{ if(o.material){ o.material.depthTest=false; o.material.transparent=true; } }); thr.renderOrder=12; thr.visible=false; g.add(thr);
   g.traverse(o=>o.userData.noStyle=true);
-  const tags={roll:[V(0,0,-L-3.2),'Roll axis'],pitch:[V(L+3.2,0,0),'Pitch axis'],yaw:[V(0,10.6,0),'Yaw axis']};
+  const tags={roll:[V(0,0,-L-3.2),tr('Roll axis','Paksi roll')],pitch:[V(L+3.2,0,0),tr('Pitch axis','Paksi pitch')],yaw:[V(0,10.6,0),tr('Yaw axis','Paksi yaw')]};
   MV.vis={g,lines,rings,thr,tags,tagEls:{},cap:null,L};
   return MV.vis;
 }
@@ -207,12 +224,12 @@ function stepQuiz(){
   q.center=true;
   if(hit){
     if(!q.wrong) q.first++;
-    q.ok=true; q.msg=`Correct: ${MOVES[a][s>0?'pos':'neg'].t}. ${MOVES[a][s>0?'pos':'neg'].d}`;
+    q.ok=true; q.msg=`${tr('Correct','Betul')}: ${MOVES[a][s>0?'pos':'neg'].t}. ${MOVES[a][s>0?'pos':'neg'].d}`;
     q.i++; q.wrong=false;
-    toast(q.i>=q.list.length?`Quiz finished: ${q.first} of ${q.list.length} right first time.`:'Correct!','ok');
+    toast(q.i>=q.list.length?tr(`Quiz finished: ${q.first} of ${q.list.length} right first time.`,`Kuiz selesai: ${q.first} daripada ${q.list.length} betul pada cubaan pertama.`):tr('Correct!','Betul!'),'ok');
   } else {
     q.wrong=true; q.ok=false;
-    q.msg=`That was ${MOVES[d[0]][d[1]>0?'pos':'neg'].t.toLowerCase()}. ${MOVES[a].name} is the ${MOVES[a].stick.toLowerCase()}.`;
+    q.msg=tr(`That was ${MOVES[d[0]][d[1]>0?'pos':'neg'].t.toLowerCase()}. ${MOVES[a].name} is the ${MOVES[a].stick.toLowerCase()}.`,`Itu ialah ${MOVES[d[0]][d[1]>0?'pos':'neg'].t.toLowerCase()}. ${MOVES[a].name} ialah ${MOVES[a].stick.toLowerCase()}.`);
   }
   renderPanel();
 }
@@ -274,7 +291,7 @@ export function stepMoves(dt){
   for(const a in v.tagEls){ const el=v.tagEls[a], w=v.g.localToWorld(v.tags[a][0].clone()), s=screenOf(w);
     el.style.display=s.z>1?'none':''; el.style.opacity=act===a||!act?1:.45; el.style.transform=`translate(${s.x-vr.left}px,${s.y-vr.top}px) translate(-50%,-50%)`; }
   if(v.cap){ const sgn=act?Math.sign(I[act])||1:1, m=act?MOVES[act][sgn>0?'pos':'neg']:null;
-    const html=m?`<b style="color:#${COL[act].toString(16).padStart(6,'0')}">${m.t}</b><span>${MOVES[act].stick}</span>`:'<b>Hover</b><span>Sticks centred: the drone holds its height and stays level</span>';
+    const html=m?`<b style="color:#${COL[act].toString(16).padStart(6,'0')}">${m.t}</b><span>${MOVES[act].stick}</span>`:tr('<b>Hover</b><span>Sticks centred: the drone holds its height and stays level</span>','<b>Melayang</b><span>Kayu kawalan di tengah: dron mengekalkan ketinggian dan kekal rata</span>');
     if(v.cap.dataset.h!==html){ v.cap.innerHTML=html; v.cap.dataset.h=html; } }
   updateSticksUI();
 }
@@ -295,50 +312,50 @@ function updateSticksUI(){
 /* ---------- side panel ---------- */
 function padSetup(){
   const p=MV.pad, cfg=MV.padCfg, n=Math.max(4,p?p.axes:4);
-  const rows=AXES.map(a=>`<label><span>${MOVES[a].name}</span><select data-ax="${a}">${Array.from({length:n},(_,i)=>`<option value="${i}" ${cfg.map[a][0]===i?'selected':''}>Axis ${i}</option>`).join('')}</select><span class="inv"><input type="checkbox" data-inv="${a}" ${cfg.map[a][1]?'checked':''}> invert</span></label>`).join('');
-  return `<details class="padset" ${p&&!padSaved?'open':''}><summary>Controller setup</summary>
-    <p><b>PS4 or PS5 controller by Bluetooth:</b> hold <b>Share + PS</b> (PS4) or <b>Create + PS</b> (PS5) until the light flashes. Pair it in your computer’s Bluetooth settings (it shows as <i>Wireless Controller</i> or <i>DualSense</i>). Then press any button on it with this page open. Chrome or Edge work best.</p>
-    <p>Or plug a radio transmitter in by USB (set the radio to <b>Joystick</b> or <b>USB HID</b>), or connect another gamepad. Move each stick. Check that its channel on the remote’s screen moves the same way. If not, change the axis or tick invert.</p>
-    <label><span>Layout</span><select id="padPreset">${Object.entries(PAD_PRESETS).map(([k,v])=>`<option value="${k}" ${cfg.preset===k?'selected':''}>${v.name}</option>`).join('')}${cfg.preset==='custom'?'<option selected>Custom</option>':''}</select></label>
+  const rows=AXES.map(a=>`<label><span>${MOVES[a].name}</span><select data-ax="${a}">${Array.from({length:n},(_,i)=>`<option value="${i}" ${cfg.map[a][0]===i?'selected':''}>${tr('Axis','Paksi')} ${i}</option>`).join('')}</select><span class="inv"><input type="checkbox" data-inv="${a}" ${cfg.map[a][1]?'checked':''}> ${tr('invert','songsang')}</span></label>`).join('');
+  return `<details class="padset" ${p&&!padSaved?'open':''}><summary>${tr('Controller setup','Tetapan alat kawalan')}</summary>
+    <p>${tr('<b>PS4 or PS5 controller by Bluetooth:</b> hold <b>Share + PS</b> (PS4) or <b>Create + PS</b> (PS5) until the light flashes. Pair it in your computer’s Bluetooth settings (it shows as <i>Wireless Controller</i> or <i>DualSense</i>). Then press any button on it with this page open. Chrome or Edge work best.','<b>Alat kawalan PS4 atau PS5 melalui Bluetooth:</b> tekan dan tahan <b>Share + PS</b> (PS4) atau <b>Create + PS</b> (PS5) sehingga lampu berkelip. Pasangkannya dalam tetapan Bluetooth komputer anda (ia dipaparkan sebagai <i>Wireless Controller</i> atau <i>DualSense</i>). Kemudian tekan mana-mana butang padanya semasa halaman ini dibuka. Chrome atau Edge paling sesuai.')}</p>
+    <p>${tr('Or plug a radio transmitter in by USB (set the radio to <b>Joystick</b> or <b>USB HID</b>), or connect another gamepad. Move each stick. Check that its channel on the remote’s screen moves the same way. If not, change the axis or tick invert.','Atau palamkan pemancar radio melalui USB (tetapkan radio kepada <b>Joystick</b> atau <b>USB HID</b>), atau sambungkan gamepad lain. Gerakkan setiap kayu. Semak bahawa salurannya pada skrin alat kawalan bergerak ke arah yang sama. Jika tidak, tukar paksi atau tandakan songsang.')}</p>
+    <label><span>${tr('Layout','Susun atur')}</span><select id="padPreset">${Object.entries(PAD_PRESETS).map(([k,v])=>`<option value="${k}" ${cfg.preset===k?'selected':''}>${v.name}</option>`).join('')}${cfg.preset==='custom'?`<option selected>${tr('Custom','Tersuai')}</option>`:''}</select></label>
     ${rows}</details>`;
 }
 export function renderMoves(){
   const q=MV.quiz, playing=MV.anim||MV.queue.length;
-  const stick=(s,v,h)=>`<div class="stickwrap"><div class="stick" data-s="${s}" role="img" aria-label="${s==='L'?'Left':'Right'} stick: up and down is ${v}, left and right is ${h}">
+  const stick=(s,v,h)=>`<div class="stickwrap"><div class="stick" data-s="${s}" role="img" aria-label="${tr(`${s==='L'?'Left':'Right'} stick: up and down is ${v}, left and right is ${h}`,`Kayu ${s==='L'?'kiri':'kanan'}: atas dan bawah ialah ${v}, kiri dan kanan ialah ${h}`)}">
       <span class="st-l t">▲</span><span class="st-l b">▼</span><span class="st-l l">◀</span><span class="st-l r">▶</span><div class="knob" id="mvK${s}"></div></div>
       <small><b>${v} · ${h}</b>${s==='L'?'<kbd>W</kbd><kbd>S</kbd> <kbd>A</kbd><kbd>D</kbd>':'<kbd>↑</kbd><kbd>↓</kbd> <kbd>←</kbd><kbd>→</kbd>'}</small></div>`;
   const lcd=CH.map(([a,l])=>`<div class="ch"><span>${l}</span><div class="chb"><i id="mvC_${a}"></i></div><b id="mvU_${a}">1500</b></div>`).join('');
-  const src=MV.pad?`<span class="rm-dot on"></span>${esc(padName(MV.pad.id))}`:'<span class="rm-dot"></span>On-screen sticks and keyboard';
+  const src=MV.pad?`<span class="rm-dot on"></span>${esc(padName(MV.pad.id))}`:`<span class="rm-dot"></span>${tr('On-screen sticks and keyboard','Kayu kawalan pada skrin dan papan kekunci')}`;
   let quiz='';
   if(q){
     const done=q.i>=q.list.length, cur=done?null:q.list[q.i];
-    quiz=`<div class="mvquiz"><div class="eyebrow">Quiz · ${Math.min(q.i+1,q.list.length)} of ${q.list.length}</div>
-      ${done?`<b>${q.first} of ${q.list.length} right first time</b><p>${q.first===q.list.length?'Perfect. You know every stick movement.':'Play the movements you missed, then try again.'}</p><div class="row"><button class="btn sm primary" data-act="mvQuiz">Try again</button><button class="btn sm ghost" data-act="mvQuizEnd">Close</button></div>`
-      :`<b>Make the drone: ${MOVES[cur[0]][cur[1]>0?'pos':'neg'].t}</b><p>Move one stick, then let it go back to the centre.</p>`}
+    quiz=`<div class="mvquiz"><div class="eyebrow">${tr('Quiz','Kuiz')} · ${Math.min(q.i+1,q.list.length)} ${tr('of','daripada')} ${q.list.length}</div>
+      ${done?`<b>${tr(`${q.first} of ${q.list.length} right first time`,`${q.first} daripada ${q.list.length} betul pada cubaan pertama`)}</b><p>${q.first===q.list.length?tr('Perfect. You know every stick movement.','Sempurna. Anda tahu setiap pergerakan kayu kawalan.'):tr('Play the movements you missed, then try again.','Mainkan pergerakan yang anda terlepas, kemudian cuba lagi.')}</p><div class="row"><button class="btn sm primary" data-act="mvQuiz">${tr('Try again','Cuba lagi')}</button><button class="btn sm ghost" data-act="mvQuizEnd">${tr('Close','Tutup')}</button></div>`
+      :`<b>${tr('Make the drone','Buat dron')}: ${MOVES[cur[0]][cur[1]>0?'pos':'neg'].t}</b><p>${tr('Move one stick, then let it go back to the centre.','Gerakkan satu kayu, kemudian lepaskan supaya ia kembali ke tengah.')}</p>`}
       ${q.msg&&!done?`<p class="${q.ok?'okc':'badc'}">${esc(q.msg)}</p>`:''}</div>`;
   }
   const cards=AXES.map(a=>{ const m=MOVES[a];
     return `<div class="mvcard" data-a="${a}" style="--c:#${COL[a].toString(16).padStart(6,'0')}"><header><b>${m.name}</b><span>${m.short} · ${m.keys}</span></header><p>${m.what}</p>
-      <details><summary>What the motors do</summary><p><b>${m.pos.t}:</b> ${m.pos.d}</p><p><b>${m.neg.t}:</b> ${m.neg.d}</p></details>
-      <button class="btn sm" data-act="mvPlay" data-a="${a}" ${q?'disabled':''}>▶ Play ${m.name.toLowerCase()}</button></div>`; }).join('');
+      <details><summary>${tr('What the motors do','Apa yang motor lakukan')}</summary><p><b>${m.pos.t}:</b> ${m.pos.d}</p><p><b>${m.neg.t}:</b> ${m.neg.d}</p></details>
+      <button class="btn sm" data-act="mvPlay" data-a="${a}" ${q?'disabled':''}>▶ ${tr('Play','Main')} ${m.name.toLowerCase()}</button></div>`; }).join('');
   return {
-    head:`<div class="eyebrow">Activity · ${esc(MODEL.name)}</div><h2>Drone movements</h2><p>Fly with the remote: throttle, yaw, pitch and roll. See which stick does each one and how the motors make it happen.</p>`,
-    body:`<div class="remote" aria-label="Radio transmitter">
+    head:tr(`<div class="eyebrow">Activity · ${esc(MODEL.name)}</div><h2>Drone movements</h2><p>Fly with the remote: throttle, yaw, pitch and roll. See which stick does each one and how the motors make it happen.</p>`,`<div class="eyebrow">Aktiviti · ${esc(MODEL.name)}</div><h2>Pergerakan dron</h2><p>Terbang dengan alat kawalan jauh: throttle, yaw, pitch dan roll. Lihat kayu mana yang melakukan setiap satu dan bagaimana motor menghasilkannya.</p>`),
+    body:`<div class="remote" aria-label="${tr('Radio transmitter','Pemancar radio')}">
         <div class="rm-ant" aria-hidden="true"></div>
         <div class="rm-top"><span class="rm-sw" aria-hidden="true"></span><div class="rm-lcd">${lcd}</div><span class="rm-sw" aria-hidden="true"></span></div>
         <div class="sticks">${stick('L','Throttle','Yaw')}${stick('R','Pitch','Roll')}</div>
         <div class="rm-src">${src}</div>
       </div>
-      <p class="note">Mode 2 transmitter, the most common layout. <b>Drag a stick</b>, use the keys, or connect a <b>PS4 / PS5 controller by Bluetooth</b>, a gamepad or a USB radio. The sticks spring back to the centre. In this trainer, a centred throttle stick holds a hover.</p>
+      <p class="note">${tr('Mode 2 transmitter, the most common layout. <b>Drag a stick</b>, use the keys, or connect a <b>PS4 / PS5 controller by Bluetooth</b>, a gamepad or a USB radio. The sticks spring back to the centre. In this trainer, a centred throttle stick holds a hover.','Pemancar Mod 2, susun atur yang paling biasa. <b>Seret kayu kawalan</b>, gunakan kekunci, atau sambungkan <b>alat kawalan PS4 / PS5 melalui Bluetooth</b>, gamepad atau radio USB. Kayu kawalan kembali ke tengah dengan sendiri. Dalam latihan ini, kayu throttle di tengah mengekalkan dron melayang.')}</p>
       ${padSetup()}
       ${quiz}
-      <div class="hud"><div><small>Roll</small><span id="mvR">0°</span></div><div><small>Pitch</small><span id="mvP">0°</span></div><div><small>Heading</small><span id="mvY">0°</span></div><div><small>Height</small><span id="mvH">0 mm</span></div></div>
-      <div class="row"><button class="btn sm ghost" data-act="mvCentre">Fly back to the centre</button>${playing?'<button class="btn sm" data-act="mvStop">Stop animation</button>':''}</div>
-      <div class="bars">${[1,2,3,4].map(n=>`<div class="bar"><span>M${n} ${({1:'RR',2:'FR',3:'RL',4:'FL'})[n]} · ${EXP[n]}</span><div class="tr"><div class="fl ${EXP[n]==='CCW'?'ccw':''}" id="mvb${n}"></div></div><span class="v" id="mvv${n}">0%</span></div>`).join('')}</div>
-      <div class="toggles"><label><input type="checkbox" id="chkForces" ${S.forces?'checked':''}> Force arrows</label><label><input type="checkbox" id="chkSpin" ${S.spinArrows?'checked':''}> Spin arrows</label></div>
+      <div class="hud"><div><small>Roll</small><span id="mvR">0°</span></div><div><small>Pitch</small><span id="mvP">0°</span></div><div><small>${tr('Heading','Arah haluan')}</small><span id="mvY">0°</span></div><div><small>${tr('Height','Ketinggian')}</small><span id="mvH">0 mm</span></div></div>
+      <div class="row"><button class="btn sm ghost" data-act="mvCentre">${tr('Fly back to the centre','Terbang kembali ke tengah')}</button>${playing?`<button class="btn sm" data-act="mvStop">${tr('Stop animation','Hentikan animasi')}</button>`:''}</div>
+      <div class="bars">${[1,2,3,4].map(n=>`<div class="bar"><span>M${n} ${(LANG==='ms'?{1:'BKn',2:'DKn',3:'BKr',4:'DKr'}:{1:'RR',2:'FR',3:'RL',4:'FL'})[n]} · ${EXP[n]}</span><div class="tr"><div class="fl ${EXP[n]==='CCW'?'ccw':''}" id="mvb${n}"></div></div><span class="v" id="mvv${n}">0%</span></div>`).join('')}</div>
+      <div class="toggles"><label><input type="checkbox" id="chkForces" ${S.forces?'checked':''}> ${tr('Force arrows','Anak panah daya')}</label><label><input type="checkbox" id="chkSpin" ${S.spinArrows?'checked':''}> ${tr('Spin arrows','Anak panah putaran')}</label></div>
       ${forceKey()}
-      <div><h3 class="sec">The four movements</h3><div class="mvcards">${cards}</div></div>`,
-    foot:`<button class="btn ghost" data-act="exploreBack">← Parts</button><button class="btn" data-act="mvQuiz">${q?'Restart quiz':'Quiz me'}</button><button class="btn primary" data-act="mvAll" ${q?'disabled':''}>▶ Play all</button>`,
+      <div><h3 class="sec">${tr('The four movements','Empat pergerakan')}</h3><div class="mvcards">${cards}</div></div>`,
+    foot:`<button class="btn ghost" data-act="exploreBack">← ${tr('Parts','Bahagian')}</button><button class="btn" data-act="mvQuiz">${q?tr('Restart quiz','Mula semula kuiz'):tr('Quiz me','Uji saya')}</button><button class="btn primary" data-act="mvAll" ${q?'disabled':''}>▶ ${tr('Play all','Main semua')}</button>`,
   };
 }
 
@@ -358,25 +375,49 @@ function padModel(id){
   if(/dualshock/i.test(id)||p==='05c4'||p==='09cc') return 'PS4 DualShock 4';
   return isPS(id)?'PlayStation controller':'Other gamepad';
 }
-const ago=t=>{ const s=Math.floor((Date.now()-t)/1000); return s<60?`${s} s ago`:`${Math.floor(s/60)} min ${s%60} s ago`; };
+const ago=t=>{ const s=Math.floor((Date.now()-t)/1000); return s<60?tr(`${s} s ago`,`${s} s yang lalu`):tr(`${Math.floor(s/60)} min ${s%60} s ago`,`${Math.floor(s/60)} min ${s%60} s yang lalu`); };
 function padInfoHTML(gp){
-  if(!gp) return '<tr><td>Controller</td><td>None connected</td></tr>';
+  if(!gp) return `<tr><td>${tr('Controller','Alat kawalan')}</td><td>${tr('None connected','Tiada yang disambungkan')}</td></tr>`;
   const ids=padIds(gp.id), all=[...(navigator.getGamepads?navigator.getGamepads():[])].filter(g=>g&&g.connected).length, vib=!!gp.vibrationActuator;
   const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
-  return row('Controller',`<b>${esc(padName(gp.id))}</b>`)+row('Model',padModel(gp.id))
-    +row('Maker',ids&&ids[0]==='054c'?'Sony (vendor 054c)':ids?`Vendor ${ids[0]}`:'Not reported')
-    +row('Product id',ids?ids[1]:'Not reported')
-    +row('Browser name',`<span style="font-family:var(--font-mono);font-size:var(--text-xs)">${esc(gp.id)}</span>`)
-    +row('Button layout',gp.mapping==='standard'?'Standard (the browser maps the buttons)':'Raw (this lab maps the buttons)')
-    +row('Sticks and buttons',`${gp.axes.length} axes · ${gp.buttons.length} buttons`)
-    +row('Vibration',vib?'Supported <button class="btn sm ghost" data-rumble>Test vibration</button>':'Not available in this browser')
-    +row('Slot',`${gp.index+1}${all>1?` (${all} controllers connected, using the first)`:''}`)
-    +row('Connected',padSince[gp.index]?ago(padSince[gp.index]):'Before this page opened');
+  return row(tr('Controller','Alat kawalan'),`<b>${esc(padName(gp.id))}</b>`)+row('Model',padModel(gp.id))
+    +row(tr('Maker','Pembuat'),ids&&ids[0]==='054c'?'Sony (vendor 054c)':ids?`Vendor ${ids[0]}`:tr('Not reported','Tidak dilaporkan'))
+    +row(tr('Product id','ID produk'),ids?ids[1]:tr('Not reported','Tidak dilaporkan'))
+    +row(tr('Browser name','Nama dalam pelayar'),`<span style="font-family:var(--font-mono);font-size:var(--text-xs)">${esc(gp.id)}</span>`)
+    +row(tr('Button layout','Susun atur butang'),gp.mapping==='standard'?tr('Standard (the browser maps the buttons)','Standard (pelayar memetakan butang)'):tr('Raw (this lab maps the buttons)','Mentah (makmal ini memetakan butang)'))
+    +row(tr('Sticks and buttons','Kayu dan butang'),tr(`${gp.axes.length} axes · ${gp.buttons.length} buttons`,`${gp.axes.length} paksi · ${gp.buttons.length} butang`))
+    +row(tr('Vibration','Getaran'),vib?tr('Supported <button class="btn sm ghost" data-rumble>Test vibration</button>','Disokong <button class="btn sm ghost" data-rumble>Uji getaran</button>'):tr('Not available in this browser','Tidak tersedia dalam pelayar ini'))
+    +row(tr('Slot','Slot'),`${gp.index+1}${all>1?tr(` (${all} controllers connected, using the first)`,` (${all} alat kawalan disambungkan, menggunakan yang pertama)`):''}`)
+    +row(tr('Connected','Disambungkan'),padSince[gp.index]?ago(padSince[gp.index]):tr('Before this page opened','Sebelum halaman ini dibuka'));
 }
 let padInfoLast='';
 function openPadDlg(){
   const d=$('#padDlg'); if(!d) return;
-  d.innerHTML=`<h2 id="padDlgT">Controller</h2><button class="x" aria-label="Close" data-close>×</button>
+  d.innerHTML=LANG==='ms'?`<h2 id="padDlgT">Alat kawalan</h2><button class="x" aria-label="Tutup" data-close>×</button>
+    <div class="pd-stat" id="pdStat" role="status"><i></i><span></span></div>
+    <div class="pd-live" aria-hidden="true"><div class="pd-stick"><i id="pdL"></i></div><div class="pd-stick"><i id="pdR"></i></div><div class="pd-btns" id="pdB"></div></div>
+    <h3>Alat kawalan yang disambungkan</h3>
+    <table><tbody id="pdInfo"></tbody></table>
+    <p class="note">Pelayar tidak melaporkan sama ada alat kawalan menggunakan Bluetooth atau kabel USB, atau tahap baterinya.</p>
+    <h3>Sambungkan alat kawalan PS4 atau PS5 melalui Bluetooth</h3>
+    <ol>
+      <li>Letakkan alat kawalan dalam mod berpasangan: tekan dan tahan <b>Share + PS</b> (PS4) atau <b>Create + PS</b> (PS5) selama 3 saat, sehingga lampu berkelip laju.</li>
+      <li>Buka tetapan Bluetooth komputer. Windows: <b>Settings › Bluetooth &amp; devices › Add device › Bluetooth</b>. Mac: <b>System Settings › Bluetooth</b>.</li>
+      <li>Pilih <b>Wireless Controller</b> (PS4) atau <b>DualSense Wireless Controller</b> (PS5). Lampu kekal menyala apabila sudah berpasangan.</li>
+      <li>Kembali ke halaman ini dan <b>tekan mana-mana butang</b> pada alat kawalan. Kotak di atas bertukar hijau.</li>
+    </ol>
+    <p class="note">Gunakan Chrome atau Edge. Kabel USB juga boleh digunakan. Pelayar hanya memaparkan alat kawalan selepas anda menekan satu butang padanya.</p>
+    <h3>Susun atur kayu kawalan</h3>
+    <label>Susun atur <select id="pdPreset">${Object.entries(PAD_PRESETS).map(([k,v])=>`<option value="${k}" ${MV.padCfg.preset===k?'selected':''}>${v.name}</option>`).join('')}${MV.padCfg.preset==='custom'?'<option value="custom" selected>Tersuai</option>':''}</select></label>
+    <p class="note">Jika kayu kawalan bergerak ke arah yang salah, laraskan setiap paksi di bawah <b>Tetapan alat kawalan</b> dalam aktiviti Pergerakan.</p>
+    <h3>Butang</h3>
+    <table><tbody>
+      <tr><td>Kayu kiri</td><td>Throttle (atas/bawah) dan yaw (kiri/kanan)</td></tr>
+      <tr><td>Kayu kanan</td><td>Pitch (atas/bawah) dan roll (kiri/kanan)</td></tr>
+      <tr><td>✕ · ○</td><td>Terbangkan: berlepas · mendarat</td></tr>
+      <tr><td>△ · □</td><td>Terbangkan: naik · turun</td></tr>
+      <tr><td>Options</td><td>Terbangkan: penerbangan demo</td></tr>
+    </tbody></table>`:`<h2 id="padDlgT">Controller</h2><button class="x" aria-label="Close" data-close>×</button>
     <div class="pd-stat" id="pdStat" role="status"><i></i><span></span></div>
     <div class="pd-live" aria-hidden="true"><div class="pd-stick"><i id="pdL"></i></div><div class="pd-stick"><i id="pdR"></i></div><div class="pd-btns" id="pdB"></div></div>
     <h3>Connected controller</h3>
@@ -407,7 +448,8 @@ function padLive(){
   const d=$('#padDlg'); if(!d||!d.open) return;
   const gp=firstPad(), st=$('#pdStat');
   st.classList.toggle('on',!!gp);
-  st.querySelector('span').textContent=gp?`${padName(gp.id)} connected. Move the sticks to test it.`:'No controller found. Pair it (steps below), then press a button on it.';
+  st.querySelector('span').textContent=gp?tr(`${padName(gp.id)} connected. Move the sticks to test it.`,`${padName(gp.id)} disambungkan. Gerakkan kayu kawalan untuk mengujinya.`):tr('No controller found. Pair it (steps below), then press a button on it.','Tiada alat kawalan ditemui. Pasangkannya (langkah di bawah), kemudian tekan satu butang padanya.');
+
   const ax=i=>gp&&gp.axes[i]||0, std=!gp||gp.mapping==='standard', ry=std?3:5;
   $('#pdL').style.transform=`translate(${ax(0)*24}px,${ax(1)*24}px)`;
   $('#pdR').style.transform=`translate(${ax(2)*24}px,${ax(ry)*24}px)`;

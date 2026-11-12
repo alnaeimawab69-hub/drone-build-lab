@@ -6,6 +6,8 @@ import { S } from './08-state.js';
 import { AIR_DROP, FORCE_LEN, PN, droneRoot, netArrow, pData, pGeo, pPos, particles, setArrow, showSpinRings, thrustArrows, totalArrow, weightArrow } from './09-scene-content.js';
 import { renderPanel } from './21-panel.js';
 import { toast } from './23-toast.js';
+import { LANG, tr } from '../../lang.js';
+
 
 /* ================= Flight model ================= */
 export const G=9.8;
@@ -23,19 +25,33 @@ export const MANS={
   land:{t:'Land',d:'Thrust drops slowly below the weight until the drone touches down. Then the motors are disarmed (switched off).',dof:'heave'},
   arm:{t:'Armed',d:'The motors are live and idle at low speed. Thrust is far below the weight, so the drone stays on the mat.',dof:null},
 };
+/* Bahasa Malaysia: same keys, titles and explanations */
+if(LANG==='ms') Object.entries({
+  takeoff:['Berlepas dan melayang','Keempat-empat motor dipercepatkan serentak. Apabila jumlah tujahan lebih besar daripada berat, dron naik. Apabila tujahan sama dengan berat, ia melayang.'],
+  climb:['Naik','Tujahan meningkat melebihi berat. Daya bersih menghala ke atas, jadi dron memecut ke atas. Kemudian pengawal menyesuaikan semula untuk melayang.'],
+  descend:['Turun','Tujahan berkurang sedikit di bawah berat. Graviti menang dan dron turun. Kemudian tujahan meningkat semula untuk menghentikannya.'],
+  pitchF:['Pitch ke depan','Motor belakang (M1, M3) dipercepatkan dan motor depan (M2, M4) diperlahankan. Muncung menunduk dan tujahan condong ke depan. Sebahagian tujahan kini menolak dron ke hadapan. Untuk berhenti, ia condong semula ke arah sebaliknya.'],
+  pitchB:['Pitch ke belakang','Motor depan (M2, M4) dipercepatkan dan motor belakang (M1, M3) diperlahankan. Muncung terangkat dan tujahan yang condong menolak dron ke belakang.'],
+  rollR:['Roll ke kanan','Motor kiri (M3, M4) dipercepatkan dan motor kanan (M1, M2) diperlahankan. Dron condong ke kanan dan tujahan yang condong menggelongsorkannya ke sisi.'],
+  rollL:['Roll ke kiri','Motor kanan (M1, M2) dipercepatkan dan motor kiri (M3, M4) diperlahankan. Dron condong ke kiri dan menggelongsor ke kiri.'],
+  yawR:['Yaw ke kanan',`Setiap kipas yang berputar memulas rangka ke arah bertentangan (perhatikan anak panah putaran). Kipas lawan arah jam (${motorsTurning('CCW')}) dipercepatkan dan kipas ikut arah jam (${motorsTurning('CW')}) diperlahankan. Pulasan tidak lagi seimbang, jadi muncung berpusing ke kanan. Jumlah daya angkat kekal sama.`],
+  yawL:['Yaw ke kiri',`Kipas ikut arah jam (${motorsTurning('CW')}) dipercepatkan dan kipas lawan arah jam (${motorsTurning('CCW')}) diperlahankan. Rangka terpulas ke kiri. Jumlah daya angkat kekal sama.`],
+  land:['Mendarat','Tujahan berkurang perlahan-lahan di bawah berat sehingga dron menyentuh tanah. Kemudian motor dinyahaktifkan (dimatikan).'],
+  arm:['Diaktifkan','Motor berkuasa dan berputar perlahan. Tujahan jauh di bawah berat, jadi dron kekal di atas alas.'],
+}).forEach(([k,[t,d]])=>Object.assign(MANS[k],{t,d}));
 export const TOUR=[['takeoff',3.2],['pitchF',4.2],['rollR',4.2],['yawR',2.6],['climb',2.6],['descend',2.6],['land',3.6]];
 export function airborne(){ return FL.armed&&FL.altT>0; }
 export function doMan(name){
   const f=FL;
-  if(name==='arm'){ if(f.altT>0||f.pos.y>.05){ toast('Land before you disarm.'); return; } f.armed=!f.armed; f.landing=false; f.cur=f.armed?'arm':null; renderPanel(); return; }
+  if(name==='arm'){ if(f.altT>0||f.pos.y>.05){ toast(tr('Land before you disarm.','Mendarat dahulu sebelum menyahaktifkan.')); return; } f.armed=!f.armed; f.landing=false; f.cur=f.armed?'arm':null; renderPanel(); return; }
   if(name==='takeoff'){ f.armed=true; f.landing=false; f.altT=5; S.flown.hover=1; }
   else if(name==='climb'||name==='descend'||name==='land'){
-    if(!airborne()){ toast('Take off first.'); return; }
+    if(!airborne()){ toast(tr('Take off first.','Berlepas dahulu.')); return; }
     if(name==='climb') f.altT=Math.min(11,f.altT+3.5);
     if(name==='descend') f.altT=Math.max(2.5,f.altT-3);
     if(name==='land'){ f.altT=0; f.landing=true; }
   } else {
-    if(!airborne()||f.pos.y<1.5){ toast('Take off first.'); return; }
+    if(!airborne()||f.pos.y<1.5){ toast(tr('Take off first.','Berlepas dahulu.')); return; }
     f.man=name.slice(0,-1); f.sign=/[FR]$/.test(name)?1:-1; f.manT=0; S.flown[f.man]=1;
   }
   f.cur=name; renderPanel();

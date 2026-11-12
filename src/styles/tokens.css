@@ -112,3 +112,9 @@
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition-duration:0s!important;scroll-behavior:auto!important}
 }
+
+/* language switch (English / Bahasa Malaysia), used on the site header and the lab start screen */
+.lang{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--color-border-strong);border-radius:999px}
+.lang button{font:inherit;font-size:12px;line-height:1.2;padding:5px 10px;border:0;border-radius:999px;background:none;color:var(--color-text-muted);cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--color-accent);color:var(--color-accent-ink);cursor:default}
+.lang button:focus-visible{outline:2px solid var(--color-focus);outline-offset:1px}

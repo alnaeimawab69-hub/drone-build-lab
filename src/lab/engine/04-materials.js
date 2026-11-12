@@ -77,7 +77,7 @@ export function wireColor(need,label){
   if(need==='CAM'||need==='VTX') return 0xe8c33c;
   if(need&&need[0]==='M') return 0x8a939c;
   if(need==='ESC') return 0xc9ced3;
-  if(label==='TX') return CINE?0x3d9be0:0x34a853;   // model 1: green TX, like a standard 4-wire UART cable
+  if(label==='TX') return 0x34a853;   // green TX, like a standard 4-wire UART cable
   return 0xeeeeee;
 }
 export const hex=c=>'#'+c.toString(16).padStart(6,'0');

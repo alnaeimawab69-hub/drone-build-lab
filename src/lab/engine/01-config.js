@@ -1,5 +1,6 @@
 /* Drone Build Lab · Shared helpers and drone conventions (front = -Z, motor numbering) */
 import * as THREE from 'three';
+import { tr } from '../../lang.js';
 
 export const $=s=>document.querySelector(s);
 export const TAU=Math.PI*2, DEG=Math.PI/180;
@@ -21,14 +22,14 @@ export const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':
    sealed: built from sealed modules: no screws, and plug-in connections instead of soldering
    root: z of an arm's inner end, when it does not start at the centre · plateZ: z of the bottom plate's centre · aluZ: z of the standoff pairs */
 export const MODELS={
-  lx250:{key:'lx250',no:1,name:'LX-250',title:'LX-250 quadcopter',tag:'250 mm quad',
-    blurb:'Classic X frame, analog video, 4S power. The first build.',
+  lx250:{key:'lx250',no:1,name:'LX-250',title:tr('LX-250 quadcopter','Quadcopter LX-250'),tag:tr('250 mm quad','quad 250 mm'),
+    blurb:tr('Classic X frame, analog video, 4S power. The first build.','Rangka X klasik, video analog, kuasa 4S. Binaan pertama.'),
     arm:12.5,ang:{1:-45,2:45,3:-135,4:135},armT:.45,plate:[5.6,10.5],alu:2.35,bat:[3,2.6,7],batZ:.5,prop:'5 in',cg:2.6,propR:6.35},
-  cx5:{key:'cx5',no:2,name:'CX-5',title:'CX-5 HD freestyle',tag:'5-inch HD freestyle FPV',
-    blurb:'Wide-front freestyle frame: the front props stay out of the camera picture. HD digital video, 6S power.',
+  cx5:{key:'cx5',no:2,name:'CX-5',title:tr('CX-5 HD freestyle','CX-5 gaya bebas HD'),tag:tr('5-inch HD freestyle FPV','FPV gaya bebas HD 5 inci'),
+    blurb:tr('Wide-front freestyle frame: the front props stay out of the camera picture. HD digital video, 6S power.','Rangka gaya bebas berhadapan lebar: kipas depan tidak masuk ke dalam gambar kamera. Video digital HD, kuasa 6S.'),
     arm:11.5,ang:{1:-49,2:25,3:-131,4:155},root:{2:-3.82,4:-3.82},armT:.6,plate:[5.4,14.45],plateZ:-.175,alu:2.35,aluZ:[-3,0,4.2],bat:[3.4,3,6],batZ:1.1,prop:'5.1 in',cg:2.8,propR:6.5},
-  ex9:{key:'ex9',no:3,name:'EX-9',title:'EX-9 enterprise drone',tag:'enterprise inspection drone',
-    blurb:'Large industrial quad: folding arms, two hot-swap batteries, RTK positioning, gimbal camera, obstacle sensors. Explore and Movements.',
+  ex9:{key:'ex9',no:3,name:'EX-9',title:tr('EX-9 enterprise drone','Dron perusahaan EX-9'),tag:tr('enterprise inspection drone','dron pemeriksaan perusahaan'),
+    blurb:tr('Large industrial quad: folding arms, two hot-swap batteries, RTK positioning, gimbal camera, obstacle sensors. Explore and Movements.','Quad industri besar: lengan boleh lipat, dua bateri tukar-panas, kedudukan RTK, kamera gimbal, penderia halangan. Teroka dan Pergerakan.'),
     arm:44.75,ang:{1:-51,2:51,3:-129,4:129},armT:3,plate:[20,30],alu:0,bat:[8,5.5,15],batZ:8.2,prop:'21 in',cg:27,propR:26.7,armLblY:29.5,scale:.3,view:1.9,sealed:true},
 };
 function pickModel(){
@@ -67,6 +68,6 @@ export const ALU_Z=MODEL.aluZ||[-4,0,4.2];
 export const EXP=PROPS_OUT?{1:'CCW',2:'CW',3:'CW',4:'CCW'}:{1:'CW',2:'CCW',3:'CCW',4:'CW'};
 export const YAW_MIX=PROPS_OUT?-1:1;                     // yaw right speeds up the CCW motors; props out swaps which motors those are
 export const motorsTurning=d=>[1,2,3,4].filter(n=>EXP[n]===d).map(n=>'M'+n).join(', ');
-export const CORNER={1:'rear right',2:'front right',3:'rear left',4:'front left'};
+export const CORNER=tr({1:'rear right',2:'front right',3:'rear left',4:'front left'},{1:'belakang kanan',2:'depan kanan',3:'belakang kiri',4:'depan kiri'});
 export const armPos=(n,r=ARM)=>{const a=ARM_ANG[n]*DEG;return V(Math.cos(a)*r,0,-Math.sin(a)*r+ARM_ROOT(n));};
 export const opp=d=>d==='CW'?'CCW':'CW';

@@ -72,7 +72,7 @@ if(EX){ [[armPos(4).setY(PROP_Y+4),armPos(1).setY(PROP_Y+4),V(0,0,0),'wheelbase'
 export function setStyle(cad){
   S.cad=cad; const bg=cad?0xe6eaed:0x141c20;
   scene.background.setHex(bg); scene.fog.color.setHex(bg); renderer.toneMappingExposure=cad?1.65:.8; ground.visible=!cad; grid.visible=cad;
-  buildDims(); DIMS.visible=cad; $('#tblock').hidden=!cad; $('#tbName').textContent=S.name||'Student';
+  buildDims(); DIMS.visible=cad; $('#tblock').hidden=!cad;
   styleObj(droneRoot); $('#btnCad').setAttribute('aria-pressed',cad); $('#viewport').classList.toggle('cad',cad); updateMarkers();
 }
 
@@ -103,11 +103,11 @@ export const totalArrow=overlay(new THREE.ArrowHelper(V(0,1,0),V(),3,0xe0894a,.9
 export const weightArrow=overlay(new THREE.ArrowHelper(V(0,-1,0),V(),3.4,0x7cc0d3,.9,.6));
 export const netArrow=overlay(new THREE.ArrowHelper(V(1,0,0),V(),2,0x5bc489,.9,.6));
 [totalArrow,weightArrow,netArrow].forEach(a=>scene.add(a));
-/* spin arrows: a ring over each prop that turns with it, orange for clockwise and blue for counter-clockwise */
+/* spin arrows: a ring over each prop that turns with it, red for clockwise and blue for counter-clockwise, like the props */
 export const spinRings=[1,2,3,4].map(n=>{ const r=makeRing(MODEL.propR*.6,1.7/SCALE); r.position.copy(armPos(n)).setY(PROP_Y+.9/SCALE); r.traverse(o=>o.userData.noStyle=true); droneRoot.add(r); return r; });
 export function showSpinRings(on){
   spinRings.forEach((r,i)=>{ const n=i+1, w=S.spin[n], vis=on&&w!==0; r.visible=vis; if(!vis) return;
-    const cw=w<0; r.scale.z=cw?-1:1; r.userData.mat.color.setHex(cw?0xe0894a:0x7cc0d3); });
+    const cw=w<0; r.scale.z=cw?-1:1; r.userData.mat.color.setHex(cw?0xd8453b:0x3d7fd8); });
 }
 export const PN=320, pPos=new Float32Array(PN*3), pData=[], AIR_DROP=9/SCALE;  // airflow falls AIR_DROP below the props
 for(let i=0;i<PN;i++) pData.push({m:1+(i%4),y:PROP_Y-Math.random()*AIR_DROP,r:Math.sqrt(Math.random())*MODEL.propR*.88,a:Math.random()*TAU});

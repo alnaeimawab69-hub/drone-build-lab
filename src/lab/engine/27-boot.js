@@ -6,6 +6,7 @@ import { makeThumbs } from './10-thumbnails.js';
 import { renderAll } from './21-panel.js';
 import { showStart } from './24-start-report.js';
 import { loop, resize } from './26-loop.js';
+import { tr } from '../../lang.js';
 
 /* ================= Boot ================= */
 /* the start screen and the 3D view come first, so switching model or motor direction never leaves a black screen.
@@ -13,9 +14,9 @@ import { loop, resize } from './26-loop.js';
 (async function init(){
   /* the page shell is shared by both models; fill in the model's names */
   document.title=`Drone Build Lab · ${MODEL.title}`;
-  const sm=$('.brand small'); if(sm) sm.textContent='Digital lab · '+MODEL.tag;
-  const tb=$('#tblock b'); if(tb) tb.textContent=MODEL.name+(CINE?' CINEMATIC FPV':EX?' ENTERPRISE DRONE':' QUADCOPTER');
-  if(SCALE!==1){ const sc=$('.scale'); if(sc) sc.textContent=`Drone drawn at ${Math.round(SCALE*100)}% of real size`; const ts=$('#tblock dd:nth-of-type(2)'); if(ts) ts.textContent=`${Math.round(SCALE*10)} : 10`; }
+  const sm=$('.brand small'); if(sm) sm.textContent=tr('Digital lab · ','Makmal digital · ')+MODEL.tag;
+  const tb=$('#tblock b'); if(tb) tb.textContent=MODEL.name+(CINE?tr(' CINEMATIC FPV',' FPV SINEMATIK'):EX?tr(' ENTERPRISE DRONE',' DRON PERUSAHAAN'):' QUADCOPTER');
+  if(SCALE!==1){ const sc=$('.scale'); if(sc) sc.textContent=tr(`Drone drawn at ${Math.round(SCALE*100)}% of real size`,`Dron dilukis pada ${Math.round(SCALE*100)}% saiz sebenar`); const ts=$('#tblock dd:nth-of-type(2)'); if(ts) ts.textContent=`${Math.round(SCALE*10)} : 10`; }
   resize();
   renderAll();
   showStart();

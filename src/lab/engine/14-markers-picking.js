@@ -2,20 +2,37 @@
 import * as THREE from 'three';
 import { EXP, V } from './01-config.js';
 import { camera, canvas } from './02-scene.js';
-import { HOT, accepts, propDir } from './07-catalogue.js';
+import { HOT, HOTMAP, accepts, propDir } from './07-catalogue.js';
 import { PADS, S, parts } from './08-state.js';
 import { droneRoot } from './09-scene-content.js';
 import { reqOk } from './12-placement.js';
-import { updateScrewMarkers } from './13-screws.js';
+import { SCR, updateScrewMarkers } from './13-screws.js';
 import { stageKey } from './20-stages.js';
 
 /* ================= Markers ================= */
+/* practice: a numbered badge rides on the arrow of the next step (part, battery slot, then screws) */
+const badgeCv=document.createElement('canvas'); badgeCv.width=badgeCv.height=64;
+const badgeTex=new THREE.CanvasTexture(badgeCv); badgeTex.encoding=THREE.sRGBEncoding;
+const badge=new THREE.Sprite(new THREE.SpriteMaterial({map:badgeTex,depthTest:false,transparent:true}));
+badge.renderOrder=10; badge.userData.noStyle=true; badge.raycast=()=>{}; badge.visible=false;
+let badgeN=0;
+function showBadge(arrow,n,y,s){
+  if(badge.parent!==arrow) arrow.add(badge);
+  badge.position.set(0,y,0); badge.scale.setScalar(s); badge.visible=true;
+  if(n===badgeN) return; badgeN=n;
+  const g=badgeCv.getContext('2d'); g.clearRect(0,0,64,64);
+  g.fillStyle='#e0894a'; g.beginPath(); g.arc(32,32,30,0,Math.PI*2); g.fill();
+  g.fillStyle='#fff'; g.font='700 34px "IBM Plex Mono", monospace'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(n,32,34);
+  badgeTex.needsUpdate=true;
+}
 export function updateMarkers(){
   const k=stageKey(), hold=S.drag&&S.drag.kind==='part'?S.drag.typeKey:null;
+  const guide=S.mode==='learn'&&!S.explore&&!S.drag&&!S.loaded;
+  const next=guide?HOT.find(h=>h.stage===k&&!parts[h.id]&&reqOk(h)):null;
   HOT.forEach(h=>{
     const show=!S.explore&&h.stage===k&&!parts[h.id]&&reqOk(h); h.marker.visible=show;
-    /* the arrow tells where the held part goes; practice also tells which motor a propeller belongs on */
-    h.arrow.visible=show&&!!hold&&accepts(h,hold)&&(S.mode!=='learn'||h.type!=='prop'||propDir(hold)===EXP[h.motor]);
+    /* the arrow tells where the held part goes, or in practice the next spot; practice also tells which motor a propeller belongs on */
+    h.arrow.visible=show&&(hold?accepts(h,hold)&&(S.mode!=='learn'||h.type!=='prop'||propDir(hold)===EXP[h.motor]):h===next);
     if(!show) return;
     let c=S.cad?0x2c3a42:0xe3eaed,o=.8;
     if(hold&&S.mode==='learn'){ const ok=accepts(h,hold)&&(h.type!=='prop'||propDir(hold)===EXP[h.motor]); c=ok?0x5bc489:0x65777e; o=ok?1:.35; }
@@ -23,6 +40,10 @@ export function updateMarkers(){
     h.marker.material.color.setHex(c); h.marker.material.opacity=o;
   });
   updateScrewMarkers();
+  const scr=guide&&!next?Object.values(SCR).find(s=>!s.driven&&HOTMAP[s.hotId].stage===k):null;
+  if(scr) scr.arrow.visible=true;
+  const done=HOT.filter(h=>h.stage===k&&parts[h.id]).length+Object.values(SCR).filter(s=>s.driven&&HOTMAP[s.hotId].stage===k).length;
+  if(next) showBadge(next.arrow,done+1,2.1,1); else if(scr) showBadge(scr.arrow,done+1,1.15,.55); else badge.visible=false;
 }
 
 /* ================= Picking ================= */

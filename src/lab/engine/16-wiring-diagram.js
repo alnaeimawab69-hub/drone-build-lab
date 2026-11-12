@@ -8,24 +8,26 @@ import { srcPads } from './12-placement.js';
 import { attemptWire } from './15-input.js';
 import { stageKey } from './20-stages.js';
 import { renderPanel, updateViewbar } from './21-panel.js';
+import { LANG, tr } from '../../lang.js';
+
 
 /* ================= 2D wiring diagram (wiring-chart style) ================= */
 export const DG={fc:{cx:600,cy:260,s:120/1.8},esc:{cx:600,cy:610,s:55}};
 export const DG_SRC={
-  cam:{box:[565,24,130,60,'FPV CAMERA','5V · G · VIDEO OUT'],tips:[[600,112],[637,112],[673,112]]},
+  cam:{box:[565,24,130,60,tr('FPV CAMERA','KAMERA FPV'),tr('5V · G · VIDEO OUT','5V · G · KELUARAN VIDEO')],tips:[[600,112],[637,112],[673,112]]},
   /* boxes span all their wire ends so every lead leaves the box straight */
-  vtx:{box:[870,190,140,100,'VIDEO TRANSMITTER','5.8 GHz · 9 V in'],tips:[[805,213],[805,243],[805,273]]},
-  gps:{box:[110,216,140,116,'GPS MODULE','UART 3'],tips:[[400,230],[400,260],[400,290],[400,320]]},
-  rx:{box:[110,372,150,100,'RADIO RECEIVER','2.4 GHz · UART 1'],tips:[[400,388],[400,412],[400,436],[400,460]]},
-  lead:{box:[420,814,150,46,'BATTERY LEAD',CINE?'to 6S LiPo · 12 AWG':'to 4S LiPo · 12 AWG'],tips:[[560,772],[520,772]]},
-  cap:{box:[650,814,150,46,'CAPACITOR',CINE?'50 V · 1000 µF':'35 V · 1000 µF'],tips:[[720,772],[690,772]]},
+  vtx:{box:[870,190,140,100,tr('VIDEO TRANSMITTER','PEMANCAR VIDEO'),tr('5.8 GHz · 9 V in','5.8 GHz · masukan 9 V')],tips:[[805,213],[805,243],[805,273]]},
+  gps:{box:[110,216,140,116,tr('GPS MODULE','MODUL GPS'),'UART 3'],tips:[[400,230],[400,260],[400,290],[400,320]]},
+  rx:{box:[110,372,150,100,tr('RADIO RECEIVER','PENERIMA RADIO'),'2.4 GHz · UART 1'],tips:[[400,388],[400,412],[400,436],[400,460]]},
+  lead:{box:[420,814,150,46,tr('BATTERY LEAD','KABEL BATERI'),CINE?tr('to 6S LiPo · 12 AWG','ke LiPo 6S · 12 AWG'):tr('to 4S LiPo · 12 AWG','ke LiPo 4S · 12 AWG')],tips:[[560,772],[520,772]]},
+  cap:{box:[650,814,150,46,tr('CAPACITOR','KAPASITOR'),CINE?'50 V · 1000 µF':'35 V · 1000 µF'],tips:[[720,772],[690,772]]},
   mot4:{circ:[300,545,44],tips:[[410,563]]}, mot2:{circ:[900,545,44],tips:[[790,563]]},
   mot3:{circ:[300,770,44],tips:[[410,657]]}, mot1:{circ:[900,770,44],tips:[[790,657]]},
 };
 /* model 2: no analog camera or VTX. The digital VTX uses UART 2; the HD camera feeds it over its own coax */
 if(CINE){
   delete DG_SRC.cam;
-  DG_SRC.vtx={box:[870,175,150,130,'DIGITAL VTX','HD video · 9 V in'],tips:[[805,200],[805,230],[805,260],[805,290]]};
+  DG_SRC.vtx={box:[870,175,150,130,tr('DIGITAL VTX','VTX DIGITAL'),tr('HD video · 9 V in','video HD · masukan 9 V')],tips:[[805,200],[805,230],[805,260],[805,290]]};
 }
 /* model 3: the flight controller in the middle with its keyed ports, each module around it on the side its port faces */
 if(EX){
@@ -96,7 +98,7 @@ export function renderDiagram(){
     const dx=tip[0]-a[0], dy=tip[1]-a[1], side=Math.abs(dx)>Math.abs(dy), off=p.need[0]==='M'?18:15;
     const lx=side?tip[0]+Math.sign(dx)*off:tip[0], ly=side?tip[1]+4:tip[1]+Math.sign(dy||1)*(off+5)+4, anchor=side?(dx>0?'start':'end'):'middle';
     const knob=p.need[0]==='M'?`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="11" fill="#8a939c" stroke="#111" stroke-width="1.5"/>`:p.need==='ESC'?(HARNESS_PINS?`<rect class="knob" x="${tip[0]-30}" y="${tip[1]-8}" width="60" height="16" rx="3" fill="#e9e6dc" stroke="#111" stroke-width="1.5"/>${pins8(tip[0],tip[1])}`:`<rect class="knob" x="${tip[0]-22}" y="${tip[1]-8}" width="44" height="16" rx="3" fill="#e9e6dc" stroke="#111" stroke-width="1.5"/>`):`<circle class="knob" cx="${tip[0]}" cy="${tip[1]}" r="9" fill="${col}" stroke="#111" stroke-width="1.5"/>`;
-    const lab=p.need==='ESC'?(HARNESS_PINS?`<text class="t-tip" x="${tip[0]}" y="${tip[1]+22}" text-anchor="middle" style="font:700 9px var(--f-mono);fill:#f2f2ee">8-WIRE HARNESS · TO FC</text>`:`<text class="t-tip" x="${tip[0]}" y="${tip[1]+4}" text-anchor="middle" style="font-size:9px">HARNESS</text>`):`<text class="t-tip" x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(p.need[0]==='M'?'3 wires':p.label)}</text>`;
+    const lab=p.need==='ESC'?(HARNESS_PINS?`<text class="t-tip" x="${tip[0]}" y="${tip[1]+22}" text-anchor="middle" style="font:700 9px var(--f-mono);fill:#f2f2ee">${tr('8-WIRE HARNESS · TO FC','ABAH-ABAH 8 WAYAR · KE FC')}</text>`:`<text class="t-tip" x="${tip[0]}" y="${tip[1]+4}" text-anchor="middle" style="font-size:9px">${tr('HARNESS','ABAH-ABAH')}</text>`):`<text class="t-tip" x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(p.need[0]==='M'?tr('3 wires','3 wayar'):p.label)}</text>`;
     return `<g class="tip" data-src="${p.id}">${p.hotId==='esc'?'':`<line x1="${a[0]}" y1="${a[1]}" x2="${tip[0]}" y2="${tip[1]}" stroke="#0d0f11" stroke-width="6.5"/><line x1="${a[0]}" y1="${a[1]}" x2="${tip[0]}" y2="${tip[1]}" stroke="${p.need[0]==='M'?'#8a939c':col}" stroke-width="4"/>`}${knob}${lab}</g>`;
   }).join('');
   const comp=Object.entries(DG_SRC).filter(([h])=>parts[h]).map(([h,c])=>{
@@ -104,26 +106,26 @@ export function renderDiagram(){
     const [x,y,w,hh,t,sub]=c.box; return `<rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="8" fill="#2a2f35" stroke="#0d0f11" stroke-width="2"/><text x="${x+w/2}" y="${y+hh/2-2}" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">${t}</text><text x="${x+w/2}" y="${y+hh/2+14}" text-anchor="middle" style="font-size:10px;fill:#aab3b8">${sub}</text>`;
   }).join('');
   const done=srcPads().filter(p=>p.wired).length, total=srcPads().length;
-  el.innerHTML=`<svg viewBox="0 0 1100 880" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Wiring diagram. Drag each coloured wire end onto its pad.">
-    <text class="t-title" x="40" y="44">WIRING DIAGRAM</text><text class="t-s" x="40" y="64">${MODEL.name} stack · top view, front at the top</text>
-    <g transform="translate(40,84)"><text class="t-h" y="0">Stack specifications</text>
-      ${[['Mounting','30.5 × 30.5 mm'],['Input','3–6S LiPo'],['BEC','5 V 2 A · 9 V 2 A'],['Receiver','UART 1'],['GPS','UART 3'],CINE?['Video','UART 2 · digital']:['Video','CAM in · VTX out']].map(([k,v],i)=>`<text class="t-s" y="${20+i*17}">${k}</text><text y="${20+i*17}" x="92" style="font-size:11px">${v}</text>`).join('')}</g>
-    <g transform="translate(870,40)"><text class="t-h">Wire colours</text>
-      ${[['#d8453b','Power (+, 5V, 9V)'],['#3a3f46','Ground (G, −)'],['#e8c33c',CINE?'Video (HD camera coax, pre-fitted)':'Video'],[hex(wireColor('R1','TX')),'TX (transmit)'],['#eeeeee','RX (receive)'],['#8a939c','Motor phases']].map(([c,l],i)=>`<rect x="0" y="${12+i*18}" width="22" height="7" rx="2" fill="${c}" stroke="#0d0f11"/><text class="t-s" x="30" y="${19+i*18}">${l}</text>`).join('')}</g>
-    <g transform="translate(40,700)"><text class="t-h" style="fill:#b2382b">Default ports</text>
-      ${(CINE?[['UART 1','Receiver'],['UART 2','Digital VTX'],['UART 3','GPS']]:[['UART 1','Receiver'],['UART 3','GPS'],['CAM','Camera video in'],['VTX','Video out to VTX']]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
-    ${HARNESS_PINS?`<g transform="translate(40,496)"><text class="t-h">ESC harness · 8 wires</text>
-      ${HARNESS_PINS.map((k,i)=>`<rect x="0" y="${10+i*16}" width="22" height="7" rx="2" fill="${hex(HARNESS_COLS[i])}" stroke="#0d0f11"/><text y="${17+i*16}" x="30" style="font-size:10px;font-weight:600">${k}</text><text class="t-s" y="${17+i*16}" x="70">${['Motor 1 signal','Motor 2 signal','Motor 3 signal','Motor 4 signal','Ground','Battery voltage','Current sensor','Telemetry'][i]}</text>`).join('')}</g>`:''}
-    <g transform="translate(40,800)"><text style="font:700 12px var(--f-mono);fill:#b2382b">⚠ Capacitor required</text><text class="t-s" y="16">absorbs voltage spikes</text></g>
+  el.innerHTML=`<svg viewBox="0 0 1100 880" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${tr('Wiring diagram. Drag each coloured wire end onto its pad.','Rajah pendawaian. Seret setiap hujung wayar berwarna ke padnya.')}">
+    <text class="t-title" x="40" y="44">${tr('WIRING DIAGRAM','RAJAH PENDAWAIAN')}</text><text class="t-s" x="40" y="64">${tr(`${MODEL.name} stack · top view, front at the top`,`Tindanan ${MODEL.name} · pandangan atas, hadapan di atas`)}</text>
+    <g transform="translate(40,84)"><text class="t-h" y="0">${tr('Stack specifications','Spesifikasi tindanan')}</text>
+      ${[[tr('Mounting','Pemasangan'),'30.5 × 30.5 mm'],[tr('Input','Masukan'),'3–6S LiPo'],['BEC','5 V 2 A · 9 V 2 A'],[tr('Receiver','Penerima'),'UART 1'],['GPS','UART 3'],CINE?['Video',tr('UART 2 · digital','UART 2 · digital')]:['Video',tr('CAM in · VTX out','CAM masuk · VTX keluar')]].map(([k,v],i)=>`<text class="t-s" y="${20+i*17}">${k}</text><text y="${20+i*17}" x="92" style="font-size:11px">${v}</text>`).join('')}</g>
+    <g transform="translate(870,40)"><text class="t-h">${tr('Wire colours','Warna wayar')}</text>
+      ${[['#d8453b',tr('Power (+, 5V, 9V)','Kuasa (+, 5V, 9V)')],['#3a3f46',tr('Ground (G, −)','Bumi (G, −)')],['#e8c33c',CINE?tr('Video (HD camera coax, pre-fitted)','Video (sepaksi kamera HD, siap dipasang)'):'Video'],[hex(wireColor('R1','TX')),tr('TX (transmit)','TX (hantar)')],['#eeeeee',tr('RX (receive)','RX (terima)')],['#8a939c',tr('Motor phases','Fasa motor')]].map(([c,l],i)=>`<rect x="0" y="${12+i*18}" width="22" height="7" rx="2" fill="${c}" stroke="#0d0f11"/><text class="t-s" x="30" y="${19+i*18}">${l}</text>`).join('')}</g>
+    <g transform="translate(40,700)"><text class="t-h" style="fill:#b2382b">${tr('Default ports','Port lalai')}</text>
+      ${(CINE?[['UART 1',tr('Receiver','Penerima')],['UART 2',tr('Digital VTX','VTX digital')],['UART 3','GPS']]:[['UART 1',tr('Receiver','Penerima')],['UART 3','GPS'],['CAM',tr('Camera video in','Masukan video kamera')],['VTX',tr('Video out to VTX','Keluaran video ke VTX')]]).map(([k,v],i)=>`<text y="${20+i*17}" style="font-size:11px;font-weight:600">${k}</text><text class="t-s" x="64" y="${20+i*17}">${v}</text>`).join('')}</g>
+    ${HARNESS_PINS?`<g transform="translate(40,496)"><text class="t-h">${tr('ESC harness · 8 wires','Abah-abah ESC · 8 wayar')}</text>
+      ${HARNESS_PINS.map((k,i)=>`<rect x="0" y="${10+i*16}" width="22" height="7" rx="2" fill="${hex(HARNESS_COLS[i])}" stroke="#0d0f11"/><text y="${17+i*16}" x="30" style="font-size:10px;font-weight:600">${k}</text><text class="t-s" y="${17+i*16}" x="70">${tr(['Motor 1 signal','Motor 2 signal','Motor 3 signal','Motor 4 signal','Ground','Battery voltage','Current sensor','Telemetry'],['Isyarat motor 1','Isyarat motor 2','Isyarat motor 3','Isyarat motor 4','Bumi','Voltan bateri','Penderia arus','Telemetri'])[i]}</text>`).join('')}</g>`:''}
+    <g transform="translate(40,800)"><text style="font:700 12px var(--f-mono);fill:#b2382b">⚠ ${tr('Capacitor required','Kapasitor diperlukan')}</text><text class="t-s" y="16">${tr('absorbs voltage spikes','menyerap lonjakan voltan')}</text></g>
     <rect x="490" y="500" width="220" height="220" rx="14" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
-    <text x="600" y="616" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">4-IN-1 ESC</text><text x="600" y="632" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">stack, lower board</text>
+    <text x="600" y="616" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">${tr('4-IN-1 ESC','ESC 4-DALAM-1')}</text><text x="600" y="632" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">${tr('stack, lower board','tindanan, papan bawah')}</text>
     ${harness}
     <rect x="480" y="140" width="240" height="240" rx="18" fill="#22262b" stroke="#0d0f11" stroke-width="2"/>
     ${[[495,155],[705,155],[495,365],[705,365]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="#d4a93c" stroke-width="3"/>`).join('')}
-    <path d="M600,222 l18,26 h-10 v26 h-16 v-26 h-10 z" fill="#f2f2ee"/><text x="600" y="296" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">FRONT</text>
-    <text x="600" y="318" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">FLIGHT CONTROLLER</text>
+    <path d="M600,222 l18,26 h-10 v26 h-16 v-26 h-10 z" fill="#f2f2ee"/><text x="600" y="296" text-anchor="middle" style="font:700 12px var(--f-mono);fill:#f2f2ee">${tr('FRONT','HADAPAN')}</text>
+    <text x="600" y="318" text-anchor="middle" style="font:600 10px var(--f-mono);fill:#aab3b8">${tr('FLIGHT CONTROLLER','PENGAWAL PENERBANGAN')}</text>
     ${comp}${wired}${tgtSvg}${tips}
-    <text x="1060" y="870" text-anchor="end" class="t-s">${done} of ${total} wires soldered</text>
+    <text x="1060" y="870" text-anchor="end" class="t-s">${tr(`${done} of ${total} wires soldered`,`${done} daripada ${total} wayar dipateri`)}</text>
     <path id="dgTemp" d="" fill="none" stroke="#e0894a" stroke-width="4" stroke-dasharray="8 6" stroke-linecap="round" pointer-events="none"/>
     <g id="dgFlash"></g>
   </svg>`;
@@ -161,7 +163,7 @@ export function dgPoint(svg,e){ const pt=svg.createSVGPoint(); pt.x=e.clientX; p
 export function dgFlash(xy,ok){
   const g=document.getElementById('dgFlash'); if(!g) return;
   const w=ok?60:96, el=document.createElementNS('http://www.w3.org/2000/svg','g'); el.setAttribute('class','flash');
-  el.innerHTML=`<rect x="${xy[0]-w/2}" y="${xy[1]-44}" width="${w}" height="26" rx="13" fill="${ok?'#2f9e63':'#d23b2f'}"/><text x="${xy[0]}" y="${xy[1]-26}" text-anchor="middle">${ok?'✓ OK':'✕ WRONG'}</text>`;
+  el.innerHTML=`<rect x="${xy[0]-w/2}" y="${xy[1]-44}" width="${w}" height="26" rx="13" fill="${ok?'#2f9e63':'#d23b2f'}"/><text x="${xy[0]}" y="${xy[1]-26}" text-anchor="middle">${ok?'✓ OK':tr('✕ WRONG','✕ SALAH')}</text>`;
   g.appendChild(el); setTimeout(()=>el.remove(),1400);
 }
 $('#diagram').addEventListener('pointerdown',e=>{
@@ -196,6 +198,24 @@ export const NETNAME={'VBAT+':'battery + pad','VBAT-':'battery − pad','5V':'5 
 export function explainWire(src,tgt){
   const need=src.need, got=tgt.net, owner=lc(TYPES[HOTMAP[src.hotId].type].name);
   const pol=s=>s==='VBAT+'||s==='VBAT-';
+  if(LANG==='ms'){
+    if(pol(need)&&pol(got)) return `Kekutuban terbalik. Wayar ${src.label} ${owner} pergi ke pad ${need==='VBAT+'?'+':'−'}. Jika terbalik, ia boleh merosakkan ESC${HOTMAP[src.hotId].type==='cap'?' dan kapasitor (kakinya yang berjalur ialah −)':''} sebaik sahaja bateri dipalamkan.`;
+    if(pol(need)) return `${owner} membawa voltan bateri penuh. Ia mesti pada pad bateri ESC, bukan ${NETNAME[got]}.`;
+    if(need[0]==='M'&&got&&got[0]==='M') return `Itu keluaran ${got}. Motor pada lengan ${CORNER[+need[1]]} mesti menggunakan ${need}. Pengawal penerbangan menjangka motor ${need[1]} di penjuru itu; jika tidak, ia membetulkan dengan motor yang salah dan dron terbalik.`;
+    if(/^[TR][123]$/.test(need)&&/^[TR][123]$/.test(got)){
+      if(need[1]!==got[1]) return `Port bersiri (UART) yang salah. ${owner} menggunakan UART ${need[1]}. Pad itu milik UART ${got[1]}.`;
+      return 'TX dan RX bersilang. Wayar TX (hantar) pergi ke pad R (terima). Wayar RX (terima) pergi ke pad T (hantar).';
+    }
+    if(need==='5V'&&got==='9V') return `Voltan terlalu tinggi. ${owner} menggunakan 5 V. Pad 9 V boleh merosakkannya.`;
+    if(need==='9V'&&got==='5V') return `${owner} memerlukan pad 9 V. 5 V terlalu rendah untuknya berfungsi dengan baik.`;
+    if((need==='5V'||need==='9V')&&got==='GND') return 'Litar pintas. Wayar kuasa pada pad bumi menyambung + terus ke −. Ini boleh membakar papan.';
+    if(need==='GND'&&(got==='5V'||got==='9V')) return 'Litar pintas. Wayar bumi mesti pergi ke pad G, bukan pad kuasa.';
+    if(need==='GND') return 'Wayar bumi pergi ke pad G (bumi).';
+    if(need==='CAM'&&got==='VTX') return 'Video kamera masuk ke pad CAM. Pad VTX menghantar video keluar ke pemancar video.';
+    if(need==='VTX'&&got==='CAM') return 'Pemancar video mengambil videonya dari pad VTX. CAM ialah masukan kamera.';
+    if(need==='ESC') return HARNESS_PINS?'Abah-abah ESC 8 wayar (S1 hingga S4, GND, VBAT, CUR, TLM) dipalamkan ke soket ESC 8 pin pada pengawal penerbangan.':'Abah-abah ESC dipalamkan ke soket ESC pada pengawal penerbangan.';
+    return `Wayar ini memerlukan ${NETNAME[need]}, tetapi itu ialah ${NETNAME[got]||'pad yang salah'}.`;
+  }
   if(pol(need)&&pol(got)) return `Reversed polarity. The ${owner} ${src.label} wire goes to the ${need==='VBAT+'?'+':'−'} pad. Reversed, it can destroy the ESC${HOTMAP[src.hotId].type==='cap'?' and the capacitor (its striped leg is −)':''} the moment the battery is plugged in.`;
   if(pol(need)) return `The ${owner} carries full battery voltage. It belongs on the ESC battery pads, not the ${NETNAME[got]}.`;
   if(need[0]==='M'&&got&&got[0]==='M') return `That is output ${got}. The motor on the ${CORNER[+need[1]]} arm must use ${need}. The flight controller expects motor ${need[1]} in that corner; otherwise it corrects with the wrong motor and the drone flips.`;
@@ -214,6 +234,11 @@ export function explainWire(src,tgt){
   return `This wire needs the ${NETNAME[need]}, but that is the ${NETNAME[got]||'wrong pad'}.`;
 }
 export const NETSHORT={'VBAT+':'ESC +','VBAT-':'ESC −','5V':'FC 5V','9V':'FC 9V','GND':'a G pad','T1':'FC T1','R1':'FC R1','T2':'FC T2','R2':'FC R2','T3':'FC T3','R3':'FC R3','CAM':'FC CAM','VTX':'FC VTX','ESC':'FC ESC socket',M1:'ESC M1',M2:'ESC M2',M3:'ESC M3',M4:'ESC M4'};
+if(LANG==='ms'){
+  Object.assign(NETNAME,{'VBAT+':'pad bateri +','VBAT-':'pad bateri −','5V':'bekalan 5 V','9V':'bekalan 9 V','GND':'bumi (G)','T1':'hantar UART 1 (T1)','R1':'terima UART 1 (R1)','T2':'hantar UART 2 (T2)','R2':'terima UART 2 (R2)','T3':'hantar UART 3 (T3)','R3':'terima UART 3 (R3)','CAM':'masukan kamera (CAM)','VTX':'keluaran video (VTX)','ESC':'soket ESC',M1:'keluaran motor M1',M2:'keluaran motor M2',M3:'keluaran motor M3',M4:'keluaran motor M4'});
+  Object.assign(NETSHORT,{'GND':'pad G','ESC':'soket ESC FC'});
+}
+
 /* model 3 port names */
 if(EX){ Object.assign(NETNAME,{ANT:'antenna port (ANT)',FPV:'FPV camera port (FPV)',GMB:'gimbal port (GMB)',RTK:'RTK port (RTK)',VIS:'obstacle sensor port (VIS)',LGT:'lights port (LGT)',M1:'motor port M1',M2:'motor port M2',M3:'motor port M3',M4:'motor port M4'});
   Object.assign(NETSHORT,{ANT:'FC ANT',FPV:'FC FPV',GMB:'FC GMB',RTK:'FC RTK',VIS:'FC VIS',LGT:'FC LGT',M1:'FC M1',M2:'FC M2',M3:'FC M3',M4:'FC M4'}); }

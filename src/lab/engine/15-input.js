@@ -17,6 +17,7 @@ import { stageKey } from './20-stages.js';
 import { renderPanel } from './21-panel.js';
 import { showInfo } from './22-info-labels.js';
 import { toast } from './23-toast.js';
+import { tr } from '../../lang.js';
 
 /* ================= Pointer handling ================= */
 export function onCanvasDown(e){
@@ -30,7 +31,7 @@ export function onCanvasDown(e){
 canvasHooks.down=onCanvasDown;
 window.addEventListener('pointermove',e=>{
   if(S.pendingHole){ if(Math.hypot(e.clientX-S.pendingHole.x,e.clientY-S.pendingHole.y)>6) S.pendingHole=null; return; }
-  if(S.pending){ if(Math.hypot(e.clientX-S.pending.x,e.clientY-S.pending.y)>6){ const id=S.pending.id; S.pending=null; const dep=dependents(id); if(dep.length){ toast(`Remove the ${lc(TYPES[parts[dep[0]].type].name)} first. It is fitted to this part.`); return; } if(HOTMAP[id].stage==='power') stopAllSpin(); const g=unplace(id); beginPartDrag(g.userData.typeKey,g,e); } return; }
+  if(S.pending){ if(Math.hypot(e.clientX-S.pending.x,e.clientY-S.pending.y)>6){ const id=S.pending.id; S.pending=null; const dep=dependents(id); if(dep.length){ toast(tr(`Remove the ${lc(TYPES[parts[dep[0]].type].name)} first. It is fitted to this part.`,`Tanggalkan ${lc(TYPES[parts[dep[0]].type].name)} dahulu. Ia dipasang pada bahagian ini.`)); return; } if(HOTMAP[id].stage==='power') stopAllSpin(); const g=unplace(id); beginPartDrag(g.userData.typeKey,g,e); } return; }
   if(S.drag&&S.drag.kind==='part') movePartDrag(e);
   else if(S.drag&&S.drag.kind==='wire') moveWireDrag(e);
   else if(S.drag&&S.drag.kind==='screw') moveScrewDrag(e);
@@ -54,8 +55,8 @@ export function hover(e){
   if(e.target!==canvas){ showTip(null); return; }
   setNDC(e); const k=stageKey(); let cur='', t=null;
   if(k==='wire'){ const id=pickPad(); if(id){ cur='pointer'; t=padName(PADS[id]); } }
-  else if((k==='frame'||k==='mount')&&pickHole()){ const s=SCR[pickHole()]; cur='pointer'; t=S.mode==='learn'?`Hole for an ${SCREWT[s.spec.kind].name}`:'Fastener hole'; }
-  else if(k==='frame'||k==='mount'||k==='power'||k==='props'){ const id=pickPart(k); if(id){ cur='grab'; t=TYPES[parts[id].type].name+(parts[id].type==='fc'&&k==='mount'?' · click to rotate':''); } }
+  else if((k==='frame'||k==='mount')&&pickHole()){ const s=SCR[pickHole()]; cur='pointer'; t=S.mode==='learn'?tr(`Hole for an ${SCREWT[s.spec.kind].name}`,`Lubang untuk ${SCREWT[s.spec.kind].name}`):tr('Fastener hole','Lubang pengikat'); }
+  else if(k==='frame'||k==='mount'||k==='power'||k==='props'){ const id=pickPart(k); if(id){ cur='grab'; t=TYPES[parts[id].type].name+(parts[id].type==='fc'&&k==='mount'?tr(' · click to rotate',' · klik untuk memusingkan'):''); } }
   canvas.style.cursor=cur; showTip(t,e.clientX,e.clientY);
 }
 
@@ -81,21 +82,21 @@ export function endPartDrag(e,cancel){
   if(cancel||!h){ removeGroup(g); }
   else if(!accepts(h,t)){
     removeGroup(g);
-    const sec=secOf(); const other=h.type==='prop'?'a propeller':'the '+lc(TYPES[h.type].name);
-    mistake(sec,2,`That spot is for ${other}. The ${lc(nm)} goes ${TYPES[t].where}.`,`Wrong place for the ${lc(nm)}.`);
+    const sec=secOf(); const other=h.type==='prop'?tr('a propeller','kipas'):tr('the ','')+lc(TYPES[h.type].name);
+    mistake(sec,2,tr(`That spot is for ${other}. The ${lc(nm)} goes ${TYPES[t].where}.`,`Tempat itu untuk ${other}. ${nm} dipasang ${TYPES[t].where}.`),tr(`Wrong place for the ${lc(nm)}.`,`Tempat yang salah untuk ${lc(nm)}.`));
   } else if(h.type==='prop'&&propDir(t)!==EXP[h.motor]){
     removeGroup(g);
-    mistake('props',3,`Motor ${h.motor} (${CORNER[h.motor]}) spins ${EXP[h.motor]}, so it needs a ${EXP[h.motor]} propeller. The wrong propeller pushes air up, and the drone flips at take-off.`,`That propeller does not match this motor.`);
+    mistake('props',3,tr(`Motor ${h.motor} (${CORNER[h.motor]}) spins ${EXP[h.motor]}, so it needs a ${EXP[h.motor]} propeller. The wrong propeller pushes air up, and the drone flips at take-off.`,`Motor ${h.motor} (${CORNER[h.motor]}) berputar ${EXP[h.motor]}, jadi ia memerlukan kipas ${EXP[h.motor]}. Kipas yang salah menolak udara ke atas, dan dron terbalik semasa berlepas.`),tr(`That propeller does not match this motor.`,`Kipas itu tidak sepadan dengan motor ini.`));
   } else {
     place(h,g,{animate:true}); S.undo.push({k:'part',id:h.id,stage:stageKey()});
-    if(h.type==='fc'){ toast(learn?'Flight controller fitted. Now click the board to turn it until the arrow points to the front.':'Flight controller fitted.','ok'); }
-    else toast(`${nm} fitted${h.motor&&h.type==='motor'?' to arm '+h.motor:''}.`,'ok');
+    if(h.type==='fc'){ toast(learn?tr('Flight controller fitted. Now click the board to turn it until the arrow points to the front.','Pengawal penerbangan dipasang. Sekarang klik papan untuk memusingkannya sehingga anak panah menghala ke depan.'):tr('Flight controller fitted.','Pengawal penerbangan dipasang.'),'ok'); }
+    else toast(tr(`${nm} fitted${h.motor&&h.type==='motor'?' to arm '+h.motor:''}.`,`${nm} dipasang${h.motor&&h.type==='motor'?' pada lengan '+h.motor:''}.`),'ok');
   }
   updateMarkers(); controls.enabled=true; renderPanel();
 }
 export function clickPart(id){
   const p=parts[id]; if(!p) return;
-  if(p.type==='fc'&&stageKey()==='mount'){ setFCRot((S.fcRot+1)%4); if(S.mode==='learn'&&S.fcRot===0) toast('The arrow points to the front. The flight controller is the right way round.','ok'); renderPanel(); return; }
+  if(p.type==='fc'&&stageKey()==='mount'){ setFCRot((S.fcRot+1)%4); if(S.mode==='learn'&&S.fcRot===0) toast(tr('The arrow points to the front. The flight controller is the right way round.','Anak panah menghala ke depan. Pengawal penerbangan berada pada arah yang betul.'),'ok'); renderPanel(); return; }
   showInfo(p.type);
 }
 export function infoClick(){
@@ -109,7 +110,7 @@ export function infoClick(){
 export let rubber=null;
 export function startWireDrag(id){
   const p=PADS[id];
-  if(p.need&&p.wired){ toast('That wire is already soldered.'); controls.enabled=true; return; }
+  if(p.need&&p.wired){ toast(tr('That wire is already soldered.','Wayar itu sudah dipateri.')); controls.enabled=true; return; }
   S.drag={kind:'wire',from:id,hover:null};
   if(S.mode==='learn'&&p.need) Object.values(PADS).forEach(q=>{ if(!q.need&&q.net===p.need) setPadMat(q,M.padGood); });
   document.body.classList.add('dragging');
@@ -132,19 +133,20 @@ export function endWireDrag(e,cancel){
   if(!cancel&&d.hover){
     let src=PADS[d.from], tgt=PADS[d.hover];
     if(!src.need&&tgt.need) [src,tgt]=[tgt,src];
-    if(src.need&&tgt.need) toast('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.');
-    else if(!src.need&&!tgt.need) toast('Start from a wire end (a coloured dot or plug). Then drop it on a pad.');
-    else if(src.wired) toast('That wire is already soldered.');
-    else if(tgt.net===src.need){ addWire(src.id,tgt.id); S.undo.push({k:'wire',id:src.id,stage:'wire'}); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); }
-    else mistake('wire',2,explainWire(src,tgt),'Wrong pad. The wire was not soldered.');
+    if(src.need&&tgt.need) toast(tr('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.','Kedua-dua hujung ialah wayar. Lepaskan hujung wayar pada pad ESC atau pengawal penerbangan.'));
+    else if(!src.need&&!tgt.need) toast(tr('Start from a wire end (a coloured dot or plug). Then drop it on a pad.','Mula dari hujung wayar (titik berwarna atau palam). Kemudian lepaskan pada pad.'));
+    else if(src.wired) toast(tr('That wire is already soldered.','Wayar itu sudah dipateri.'));
+    else if(tgt.net===src.need){ addWire(src.id,tgt.id); S.undo.push({k:'wire',id:src.id,stage:'wire'}); toast(`${tr('Soldered','Dipateri')}: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); }
+    else mistake('wire',2,explainWire(src,tgt),tr('Wrong pad. The wire was not soldered.','Pad yang salah. Wayar tidak dipateri.'));
   }
   controls.enabled=true; renderPanel();
 }
 export function attemptWire(src,tgt){
   if(!src||!tgt) return 'none';
   if(!src.need&&tgt.need) [src,tgt]=[tgt,src];
-  if(src.need&&tgt.need){ toast('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.'); return 'none'; }
-  if(src.wired){ toast('That wire is already soldered.'); return 'none'; }
-  if(tgt.net===src.need){ addWire(src.id,tgt.id); S.undo.push({k:'wire',id:src.id,stage:'wire'}); toast(`Soldered: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); return 'ok'; }
-  mistake('wire',2,explainWire(src,tgt),'Wrong pad. The wire was not soldered.'); return 'bad';
+  if(src.need&&tgt.need){ toast(tr('Both ends are wires. Drop the wire end on a pad of the ESC or flight controller.','Kedua-dua hujung ialah wayar. Lepaskan hujung wayar pada pad ESC atau pengawal penerbangan.')); return 'none'; }
+  if(src.wired){ toast(tr('That wire is already soldered.','Wayar itu sudah dipateri.')); return 'none'; }
+  if(tgt.net===src.need){ addWire(src.id,tgt.id); S.undo.push({k:'wire',id:src.id,stage:'wire'}); toast(`${tr('Soldered','Dipateri')}: ${TYPES[HOTMAP[src.hotId].type].name} ${src.label} → ${TYPES[HOTMAP[tgt.hotId].type].name} ${tgt.label}`,'ok'); return 'ok'; }
+  mistake('wire',2,explainWire(src,tgt),tr('Wrong pad. The wire was not soldered.','Pad yang salah. Wayar tidak dipateri.')); return 'bad';
+
 }

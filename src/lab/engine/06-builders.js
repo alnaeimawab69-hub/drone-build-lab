@@ -6,6 +6,26 @@ import { M, std, wireMat } from './04-materials.js';
 import { PHASE_COLS, addPad, boardMesh, box, circHole, cyl, flatExtrude, mesh, rod, roundBox, rrShape, slotHole, smd, strands, tube } from './05-geometry.js';
 
 /* ================= Builders (all geometry made here, no imported models) ================= */
+/* where the VTX and receiver sit (drone coordinates, same rotation order as place()), shared with the catalogue,
+   so each can run its antenna cable up through the top plate into the TPU antenna mount */
+export const AT={
+  vtx:CINE?{pos:V(0,.5,3.5)}:{pos:V(-.6,1.4,4.85),rx:Math.PI/2,ry:Math.PI},
+  rx:CINE?{pos:V(-1.75,.45,6.0)}:{pos:V(-1.2,.42,3.75)},
+};
+/* TPU antenna mount behind the battery: centre on the top plate's top face, and the slot cut under it [x, z, w, l] */
+const TOP_Y=3.4+(CINE?.25:.22);
+export const ANT_MOUNT=CINE?V(0,TOP_Y,4.6):V(-1.0,TOP_Y,4.3);
+export const ANT_SLOT=CINE?[0,4.8,2,.8]:[-1.0,4.3,1.2,.4];
+const MOUNT_H=.7, ANT_TOP=TOP_Y+MOUNT_H;
+/* model 1: VTX antenna in the middle, receiver whips either side. Model 2: receiver whips on the left, VTX on the right, GPS wires pass behind */
+const ANT_X=CINE?{vtx:.35,rx:[-.5,-.1]}:{vtx:-1.0,rx:[-1.45,-.55]};
+const toPart=(pts,at)=>{ const o=new THREE.Object3D(); o.position.copy(at.pos); o.rotation.set(at.rx||0,at.ry||0,0); o.updateMatrix(); const inv=o.matrix.clone().invert(); return pts.map(p=>p.clone().applyMatrix4(inv)); };
+/* an antenna cable from the part (path given in drone coordinates) up into the mount, then the antenna out of the top of it */
+function mountedAntenna(g,at,path,dir,segs){
+  g.add(tube(toPart(path,at),.045,M.black));
+  const d=dir.clone().normalize(); let p=path[path.length-1];
+  for(const [len,r,mat] of segs){ const q=p.clone().addScaledVector(d,len); const [a,b]=toPart([p,q],at); g.add(rod(a,b,r,mat,12)); p=q; }
+}
 /* model 2: long slim arm that widens into a square motor pad */
 function armShapeC(){
   const L=ARM, R=1.35, sh=new THREE.Shape();
@@ -62,11 +82,18 @@ export const STRAP_Z=[-1,1].map(s=>MODEL.batZ+s*(CINE?1.6:1.9));
 const strapSlots=(sh,Y)=>{ for(const z of STRAP_Z) for(const x of [-STRAP_X,STRAP_X]){ const p=new THREE.Path(), y=Y(z); p.moveTo(x-.11,y-.36); p.lineTo(x+.11,y-.36); p.lineTo(x+.11,y+.36); p.lineTo(x-.11,y+.36); p.lineTo(x-.11,y-.36); sh.holes.push(p); } };
 /* anti-slip rubber pad under the battery, between the straps */
 function batteryPad(g){ const [W,,L]=MODEL.bat, p=box(W-.2,.06,L-.4,M.batPad,0,PLATE_T+.03,MODEL.batZ); p.castShadow=false; g.add(p); }
+/* yellow TPU antenna mount behind the battery, screwed over a slot: the antenna cables come up through the slot into it */
+function antMount(g,sh,Y){
+  const [x,z,w,l]=ANT_SLOT, p=new THREE.Path(), y=Y(z);
+  p.moveTo(x-w/2,y-l/2); p.lineTo(x+w/2,y-l/2); p.lineTo(x+w/2,y+l/2); p.lineTo(x-w/2,y+l/2); p.lineTo(x-w/2,y-l/2); sh.holes.push(p);
+  const m=mesh(roundBox(CINE?1.5:1.4,MOUNT_H,.6,.15,4),M.tpu); m.position.set(ANT_MOUNT.x,PLATE_T+MOUNT_H/2,ANT_MOUNT.z); g.add(m);
+}
 export function buildTopPlate(){
   if(CINE) return buildTopPlateC();
   const g=new THREE.Group(), ts=rrShape(5.2,9.2,.6);
   strapSlots(ts,z=>-z);
   for(const x of [-2.35,2.35]) for(const z of [-4,0,4.2]) ts.holes.push(circHole(x,-z,.15));
+  antMount(g,ts,z=>-z);
   g.add(flatExtrude(ts,PLATE_T,M.carbonTop));
   batteryPad(g);
   return g;
@@ -78,6 +105,7 @@ function buildTopPlateC(){
   const ts=mirrored([[1.45,-7],[1.45,-5.3],[W,-4.3],[W,-2.4],[N,-2],[N,-1],[W,-.6],[W,.6],[N,1],[N,3.2],[W,3.6],[W,5.5],[1.9,6.5]],Y);
   strapSlots(ts,Y);
   for(const x of [-A,A]) for(const z of ALU_Z) ts.holes.push(circHole(x,Y(z),.15));
+  antMount(g,ts,Y);
   for(const [x,z] of [[-1.3,-1.2],[1.3,-1.2]]) ts.holes.push(circHole(x,Y(z),.45));
   const pl=flatExtrude(ts,PLATE_T,M.carbonTop); pl.position.z=cz; g.add(pl);
   for(const s of [-1,1]) for(const z of ALU_Z) g.add(box(.5,.1,.9,M.accent,s*(A-.05),PLATE_T+.05,z));   // purple anodised pads over each standoff
@@ -137,7 +165,7 @@ export function makeRing(R2=1.9,k=1){
   const g=new THREE.Group(); const arc=Math.PI*1.45;
   const mat=new THREE.MeshBasicMaterial({color:0xe0894a,side:THREE.DoubleSide,depthTest:false,transparent:true});
   const t=new THREE.Mesh(new THREE.TorusGeometry(R2,.08*k,8,64,arc),mat); t.rotation.x=-Math.PI/2; g.add(t);
-  const head=new THREE.Mesh(new THREE.ConeGeometry(.26*k,.62*k,16),mat);
+  const head=new THREE.Mesh(new THREE.ConeGeometry(.26*k,.62*k,16),new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false,transparent:true}));   // white arrowhead on the coloured ring
   head.position.set(R2*Math.cos(arc),0,-R2*Math.sin(arc));
   head.quaternion.setFromUnitVectors(V(0,1,0),V(-Math.sin(arc),0,-Math.cos(arc)));
   g.add(head); t.renderOrder=head.renderOrder=7; t.userData.noStyle=head.userData.noStyle=true; g.userData.mat=mat; g.visible=false;
@@ -239,10 +267,9 @@ export function buildVTX(){
   const g=new THREE.Group(); g.add(boardMesh(2,.14,2,M.pcbG,M.vtxTop));
   g.add(box(1.4,.3,1.15,M.steel,0,.29,.1));
   const cn=cyl(.13,.13,.3,M.gold,12); cn.position.set(.65,.3,.86); g.add(cn);
-  /* the antenna stands almost upright out the back, above the top plate, where the carbon does not block it */
-  const ant=new THREE.Group(); ant.position.set(.65,.4,.9); ant.rotation.x=1.2;
-  const st=cyl(.06,.06,3.6,M.antenna,8); st.position.y=1.8; ant.add(st);
-  const tp=mesh(new THREE.SphereGeometry(.34,16,10),M.antenna); tp.scale.y=.65; tp.position.y=3.65; ant.add(tp); g.add(ant);
+  /* the antenna cable climbs behind the top plate, through the slot, into the TPU mount; the antenna stands up out of it, clear of the carbon */
+  const X=ANT_X.vtx, Z=ANT_MOUNT.z;
+  mountedAntenna(g,AT.vtx,[V(-1.25,2.3,5.25),V(-1.2,2.9,5.0),V(X,3.2,Z+.15),V(X,TOP_Y,Z),V(X,ANT_TOP,Z)],V(0,1,.35),[[3.0,.06,M.antenna],[.7,.3,M.antenna]]);
   /* the wire pads are on the underside of the board: the VTX stands upright with that side facing the flight controller,
      so the wires come straight off it, toward the flight controller, instead of passing through the board */
   const D=V(0,-1,0);
@@ -254,8 +281,9 @@ export function buildVTX(){
 export function buildRX(){
   const g=new THREE.Group(); g.add(boardMesh(1.3,.12,1.6,M.pcbG,M.rxTop));
   g.add(box(.5,.1,.5,M.black,0,.17,.05));
-  /* model 1: one antenna upright, one out to the back left (90° apart). Model 2: one out to the back left, one straight back, both clear of the tail mount */
-  for(const s of [-1,1]){ const a=CINE?V(s*.3,.14,.75):V(-.5+s*.08,.14,.5), d=(CINE?(s<0?V(-.7,.25,1):V(0,.25,1)):s<0?V(-.7,.1,.7):V(0,1,0)).normalize(); const b=a.clone().addScaledVector(d,1.9), c=a.clone().addScaledVector(d,2.6); g.add(rod(a,b,.04,M.antenna)); g.add(rod(b,c,.03,M.white)); }
+  /* both whips come up through the top plate into the TPU mount, 90° apart in a V, so the receiver keeps signal at any angle */
+  ANT_X.rx.forEach((X,i)=>{ const a=AT.rx.pos.clone().add(CINE?V(i?-.3:.3,.14,.75):V(i?-.42:-.58,.14,.5)), Z=ANT_MOUNT.z;
+    mountedAntenna(g,AT.rx,[a,a.clone().add(V(0,1,.15)),V(X,3.15,Z+.1),V(X,TOP_Y,Z),V(X,ANT_TOP,Z)],V(i?1:-1,1,.35),[[1.9,.04,M.antenna],[.7,.03,M.white]]); });
   const F=V(0,0,-1);
   addPad(g,{key:'5v',label:'5V',need:'5V',pos:V(-.45,.14,-.68),out:F});
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.15,.14,-.68),out:F});
@@ -265,7 +293,7 @@ export function buildRX(){
 }
 /* compact GPS: a thin black case with a ceramic patch antenna on top (the arrow points to the front),
    a built-in compass, a status LED and a 4-wire plug at the front */
-export const GPS_TILT=.4;
+export const GPS_LIFT=CINE?.5:.6;   // standoff height under the GPS
 export function buildGPS(){
   const g=new THREE.Group();
   const gs=mesh(roundBox(2.1,.36,2.1,.14,4),M.gpsShell); gs.position.y=.18; g.add(gs);
@@ -278,13 +306,10 @@ export function buildGPS(){
   addPad(g,{key:'g',label:'G',need:'GND',pos:V(-.15,.12,-1.2),out:F});
   addPad(g,{key:'tx',label:'TX',need:'R3',pos:V(.15,.12,-1.2),out:F});
   addPad(g,{key:'rx',label:'RX',need:'T3',pos:V(.45,.12,-1.2),out:F});
-  g.scale.setScalar(CINE?.85:.75);   // compact modules, sized for the rear bay on the bottom plate
-  if(CINE){ /* model 2: the GPS rides on a yellow TPU tail mount behind the plates, tilted back so it sees the sky past the battery.
-     The mount is narrow enough to stay clear of the rear props; it is an arch, and the VTX antenna runs out the back through it */
-    const deck=mesh(roundBox(2.1,.5,2.3,.15,4),M.tpu); deck.position.y=-.25; g.add(deck);
-    const mg=new THREE.Group(); mg.rotation.x=-GPS_TILT; mg.scale.setScalar(1/.85); g.add(mg);   // stands upright whatever the tilt
-    const top=mesh(roundBox(1.8,.85,1.5,.25,4),M.tpu); top.position.set(0,-.575,.1); mg.add(top);
-    for(const s of [-1,1]){ const leg=mesh(roundBox(.4,1.2,1.5,.15,4),M.tpu); leg.position.set(s*.7,-1.6,.1); mg.add(leg); } }   // two legs down to the bottom plate; the antenna runs between them
+  /* four nylon standoffs: model 1 lifts the GPS off the bottom plate so the battery wires pass under it; model 2 stands it on the top plate behind the antenna mount */
+  const sc=CINE?.85:.75, h=GPS_LIFT/sc;
+  for(const x of [-.6,.6]) for(const z of [-.6,.6]){ const st=cyl(.12,.12,h,M.nylon,10); st.position.set(x,-h/2,z); g.add(st); }
+  g.scale.setScalar(sc);
   return g;
 }
 export function buildCap(){
@@ -299,7 +324,7 @@ export function buildCap(){
   return g;
 }
 /* model 1: the XT60 plug sits just behind the top plate, in a TPU holder screwed under the plate's rear edge, socket facing back to meet the battery cable.
-   The two wires leave the plug, drop behind the plate edge and run forward between the plates to the ESC battery pads.
+   The two wires leave the plug, drop behind the plate edge to the bottom plate and run forward along it to the ESC battery pads.
    Model 2: the wires drop less and run forward above the VTX */
 export function buildLead(){
   const g=new THREE.Group(), k=CINE?.5:1;
@@ -307,8 +332,10 @@ export function buildLead(){
   g.add(box(.94,.12,.3,M.connector,0,.3,.25));
   g.add(box(1.15,.4,.75,CINE?M.guard:M.tpu,0,-.3,-.08));                // holder: screwed under the rear edge of the top plate, cradles the plug
   g.add(box(1.2,.05,.1,M.black,0,-.52,.12));               // zip tie round the holder and the plug
+  /* model 1: the wires drop behind the rear standoffs to the bottom plate, run forward along it under the raised GPS, then rise to the ESC pads */
   for(const [x,c,ex] of [[.22,0xd8453b,.2],[-.22,0x2b2f35,-.35]])
-    g.add(tube([V(x,-.28,.55),V(x,-.8*k,.62),V(x,-1.6*k,.55),V(x,-2.05*k,-.2),V(ex,-2.05*k,-1.4),V(ex,-2.05*k,-2.4)],.11,wireMat(c)));
+    g.add(tube(CINE?[V(x,-.28,.55),V(x,-.8*k,.62),V(x,-1.6*k,.55),V(x,-2.05*k,-.2),V(ex,-2.05*k,-1.4),V(ex,-2.05*k,-2.4)]
+      :[V(x,-.28,.55),V(x,-.9,.62),V(x,-2.2,.5),V(x,-2.88,.15),V(ex,-2.92,-.9),V(ex,-2.85,-1.9),V(ex,-2.3,-2.35),V(ex,-2.05,-2.4)],.11,wireMat(c)));
   addPad(g,{key:'p',label:'+',need:'VBAT+',pos:V(.2,-2.05*k,-2.47),out:V(0,1,0)});
   addPad(g,{key:'n',label:'−',need:'VBAT-',pos:V(-.35,-2.05*k,-2.47),out:V(0,1,0)});
   const sock=new THREE.Object3D(); sock.position.set(0,0,1.12); g.add(sock); g.userData.socket=sock;
@@ -320,7 +347,7 @@ export function buildBattery(){
   const by=CINE?H*.83:2.15, bz=L/2+.12, cells=CINE?7:5, gap=CINE?.1:.12;
   g.add(box(.7,.3,.22,M.white,-1.0,by,bz));
   for(let i=0;i<cells;i++){ const x=-1.25+i*gap; g.add(tube([V(x,by,bz-.12),V(x,by+.3,bz-.32),V(x,by+.47,bz-.62)],.025,wireMat(i?0xd8453b:0x232528))); }
-  const plug=new THREE.Object3D(); plug.position.set(CINE?1.45:1.0,CINE?H*.62:1.6,L/2+.05); g.add(plug); g.userData.plug=plug;   // model 2: further right, so the cable clears the GPS on the tail
+  const plug=new THREE.Object3D(); plug.position.set(CINE?1.45:1.0,CINE?H*.62:1.6,L/2+.05); g.add(plug); g.userData.plug=plug;   // model 2: further right, so the cable clears the GPS on the top plate
   return g;
 }
 
@@ -342,9 +369,9 @@ function buildHDVTX(){
   g.add(boardMesh(2.8,.14,2.8,M.pcbG,M.vtxTop));
   const body=mesh(roundBox(2.6,.6,2.4,.1,4),M.heatsink); body.position.set(0,.45,.15); g.add(body);
   for(let i=0;i<6;i++) g.add(box(2.4,.22,.1,M.heatsink,0,.85,-.85+i*.4));
-  const ant=new THREE.Group(); ant.position.set(0,.55,1.35); ant.rotation.x=Math.PI/2;   // level and low, so it runs through the arch under the GPS and ends well behind it
-  const st=cyl(.06,.06,5.4,M.antenna,8); st.position.y=2.7; ant.add(st);
-  const tp=cyl(.32,.32,.85,M.antenna,20); tp.position.y=5.75; ant.add(tp); g.add(ant);
+  /* the antenna cable climbs to the TPU mount on the top plate; the antenna stands up out of it, behind the battery */
+  { const X=ANT_X.vtx, Z=ANT_MOUNT.z;
+    mountedAntenna(g,AT.vtx,[V(0,1.05,4.85),V(.1,1.6,5.2),V(X,3.0,Z+.2),V(X,TOP_Y,Z),V(X,ANT_TOP,Z)],V(0,1,.35),[[3.0,.06,M.antenna],[.85,.32,M.antenna]]); }
   const coax=new THREE.Group(); g.add(coax); g.userData.lead=coax;
   coax.add(tube([V(0,.2,-1.35),V(0,.12,-2.4),V(0,.15,-5.9),V(0,.45,-7.6),V(0,1.05,-8.2)],.045,M.black));   // forward to the camera at the nose
   const F=V(0,0,-1);

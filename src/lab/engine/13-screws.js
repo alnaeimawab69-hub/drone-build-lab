@@ -7,12 +7,13 @@ import { PROXY_GEO, PROXY_MAT, cyl } from './05-geometry.js';
 import { HOTMAP, NYL_POS, TYPES } from './07-catalogue.js';
 import { S } from './08-state.js';
 import { tween } from './11-tweens-camera.js';
-import { insideCanvas, ray, setNDC } from './14-markers-picking.js';
+import { insideCanvas, ray, setNDC, updateMarkers } from './14-markers-picking.js';
 import { showTip } from './15-input.js';
 import { mistake, secOf } from './17-scoring.js';
 import { stageKey } from './20-stages.js';
 import { renderPanel } from './21-panel.js';
 import { toast } from './23-toast.js';
+import { LANG, tr } from '../../lang.js';
 
 /* ================= Screws & nuts ================= */
 export const SCREWT={
@@ -21,6 +22,7 @@ export const SCREWT={
   M2x5:{name:'M2 × 5 mm screw',r:.1,head:.19,L:.5},
   nut:{name:'M3 nylon nut'},
 };
+if(LANG==='ms') Object.assign(SCREWT.M3x10,{name:'Skru M3 × 10 mm'}),Object.assign(SCREWT.M3x6,{name:'Skru M3 × 6 mm'}),Object.assign(SCREWT.M2x5,{name:'Skru M2 × 5 mm'}),Object.assign(SCREWT.nut,{name:'Nat nilon M3'});
 export const M_SCREW=std({color:0x2a2d31,roughness:.35,metalness:.85});
 export function buildScrew(k){
   const g=new THREE.Group(), t=SCREWT[k];
@@ -66,9 +68,19 @@ export function drive(id,anim){
   if(anim){ m.position.copy(base).addScaledVector(out,1.1); tween(.6,k=>{ const e=easeOut(k); m.position.copy(base).addScaledVector(out,(1-e)*1.1); m.quaternion.copy(qa).multiply(qs.setFromAxisAngle(V(0,1,0),-e*TAU*3)); }); }
   else m.position.copy(base);
 }
-export function undrive(id){ const s=SCR[id]; if(!s||!s.driven) return false; s.driven=false; if(s.mesh&&s.mesh.parent) s.mesh.parent.remove(s.mesh); s.mesh=null; updateScrewMarkers(); return true; }
+export function undrive(id){ const s=SCR[id]; if(!s||!s.driven) return false; s.driven=false; if(s.mesh&&s.mesh.parent) s.mesh.parent.remove(s.mesh); s.mesh=null; updateMarkers(); return true; }
 export const screwDriven=id=>!!(SCR[id]&&SCR[id].driven);
 export function screwMsg(need,got,owner){
+  if(LANG==='ms'){
+    if(owner==='motor'&&got==='M3x10') return 'Terlalu panjang. Skru M3 × 10 menembusi lengan dan masuk ke belitan kuprum motor. Ia boleh membuat litar pintas pada motor. Skru motor mesti pendek: M3 × 6.';
+    if(need==='M3x10'&&got==='M3x6') return 'Terlalu pendek. Skru lengan mesti menembusi lengan dan plat bawah dan masih mencengkam. Gunakan M3 × 10.';
+    if(need==='M3x6'&&got==='M3x10') return 'Terlalu panjang. Skru 10 mm mencecah dasar tiang sebelum ia mengapit plat. Gunakan M3 × 6.';
+    if(need==='nut') return 'Tindanan diapit dengan nat nilon M3 di atas tiang tindanan. Nilon tidak mengalirkan elektrik, jadi ia tidak boleh membuat litar pintas pada papan.';
+    if(got==='nut') return 'Nat memerlukan skru atau tiang untuk diskrukan. Lubang ini memerlukan skru.';
+    if(need==='M2x5') return 'Lubang kamera bersaiz M2 (2 mm). Skru M3 terlalu tebal untuk muat.';
+    if(got==='M2x5') return 'M2 terlalu nipis untuk lubang M3 ini. Ia tidak akan mencengkam.';
+    return 'Pengikat yang salah untuk lubang ini.';
+  }
   if(owner==='motor'&&got==='M3x10') return 'Too long. An M3 × 10 screw goes through the arm and into the motor’s copper windings. It can short-circuit the motor. Motor screws must be short: M3 × 6.';
   if(need==='M3x10'&&got==='M3x6') return 'Too short. The arm screw must go through the arm and the bottom plate and still grip. Use M3 × 10.';
   if(need==='M3x6'&&got==='M3x10') return 'Too long. A 10 mm screw hits the bottom of the standoff before it clamps the plate. Use M3 × 6.';
@@ -80,11 +92,12 @@ export function screwMsg(need,got,owner){
 }
 export function tryDrive(id,kind){
   const s=SCR[id]; if(!s||s.driven) return;
-  if(!kind){ toast('Choose a screw or nut from the fastener bin first.'); return; }
-  if(kind!==s.spec.kind){ mistake(secOf(),2,screwMsg(s.spec.kind,kind,HOTMAP[s.hotId].type),'Wrong fastener for this hole.'); return; }
-  drive(id,true); S.undo.push({k:'screw',id,stage:stageKey()});
+  if(!kind){ toast(tr('Choose a screw or nut from the fastener bin first.','Pilih skru atau nat dari bekas pengikat dahulu.')); return; }
+  if(kind!==s.spec.kind){ mistake(secOf(),2,screwMsg(s.spec.kind,kind,HOTMAP[s.hotId].type),tr('Wrong fastener for this hole.','Pengikat yang salah untuk lubang ini.')); return; }
+  drive(id,true); S.undo.push({k:'screw',id,stage:stageKey()}); updateMarkers();
   const left=stageScrews(stageKey()).filter(x=>!x.driven).length;
-  toast(`${SCREWT[kind].name} fitted to the ${lc(TYPES[HOTMAP[s.hotId].type].name)}.${left?'':' All fasteners in this stage are tight.'}`,'ok');
+  toast(tr(`${SCREWT[kind].name} fitted to the ${lc(TYPES[HOTMAP[s.hotId].type].name)}.${left?'':' All fasteners in this stage are tight.'}`,`${SCREWT[kind].name} dipasang pada ${lc(TYPES[HOTMAP[s.hotId].type].name)}.${left?'':' Semua pengikat dalam peringkat ini sudah ketat.'}`),'ok');
+
   renderPanel();
 }
 export function autoScrews(k,anim){ stageScrews(k).filter(s=>!s.driven).forEach((s,i)=>{ const go=()=>{ if(SCR[s.id]&&!s.driven){ drive(s.id,anim); if(anim) renderPanel(); } }; anim?tween(.01,null,go,i*.06):go(); }); }
@@ -102,10 +115,10 @@ export function updateScrewMarkers(){
 export function moveScrewDrag(e){
   const d=S.drag; d.hole=null;
   if(insideCanvas(e)){ document.body.classList.add('dragging'); setNDC(e); d.hole=pickHole(); }
-  updateScrewMarkers(); showTip(SCREWT[d.screw].name+(d.hole?' → hole':''),e.clientX,e.clientY);
+  updateMarkers(); showTip(SCREWT[d.screw].name+(d.hole?tr(' → hole',' → lubang'):''),e.clientX,e.clientY);
 }
 export function endScrewDrag(e,cancel){
   const {hole,screw}=S.drag; S.drag=null; document.body.classList.remove('dragging'); showTip(null);
   if(!cancel&&hole) tryDrive(hole,screw); else renderPanel();
-  updateScrewMarkers();
+  updateMarkers();
 }

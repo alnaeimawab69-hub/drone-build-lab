@@ -7,16 +7,17 @@ import { FORCE_LEN, droneRoot, netArrow, totalArrow } from './09-scene-content.j
 import { screenOf } from './14-markers-picking.js';
 import { FORCE, G } from './19-flight.js';
 import { stageKey } from './20-stages.js';
+import { tr } from '../../lang.js';
 
 /* ================= Info card & labels ================= */
 export function showInfo(t){
   const T=TYPES[t]; if(!T) return; const el=$('#info');
-  el.innerHTML=`<button class="x" aria-label="Close">×</button><div class="eyebrow">Component</div><h4>${esc(T.name)}</h4><p>${esc(T.role)}</p><dl><dt>Connects</dt><dd>${esc(T.links)}</dd><dt>Spec</dt><dd>${esc(T.spec)}</dd></dl>`;
+  el.innerHTML=`<button class="x" aria-label="${tr('Close','Tutup')}">×</button><div class="eyebrow">${tr('Component','Komponen')}</div><h4>${esc(T.name)}</h4><p>${esc(T.role)}</p><dl><dt>${tr('Connects','Sambungan')}</dt><dd>${esc(T.links)}</dd><dt>${tr('Spec','Spesifikasi')}</dt><dd>${esc(T.spec)}</dd></dl>`;
   el.hidden=false; el.querySelector('.x').onclick=()=>{ el.hidden=true; };
 }
 export const LBL={};
 export function removeLabel(id){ if(LBL[id]){ LBL[id].remove(); delete LBL[id]; } }
-export function partLabel(p){ const t=p.hot.type; if(t==='motor') return 'Motor M'+p.hot.motor; if(t==='prop') return (p.type==='propCW'?'CW':'CCW')+' prop'; return TYPES[p.type].name; }
+export function partLabel(p){ const t=p.hot.type; if(t==='motor') return 'Motor M'+p.hot.motor; if(t==='prop') return tr('','Kipas ')+(p.type==='propCW'?'CW':'CCW')+tr(' prop',''); return TYPES[p.type].name; }
 export let forceLbl=null;
 export function updateLabels(){
   const box=$('#labels');
@@ -34,7 +35,7 @@ export function updateLabels(){
   }
   /* force names at the arrow tips, in flight and in Movements */
   const showF=(stageKey()==='fly'||stageKey()==='moves')&&totalArrow.visible;
-  if(showF&&!forceLbl){ forceLbl=[['Total thrust',''],['Weight','w'],['Net force','n']].map(([t,c])=>{ const d=document.createElement('div'); d.className='plabel force '+c; d.textContent=t; box.appendChild(d); return d; }); }
+  if(showF&&!forceLbl){ forceLbl=[[tr('Total thrust','Jumlah tujahan'),''],[tr('Weight','Berat'),'w'],[tr('Net force','Daya bersih'),'n']].map(([t,c])=>{ const d=document.createElement('div'); d.className='plabel force '+c; d.textContent=t; box.appendChild(d); return d; }); }
   if(!showF&&forceLbl){ forceLbl.forEach(d=>d.remove()); forceLbl=null; }
   if(forceLbl){ const r=canvas.getBoundingClientRect(), K=FORCE_LEN/G, c=FORCE.c;
     const tips=[c.clone().addScaledVector(FORCE.up,FORCE.T*K+.7),c.clone().add(V(0,-FORCE_LEN-.7,0)),netArrow.visible?c.clone().addScaledVector(FORCE.net.clone().normalize(),FORCE.net.length()*K+1):null];
